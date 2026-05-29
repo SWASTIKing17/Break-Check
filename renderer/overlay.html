@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Drop Overlay</title>
+    <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+    <div id="overlay-container">
+        <div id="overlay-pill">
+
+            <!-- Icon wrap — always left, fixed 56×56 -->
+            <div class="icon-wrap" id="icon-wrap">
+
+                <!-- Status dot lives here so it's positioned
+                     relative to the icon, not the pill width -->
+                <div class="status-dot disconnected" id="status-dot"></div>
+
+                <svg class="drop-icon" id="drop-icon"
+                     viewBox="0 0 24 24" width="20" height="20"
+                     stroke="currentColor" stroke-width="2" fill="none"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+
+            </div>
+
+            <!-- Text panel — slides in when project known -->
+            <div class="text-panel" id="text-panel">
+                <span class="title-text" id="status-text">Drop Media</span>
+                <span class="sub-text"   id="project-text">Detecting…</span>
+            </div>
+
+        </div>
+    </div>
+    <script src="overlay.js"></script>
+</body>
+</html>

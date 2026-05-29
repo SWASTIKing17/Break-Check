@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(ffmpeg *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Swastik Development\\\\FreeXan Development\" -Depth 1 | ForEach-Object { $_.Name })",
+      "Bash(dir C:\\\\Swastik Development\\\\FreeXan Development\\\\docs *)"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+appId: com.bloomx.freexan
+productName: "freeXan"
+copyright: "Copyright © 2025 BloomX"
+
+# ── Source & Output ───────────────────────────────────────────────────────────
+directories:
+  output: dist
+  buildResources: build
+
+# ── Files to bundle ───────────────────────────────────────────────────────────
+files:
+  - "**/*"
+  - "!dist/**"
+  - "!**/*.md"
+  - "!node_modules/.cache/**"
+  - "!node_modules/.bin/**"
+
+# Native modules and runtime files must live outside the ASAR archive
+# so Node can load them as regular files from disk.
+asarUnpack:
+  - "node_modules/better-sqlite3/**/*"
+  - "node_modules/@ffmpeg-installer/**/*"
+  - "cep-extension/**/*"
+  - "blank_template.prproj"
+  - "tray_icon.png"
+
+# ── Windows ───────────────────────────────────────────────────────────────────
+win:
+  # Place icon.ico in the build/ folder (256x256 recommended).
+  # If missing, electron-builder uses a default icon.
+  icon: "build/icon.ico"
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+# ── NSIS Installer ────────────────────────────────────────────────────────────
+nsis:
+  # Single-click install — no wizard pages, just a progress bar.
+  oneClick: true
+
+  # Per-user install — no admin/UAC prompt required.
+  perMachine: false
+  allowElevation: false
+
+  # Shortcuts
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "freeXan"
+
+  # Launch the app automatically after installation finishes.
+  runAfterFinish: true
+
+  # Custom installer/uninstaller script — adds startup registry entry
+  # and shows a friendly finish message.
+  include: "build/installer.nsh"

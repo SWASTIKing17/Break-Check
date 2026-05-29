@@ -1,0 +1,31 @@
+{
+  "name": "freexan",
+  "version": "1.9.7",
+  "description": "freeXan by BloomX Solutions — invisible workflow infrastructure for Adobe Premiere Pro",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "nodemon",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "icon": "node build/make-ico.mjs",
+    "seed": "node scripts/seed-db.js",
+    "dist": "electron-builder --win --x64",
+    "dist:dir": "electron-builder --win --x64 --dir"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
+    "electron": "^30.0.0",
+    "electron-builder": "^26.8.1",
+    "nodemon": "^3.1.14",
+    "png-to-ico": "^3.0.1"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "axios": "^1.16.1",
+    "better-sqlite3": "^12.10.0",
+    "ws": "^8.20.1"
+  }
+}

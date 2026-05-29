@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>freeXan</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Custom Frameless Titlebar -->
+    <header class="titlebar">
+      <div class="titlebar-logo">
+        <img src="../tray_icon.png" width="22" height="22" class="logo-icon" alt="freeXan">
+        <span class="brand-name">freeXan<span class="brand-by"> by BloomX</span></span>
+      </div>
+      <div class="titlebar-controls">
+        <button id="btn-minimize" class="titlebar-btn" title="Minimize">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button id="btn-close" class="titlebar-btn btn-close" title="Close to Tray">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <nav class="nav-menu">
+          <div id="nav-active-bar"></div>
+          <button class="nav-item active" data-tab="tab-builder">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Builder</span>
+          </button>
+          <button class="nav-item" data-tab="tab-settings">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+          </button>
+          <button class="nav-item" data-tab="tab-database">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <span>Database</span>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="status-indicator">
+            <span class="status-dot online"></span>
+            <span id="status-text">Standby</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Content Panels -->
+      <main class="content-area">
+        <!-- Tab 1: Builder -->
+        <section id="tab-builder" class="tab-content active">
+          <div class="panel-header">
+            <h2>Initialize Flow</h2>
+            <p class="subtitle">Folders, template, presets — auto-built for the selected workflow.</p>
+          </div>
+
+          <div class="builder-grid">
+            <!-- Form Input Panel -->
+            <div class="card form-panel">
+              <form id="project-form">
+                <div class="form-group">
+                  <label for="select-client">Client</label>
+                  <div class="select-with-action">
+                    <select id="select-client" required>
+                      <option value="">Select client...</option>
+                    </select>
+                    <button type="button" id="btn-goto-db-client" class="btn-db-shortcut" title="Manage clients">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                    </button>
+                  </div>
+                  <span class="help-text">Select from your saved clients</span>
+                </div>
+
+                <div class="form-group inactive" id="form-group-funnel">
+                  <label for="select-funnel">Funnel</label>
+                  <div class="select-with-action">
+                    <select id="select-funnel">
+                      <option value="">Select funnel...</option>
+                    </select>
+                    <button type="button" id="btn-goto-db-funnel" class="btn-db-shortcut" title="Manage funnels">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                    </button>
+                  </div>
+                  <span class="help-text">Pick any funnel from your library</span>
+                </div>
+
+                <div class="form-group inactive" id="form-group-task">
+                  <label for="select-task">Task <span class="optional-tag">optional</span></label>
+                  <div class="select-with-action">
+                    <select id="select-task" disabled>
+                      <option value="">Select client + funnel first</option>
+                    </select>
+                    <button type="button" id="btn-manage-tasks" class="btn-db-shortcut" title="Manage tasks for this Client + Funnel" disabled>
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                  </div>
+                  <span class="help-text">Tasks attached to this Client + Funnel pair</span>
+
+                  <!-- Inline manage panel (hidden until Manage clicked) -->
+                  <div id="manage-tasks-panel" class="manage-panel" hidden>
+                    <div class="manage-panel-header">
+                      <span>Attach tasks to <strong id="manage-pair-label">—</strong></span>
+                      <button type="button" id="btn-close-manage" class="manage-close" title="Close">×</button>
+                    </div>
+                    <div id="manage-tasks-list" class="manage-list">
+                      <!-- Checkboxes inserted dynamically -->
+                    </div>
+                    <div class="manage-actions">
+                      <button type="button" id="btn-save-manage-tasks" class="btn-primary btn-sm-pri">Save</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="input-project">Project Name / Number</label>
+                  <input type="text" id="input-project" placeholder="e.g. 001_LaunchVideo" required>
+                  <span class="help-text">Use <code>{Date}</code> <code>{Month}</code> <code>{Year}</code> <code>{HH}</code> <code>{MM}</code> <code>{SS}</code> for live date/time</span>
+                </div>
+
+                <div id="resolved-template-hint" class="template-hint" style="display:none">
+                  <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span id="resolved-template-name">Template</span>
+                </div>
+
+                <!-- Preview Area -->
+                <div class="preview-box">
+                  <div class="preview-title">Project Structure Preview</div>
+                  <div class="preview-item">
+                    <span class="preview-label">Date Path:</span>
+                    <span id="preview-date-path" class="preview-value preview-date-chip">...</span>
+                  </div>
+                  <div class="preview-item">
+                    <span class="preview-label">Root Folder:</span>
+                    <span id="preview-root" class="preview-value">...</span>
+                  </div>
+                  <div class="preview-item">
+                    <span class="preview-label">Project File:</span>
+                    <span id="preview-file" class="preview-value">...</span>
+                  </div>
+                </div>
+
+                <button type="submit" id="btn-create" class="btn-primary">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" class="btn-icon"><path d="M12 5v14M5 12h14"/></svg>
+                  Initialize Flow
+                </button>
+              </form>
+            </div>
+
+            <!-- Folder Structure Tree View -->
+            <div class="card tree-panel">
+              <div class="panel-title">
+                <h3>Folder Hierarchy</h3>
+                <span class="badge">Autogenerated</span>
+              </div>
+              <div class="tree-container">
+                <div class="tree-root">
+                  <span class="tree-root-name" id="tree-root-label">Project Root</span>
+                  <div class="tree-children" id="folder-tree-list">
+                    <!-- Dynamic child folders go here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 2: Settings -->
+        <section id="tab-settings" class="tab-content">
+          <div class="panel-header">
+            <h2>Settings</h2>
+            <p class="subtitle">Workspaces, templates, and runtime behavior.</p>
+          </div>
+
+          <div class="card settings-card">
+            <!-- Target Directory Setup -->
+            <div class="settings-group">
+              <label class="setting-label">Default Target Directory</label>
+              <div class="input-action-group">
+                <input type="text" id="setting-target-dir" placeholder="No folder selected">
+                <button id="btn-select-dir" class="btn-secondary">Browse</button>
+              </div>
+              <p class="setting-description">Where new projects will be created on your hard drive.</p>
+            </div>
+
+            <!-- Auto-popup Behavior -->
+            <div class="settings-group checkbox-group">
+              <label class="switch">
+                <input type="checkbox" id="setting-auto-popup">
+                <span class="slider round"></span>
+              </label>
+              <div class="checkbox-text">
+                <span class="setting-label inline">Pop up automatically on Welcome Screen</span>
+                <p class="setting-description">When Premiere Pro is launched and on the Welcome Screen, the Project Builder overlay will automatically come to the front.</p>
+              </div>
+            </div>
+
+            <!-- Sequence Format -->
+            <div class="settings-group">
+              <label class="setting-label">Sequence Format</label>
+              <div class="input-action-group">
+                <select id="setting-seq-resolution">
+                  <option value="1920x1080">Landscape — 1920 × 1080</option>
+                  <option value="1080x1920">Portrait — 1080 × 1920</option>
+                  <option value="1080x1080">Square — 1080 × 1080</option>
+                </select>
+                <select id="setting-seq-fps">
+                  <option value="24">24 fps</option>
+                  <option value="25">25 fps</option>
+                  <option value="30">30 fps</option>
+                </select>
+              </div>
+              <p class="setting-description">Used when creating sequences inside new projects.</p>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="settings-actions">
+              <button id="btn-save-settings" class="btn-primary">Save Settings</button>
+              <span id="save-status" class="status-msg"></span>
+            </div>
+          </div>
+        </section>
+        <!-- Tab 3: Database -->
+        <section id="tab-database" class="tab-content">
+          <div class="panel-header">
+            <h2>Library</h2>
+            <p class="subtitle">Clients, funnels, templates, and preset assets.</p>
+          </div>
+
+          <!-- Clients -->
+          <div class="db-section">
+            <div class="db-section-header">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Clients</span>
+            </div>
+            <div id="db-clients-list" class="db-list"></div>
+            <div class="db-add-form">
+              <input type="text" id="db-new-client-name" placeholder="Client name (e.g. Google)">
+              <input type="text" id="db-new-client-initials" placeholder="Initials (e.g. GGL)" maxlength="10">
+              <button type="button" id="btn-db-add-client" class="btn-secondary btn-sm">Add</button>
+            </div>
+          </div>
+
+          <!-- Funnels -->
+          <div class="db-section">
+            <div class="db-section-header">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>Funnels</span>
+            </div>
+            <div id="db-funnels-list" class="db-list"></div>
+            <div class="db-add-form">
+              <select id="db-funnel-client-select">
+                <option value="">Global (no client)</option>
+              </select>
+              <input type="text" id="db-new-funnel-name" placeholder="Funnel name">
+              <input type="text" id="db-new-funnel-initials" placeholder="Initials" maxlength="6" style="max-width:80px">
+              <button type="button" id="btn-db-add-funnel" class="btn-secondary btn-sm">Add</button>
+            </div>
+          </div>
+
+          <!-- Tasks -->
+          <div class="db-section">
+            <div class="db-section-header">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <span>Tasks</span>
+              <span class="db-section-hint">Project types — global list</span>
+            </div>
+            <div id="db-tasks-list" class="db-list"></div>
+            <div class="db-add-form">
+              <input type="text" id="db-new-task-name" placeholder="Task name (e.g. Ads Video)">
+              <input type="text" id="db-new-task-initials" placeholder="Initials" maxlength="6" style="max-width:80px">
+              <button type="button" id="btn-db-add-task" class="btn-secondary btn-sm">Add</button>
+            </div>
+          </div>
+
+          <!-- Assets -->
+          <div class="db-section">
+            <div class="db-section-header">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Preset Assets</span>
+              <span class="db-section-hint">Auto-copied into new projects</span>
+            </div>
+            <div id="db-assets-list" class="db-list"></div>
+            <div class="db-add-form db-add-form--col">
+              <div class="db-add-row">
+                <input type="text" id="db-new-asset-name" placeholder="Asset name">
+                <select id="db-new-asset-category">
+                  <option value="other">Other</option>
+                  <option value="footage">Footage</option>
+                  <option value="audio">Audio</option>
+                  <option value="image">Image</option>
+                </select>
+              </div>
+              <div class="db-add-row">
+                <input type="text" id="db-new-asset-path" placeholder="File path" readonly>
+                <button type="button" id="btn-browse-asset" class="btn-secondary btn-sm">Browse</button>
+              </div>
+              <div class="db-add-row">
+                <select id="db-asset-client-select">
+                  <option value="">Global (no client)</option>
+                </select>
+                <select id="db-asset-funnel-select">
+                  <option value="">No funnel scope</option>
+                </select>
+                <button type="button" id="btn-db-add-asset" class="btn-secondary btn-sm">Add</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Templates -->
+          <div class="db-section">
+            <div class="db-section-header">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>Templates</span>
+              <span class="db-section-hint">Folder structure per Client · Funnel · Task</span>
+            </div>
+
+            <!-- Filter row -->
+            <div class="db-add-row fts-filter-row">
+              <select id="fts-filter-client"><option value="">All Clients</option></select>
+              <select id="fts-filter-funnel"><option value="">All Funnels</option></select>
+              <select id="fts-filter-task"  ><option value="">All Tasks</option></select>
+            </div>
+
+            <!-- Folder structure template list -->
+            <div id="fts-list" class="fts-list"></div>
+            <button type="button" id="fts-btn-create-new" class="btn-secondary btn-sm fts-create-btn">+ New Template</button>
+
+            <!-- Structure panel — shown when a template is selected -->
+            <div id="fts-panel" class="fts-panel" hidden>
+              <div class="fts-panel-header">
+                <input type="text" id="fts-template-name" class="fts-template-name-input" disabled placeholder="Template name…">
+                <div class="fts-panel-actions">
+                  <button type="button" id="fts-btn-edit" class="btn-secondary btn-sm">Edit</button>
+                  <button type="button" id="fts-btn-new"  class="btn-secondary btn-sm">New</button>
+                </div>
+              </div>
+
+              <!-- Assignment dropdowns (disabled in view mode, enabled in edit mode) -->
+              <div class="fts-assignment-row">
+                <select id="fts-client" disabled><option value="">Any Client</option></select>
+                <select id="fts-funnel" disabled><option value="">Any Funnel</option></select>
+                <select id="fts-task"   disabled><option value="">Any Task</option></select>
+              </div>
+
+              <!-- Inner tab switcher -->
+              <div class="fts-inner-tabs">
+                <button type="button" id="fts-tab-btn-folder"   class="fts-inner-tab active">Folder Structure</button>
+                <button type="button" id="fts-tab-btn-premiere" class="fts-inner-tab">Premiere Pro</button>
+              </div>
+
+              <!-- Tab 1: Folder tree -->
+              <div id="fts-tab-panel-folder" class="fts-tab-panel">
+                <div id="fts-tree" class="ft-tree fts-tree-view"></div>
+                <div id="fts-add-root-row" class="ft-root-add-row" hidden>
+                  <input type="text" id="fts-new-root-name" placeholder="Root folder name…">
+                  <button type="button" id="fts-btn-add-root" class="btn-secondary btn-sm">+ Folder</button>
+                </div>
+              </div>
+
+              <!-- Tab 2: Premiere Pro bin + sequence structure -->
+              <div id="fts-tab-panel-premiere" class="fts-tab-panel" hidden>
+                <div id="fts-premiere-tree" class="ft-tree"></div>
+                <div id="premiere-add-bin-card" class="premiere-add-card" hidden>
+                  <span class="ft-icon">🗂</span>
+                  <span>Add Bin</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Project file templates (.prproj assignments) -->
+            <div class="db-subsection-label">Project File Templates</div>
+            <div id="db-templates-list" class="db-list"></div>
+            <div class="db-add-form db-add-form--col">
+              <div class="db-add-row">
+                <input type="text" id="db-new-template-name" placeholder="Template name">
+                <input type="text" id="db-new-template-path" placeholder="Path to .prproj" readonly>
+                <button type="button" id="btn-browse-template" class="btn-secondary btn-sm">Browse</button>
+              </div>
+              <div class="db-add-row">
+                <select id="db-template-client-select">
+                  <option value="">Global (no client)</option>
+                </select>
+                <select id="db-template-funnel-select">
+                  <option value="">No funnel scope</option>
+                </select>
+                <button type="button" id="btn-db-add-template" class="btn-secondary btn-sm">Add</button>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+    </div>
+  </div>
+<!-- Sequence creation modal -->
+<div id="seq-modal-overlay" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">New Sequence</span>
+      <button id="seq-modal-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Name</label>
+        <input type="text" id="seq-modal-name" placeholder="Sequence name…">
+      </div>
+      <div class="modal-field">
+        <label>Dimensions</label>
+        <input type="hidden" id="seq-modal-dims" value="1920x1080">
+        <div class="dim-tiles">
+          <div class="dim-tile selected" data-value="1920x1080">
+            <div class="dim-tile-preview" style="width:34px;height:19px;"></div>
+            <span class="dim-tile-label">1920×1080<br>Landscape</span>
+          </div>
+          <div class="dim-tile" data-value="1080x1920">
+            <div class="dim-tile-preview" style="width:19px;height:34px;"></div>
+            <span class="dim-tile-label">1080×1920<br>Portrait</span>
+          </div>
+          <div class="dim-tile" data-value="1080x1080">
+            <div class="dim-tile-preview" style="width:26px;height:26px;"></div>
+            <span class="dim-tile-label">1080×1080<br>Square</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Frame Rate</label>
+        <select id="seq-modal-fps">
+          <option value="24">24 fps</option>
+          <option value="25" selected>25 fps</option>
+          <option value="30">30 fps</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="modal-key-hint"><kbd>↵</kbd> Add &nbsp;<kbd>Esc</kbd> Cancel</span>
+      <button id="seq-modal-cancel" class="btn-secondary btn-sm">Cancel</button>
+      <button id="seq-modal-add" class="btn-primary btn-sm">Add Sequence</button>
+    </div>
+  </div>
+</div>
+  <script src="app.js"></script>
+</body>
+</html>

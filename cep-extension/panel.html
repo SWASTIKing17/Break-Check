@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>freeXan Link</title>
+    <style>
+        /* freeXan brand — CEP panel */
+        body {
+            background-color: #0B0B12;
+            color: #F5F7FB;
+            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            padding: 12px;
+            font-size: 11px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+            background: rgba(123, 77, 255, 0.06);
+            border: 1px solid rgba(123, 77, 255, 0.18);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .status-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .status {
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.4px;
+        }
+        .status.connected {
+            color: #10D28F;
+        }
+        .status.disconnected {
+            color: #FF5A7A;
+        }
+        .info {
+            color: #9A9DAC;
+            font-size: 10px;
+            margin-top: 4px;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .pulse.connected {
+            background-color: #10D28F;
+            box-shadow: 0 0 10px #10D28F;
+            animation: pulse-green 2s infinite;
+        }
+        .pulse.disconnected {
+            background-color: #FF5A7A;
+            box-shadow: 0 0 10px #FF5A7A;
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 210, 143, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 210, 143, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 210, 143, 0); }
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 90, 122, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(255, 90, 122, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 90, 122, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-container">
+            <span id="pulse" class="pulse disconnected"></span>
+            <span id="status-text" class="status disconnected">Disconnected</span>
+        </div>
+        <div id="info-text" class="info">Waiting for freeXan…</div>
+    </div>
+    
+    <script src="CSInterface.js"></script>
+    <script src="ext.js"></script>
+</body>
+</html>

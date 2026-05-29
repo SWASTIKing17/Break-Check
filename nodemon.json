@@ -1,0 +1,18 @@
+{
+  "exec": "electron .",
+  "watch": [
+    "main.js",
+    "preload.js",
+    "db.js",
+    "renderer/"
+  ],
+  "ignore": [
+    "node_modules/",
+    "dist/",
+    "cep-extension/",
+    "docs/",
+    "scripts/"
+  ],
+  "ext": "js,html,css,json",
+  "delay": 500
+}

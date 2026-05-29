@@ -1,0 +1,168 @@
+<svg width="1200" height="400" viewBox="0 0 1200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="freexanGradient" x1="40" y1="40" x2="320" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#B084FF"/>
+      <stop offset="50%" stop-color="#7B4DFF"/>
+      <stop offset="100%" stop-color="#4E2AD9"/>
+    </linearGradient>
+
+    <linearGradient id="textGradient" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7B4DFF"/>
+      <stop offset="100%" stop-color="#B084FF"/>
+    </linearGradient>
+
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="white"/>
+
+  <!-- Logo Symbol -->
+  <g transform="translate(60 40)" filter="url(#softGlow)">
+
+    <!-- Left Fold -->
+    <path d="M120 20
+             C85 20 60 45 60 80
+             L60 130
+             C60 145 52 160 40 170
+             L20 188
+             C8 198 8 218 20 228
+             L68 270
+             C82 282 104 282 118 270
+             L160 230
+             C172 220 172 200 160 190
+             L118 152
+             C104 140 96 124 96 106
+             L96 80
+             C96 68 104 60 116 60
+             L152 60
+             C170 60 184 46 184 28
+             C184 10 170 -4 152 -4
+             Z"
+          fill="url(#freexanGradient)"/>
+
+    <!-- Right Fold -->
+    <path d="M200 20
+             C235 20 260 45 260 80
+             L260 130
+             C260 145 268 160 280 170
+             L300 188
+             C312 198 312 218 300 228
+             L252 270
+             C238 282 216 282 202 270
+             L160 230
+             C148 220 148 200 160 190
+             L202 152
+             C216 140 224 124 224 106
+             L224 80
+             C224 68 216 60 204 60
+             L168 60
+             C150 60 136 46 136 28
+             C136 10 150 -4 168 -4
+             Z"
+          fill="url(#freexanGradient)"
+          opacity="0.92"/>
+
+    <!-- Center Overlay -->
+    <path d="M118 152
+             L160 190
+             L202 152
+             L160 116
+             Z"
+          fill="#D7C2FF"
+          opacity="0.35"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(410 115)">
+    <text x="0" y="110"
+      font-family="Satoshi, Inter, Arial, sans-serif"
+      font-size="112"
+      font-weight="700"
+      letter-spacing="-3"
+      fill="#0B0B12">
+      free
+    </text>
+
+    <text x="290" y="110"
+      font-family="Satoshi, Inter, Arial, sans-serif"
+      font-size="112"
+      font-weight="700"
+      letter-spacing="-3"
+      fill="url(#textGradient)">
+      X
+    </text>
+
+    <text x="370" y="110"
+      font-family="Satoshi, Inter, Arial, sans-serif"
+      font-size="112"
+      font-weight="700"
+      letter-spacing="-3"
+      fill="#0B0B12">
+      an
+    </text>
+
+    <!-- Sub Branding -->
+    <text x="8" y="165"
+      font-family="Inter, Arial, sans-serif"
+      font-size="34"
+      font-weight="500"
+      letter-spacing="2"
+      fill="#6D6F78">
+      by
+    </text>
+
+    <text x="70" y="165"
+      font-family="Satoshi, Inter, Arial, sans-serif"
+      font-size="38"
+      font-weight="700"
+      letter-spacing="1"
+      fill="#0B0B12">
+      BLOOM
+    </text>
+
+    <text x="250" y="165"
+      font-family="Satoshi, Inter, Arial, sans-serif"
+      font-size="38"
+      font-weight="700"
+      letter-spacing="1"
+      fill="url(#textGradient)">
+      X
+    </text>
+  </g>
+</svg>
+
+# Usage Notes
+
+* Fully scalable vector logo
+* Optimized for light backgrounds
+* Suitable for:
+
+  * App icon derivation
+  * Website branding
+  * Splash screens
+  * Marketing assets
+  * SVG animation
+  * Motion graphics
+
+# Recommended Export Variants
+
+1. Full Logo
+2. Symbol Only
+3. Monochrome Dark
+4. Monochrome Light
+5. Tray Icon Version
+6. Favicon Version
+
+# Primary Brand Colors
+
+* Primary Purple: #7B4DFF
+* Light Violet: #B084FF
+* Deep Black: #0B0B12
+* White: #FFFFFF
