@@ -7,6 +7,8 @@ Record decisions, blockers, ideas, and progress here â€” not in code comments.
 
 ## Current Version: v3.5.1
 
+[2026-06-24] Added SRT export functionality to freeXan Caption. Created exportUtils.ts with generateWbwSrt and generatePhrasedSrt. Added buttons in EditView.tsx to save files locally using Adobe CEP File System.
+
 **App:** freeXan by BloomX  
 **Date:** 2026-06-24
 **Progress:**
@@ -2012,7 +2014,8 @@ pm run build:fast — clean, no errors.
 ## [2026-06-22 13:37] — Link_freeXan Bug Fix #3
 
 **Bugs Fixed:**
-- **Audio List Not Loading:** Restored missing equestAudioLibrary() explicit call and audio list rendering logic (udioLibrary = data.files || []; renderAudioList();) in ext.js which was accidentally deleted, preventing the audio library from loading in Link_freeXan.
+- **Audio List Not Loading:** Restored missing 
+equestAudioLibrary() explicit call and audio list rendering logic (udioLibrary = data.files || []; renderAudioList();) in ext.js which was accidentally deleted, preventing the audio library from loading in Link_freeXan.
 - Copied updated ext.js to installed location $env:APPDATA\Adobe\CEP\extensions\com.bloomx.freexan.link\ext.js.
 
 ---

@@ -14,6 +14,10 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
   - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
   - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
 
+### Feature
+- **SRT Export Tools.** Added "Save WBW Srt." and "Save Phrased Srt." buttons to the Edit Tab footer. generateWbwSrt exports a .srt file where each time block contains exactly one word. generatePhrasedSrt exports a .srt file where each time block contains the entire phrase.
+  - Fixed missing text parameter matching in sm_tools_format_text_selected_mogrts where Text Format tool skipped MOGRTs using 'Text' or 'Source Text' instead of 'Text Input', causing 'No clips updated.' errors.
+
 
 ## [v2.2.4] — 2026-05-29
 

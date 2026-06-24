@@ -6,6 +6,8 @@ Use this file to find: which file does what, which function controls which featu
 
 ---
 
+
+[2026-06-24] Implemented 'Save WBW Srt.' and 'Save Phrased Srt.' functionality within EditView.tsx and a new utility file exportUtils.ts.
 ## Quick Index
 
 | I want to changeâ€¦ | Go to file |
@@ -1068,7 +1070,8 @@ External clients (v3.5.1+)
 ## [2026-06-22 13:37] — Link_freeXan Bug Fix #3
 
 **Bugs Fixed:**
-- **Audio List Not Loading:** Restored missing equestAudioLibrary() explicit call and audio list rendering logic (udioLibrary = data.files || []; renderAudioList();) in ext.js which was accidentally deleted, preventing the audio library from loading in Link_freeXan.
+- **Audio List Not Loading:** Restored missing 
+equestAudioLibrary() explicit call and audio list rendering logic (udioLibrary = data.files || []; renderAudioList();) in ext.js which was accidentally deleted, preventing the audio library from loading in Link_freeXan.
 - Copied updated ext.js to installed location $env:APPDATA\Adobe\CEP\extensions\com.bloomx.freexan.link\ext.js.
 
 ---
