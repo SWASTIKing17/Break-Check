@@ -1,6 +1,8 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const { app } = require('electron');
+const { createLogger } = require('./logger');
+const dbLogger = createLogger('database');
 
 let db = null;
 
@@ -93,6 +95,10 @@ function initSchema() {
     );
   `);
 
+  // All migration DDL is wrapped in try-catch so a failed migration degrades
+  // gracefully instead of crashing the app on startup.
+  try {
+
   // Migrate funnels.client_id from NOT NULL → nullable (for global funnels).
   // SQLite doesn't support ALTER COLUMN, so we recreate if needed.
   const fCols = db.prepare("PRAGMA table_info(funnels)").all();
@@ -151,6 +157,20 @@ function initSchema() {
   if (!ftnCols.find(c => c.name === 'slot_type')) {
     db.exec("ALTER TABLE folder_template_nodes ADD COLUMN slot_type TEXT DEFAULT NULL");
   }
+  // Migrate folder_template_nodes: add link_enabled flag for folder ↔ bin auto-import
+  if (!ftnCols.find(c => c.name === 'link_enabled')) {
+    db.exec("ALTER TABLE folder_template_nodes ADD COLUMN link_enabled INTEGER NOT NULL DEFAULT 0");
+  }
+  // Migrate folder_template_nodes: add link_shortcut for drag-with-key routing on the overlay pill
+  if (!ftnCols.find(c => c.name === 'link_shortcut')) {
+    db.exec("ALTER TABLE folder_template_nodes ADD COLUMN link_shortcut TEXT DEFAULT NULL");
+  }
+
+  // Migrate folder_templates: add template_type if missing
+  const ftMainCols = db.prepare("PRAGMA table_info(folder_templates)").all();
+  if (!ftMainCols.find(c => c.name === 'template_type')) {
+    db.exec("ALTER TABLE folder_templates ADD COLUMN template_type TEXT NOT NULL DEFAULT 'folder'");
+  }
 
   // Seed a Default folder template on first run
   const existing = db.prepare('SELECT id FROM folder_templates WHERE is_default = 1').get();
@@ -162,6 +182,10 @@ function initSchema() {
         .run(tpl.lastInsertRowid, name, i);
     });
     console.log('[db] Seeded Default folder template.');
+  }
+
+  } catch (migrationErr) {
+    console.error('[db] Migration error (continuing with existing schema):', migrationErr);
   }
 }
 
@@ -194,9 +218,11 @@ const clientsApi = {
     return getDb().prepare('SELECT * FROM clients ORDER BY name').all();
   },
   add(name, initials) {
+    dbLogger(`Clients API: Adding client ${name} (${initials})`);
     return getDb().prepare('INSERT INTO clients (name, initials) VALUES (?, ?)').run(name, initials).lastInsertRowid;
   },
   update(id, name, initials) {
+    dbLogger(`Clients API: Updating client ${id} to ${name} (${initials})`);
     getDb().prepare('UPDATE clients SET name=?, initials=? WHERE id=?').run(name, initials, id);
   },
   nameConflict(name, excludeId) {
@@ -204,6 +230,7 @@ const clientsApi = {
                     .get(name, excludeId || -1);
   },
   delete(id) {
+    dbLogger(`Clients API: Deleting client ${id}`);
     getDb().prepare('DELETE FROM clients WHERE id=?').run(id);
   }
 };
@@ -225,10 +252,12 @@ const funnelsApi = {
   },
   add(clientId, name, initials) {
     const ini = (initials && initials.trim()) || deriveInitials(name);
+    dbLogger(`Funnels API: Adding funnel ${name} (${ini}) for client ${clientId}`);
     return getDb().prepare('INSERT INTO funnels (client_id, name, initials) VALUES (?, ?, ?)').run(clientId || null, name, ini).lastInsertRowid;
   },
   update(id, clientId, name, initials) {
     const ini = (initials && initials.trim()) || deriveInitials(name);
+    dbLogger(`Funnels API: Updating funnel ${id} to ${name} (${ini}) for client ${clientId}`);
     getDb().prepare('UPDATE funnels SET client_id=?, name=?, initials=? WHERE id=?').run(clientId || null, name, ini, id);
   },
   // True if another funnel exists at the same (name, client_id) scope (case-insensitive).
@@ -251,10 +280,12 @@ const tasksApi = {
   },
   add(name, initials) {
     const ini = (initials && initials.trim()) || deriveInitials(name);
+    dbLogger(`Tasks API: Adding task ${name} (${ini})`);
     return getDb().prepare('INSERT OR IGNORE INTO tasks (name, initials) VALUES (?, ?)').run(name, ini).lastInsertRowid;
   },
   update(id, name, initials) {
     const ini = (initials && initials.trim()) || deriveInitials(name);
+    dbLogger(`Tasks API: Updating task ${id} to ${name} (${ini})`);
     getDb().prepare('UPDATE tasks SET name=?, initials=? WHERE id=?').run(name, ini, id);
   },
   // Case-insensitive name conflict (excluding self).
@@ -281,6 +312,7 @@ const tasksApi = {
   // Replace the full set of tasks attached to (client, funnel) with taskIds.
   setForFunnel(clientId, funnelId, taskIds) {
     if (!clientId || !funnelId) return;
+    dbLogger(`Tasks API: Setting tasks for client ${clientId}, funnel ${funnelId} to [${taskIds.join(',')}]`);
     const d = getDb();
     const tx = d.transaction(() => {
       d.prepare('DELETE FROM funnel_tasks WHERE client_id=? AND funnel_id=?').run(clientId, funnelId);
@@ -337,9 +369,16 @@ const assetsApi = {
     `).all();
   },
   add(clientId, funnelId, name, filePath, category, tags) {
+    dbLogger(`Assets API: Adding asset ${name} (${filePath}) for client ${clientId}, funnel ${funnelId}`);
     return getDb().prepare(
       'INSERT INTO assets (client_id, funnel_id, name, file_path, category, tags) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(clientId || null, funnelId || null, name, filePath, category || 'other', tags || '').lastInsertRowid;
+  },
+  update(id, name, filePath, clientId, funnelId) {
+    dbLogger(`Assets API: Updating asset ${id} to ${name} (${filePath}) for client ${clientId}, funnel ${funnelId}`);
+    getDb().prepare(
+      'UPDATE assets SET name=?, file_path=?, client_id=?, funnel_id=? WHERE id=?'
+    ).run(name, filePath, clientId || null, funnelId || null, id);
   },
   delete(id) {
     getDb().prepare('DELETE FROM assets WHERE id=?').run(id);
@@ -365,7 +404,9 @@ const folderTemplatesApi = {
         c.name AS client_name, f.name AS funnel_name, t.name AS task_name,
         fta.client_id AS asgn_client_id, fta.funnel_id AS asgn_funnel_id, fta.task_id AS asgn_task_id
       FROM folder_templates ft
-      LEFT JOIN folder_template_assignments fta ON fta.template_id = ft.id
+      LEFT JOIN (
+        SELECT * FROM folder_template_assignments GROUP BY template_id
+      ) fta ON fta.template_id = ft.id
       LEFT JOIN clients c ON c.id = fta.client_id
       LEFT JOIN funnels f ON f.id = fta.funnel_id
       LEFT JOIN tasks t ON t.id = fta.task_id
@@ -375,17 +416,19 @@ const folderTemplatesApi = {
   getDefault() {
     return getDb().prepare('SELECT * FROM folder_templates WHERE is_default = 1 LIMIT 1').get() || null;
   },
-  create(name, prprojPath, openMode, bins, sequences) {
+  create(name, prprojPath, openMode, bins, sequences, templateType) {
     return getDb().prepare(
-      'INSERT INTO folder_templates (name, is_default, prproj_path, open_mode, bins_json, sequences_json) VALUES (?,0,?,?,?,?)'
+      'INSERT INTO folder_templates (name, is_default, prproj_path, open_mode, bins_json, sequences_json, template_type) VALUES (?,0,?,?,?,?,?)'
     ).run(name, prprojPath || null, openMode || 'copy_to_new',
-          JSON.stringify(bins || []), JSON.stringify(sequences || []));
+          JSON.stringify(bins || []), JSON.stringify(sequences || []),
+          templateType || 'folder');
   },
-  update(id, name, prprojPath, openMode, bins, sequences) {
+  update(id, name, prprojPath, openMode, bins, sequences, templateType) {
     getDb().prepare(
-      'UPDATE folder_templates SET name=?, prproj_path=?, open_mode=?, bins_json=?, sequences_json=? WHERE id=?'
+      'UPDATE folder_templates SET name=?, prproj_path=?, open_mode=?, bins_json=?, sequences_json=?, template_type=? WHERE id=?'
     ).run(name, prprojPath || null, openMode || 'copy_to_new',
-          JSON.stringify(bins || []), JSON.stringify(sequences || []), id);
+          JSON.stringify(bins || []), JSON.stringify(sequences || []),
+          templateType || 'folder', id);
   },
   delete(id) {
     getDb().prepare('DELETE FROM folder_templates WHERE id=?').run(id);
@@ -400,13 +443,33 @@ const folderTemplatesApi = {
   },
   setNodes(templateId, nodes) {
     const d = getDb();
-    const insert = d.prepare('INSERT INTO folder_template_nodes (template_id, parent_id, node_type, name, asset_path, slot_type, sort_order) VALUES (?,?,?,?,?,?,?)');
+    // Guard: reject any circular parent_id chain (direct or indirect: A→B→A)
+    const _parentLookup = {};
+    for (const n of nodes) {
+      const key = n.tempId != null ? n.tempId : n.id;
+      if (key != null) _parentLookup[key] = n.parent_id;
+    }
+    for (const n of nodes) {
+      const key = n.tempId != null ? n.tempId : n.id;
+      const visited = new Set();
+      let cur = n.parent_id;
+      while (cur != null) {
+        if (visited.has(cur) || cur === key) {
+          throw new Error(`Circular parent reference detected involving node "${n.name}"`);
+        }
+        visited.add(cur);
+        cur = _parentLookup[cur] ?? null;
+      }
+    }
+    const insert = d.prepare('INSERT INTO folder_template_nodes (template_id, parent_id, node_type, name, asset_path, slot_type, link_enabled, link_shortcut, sort_order) VALUES (?,?,?,?,?,?,?,?,?)');
     const idMap = {};
     const tx = d.transaction(() => {
       d.prepare('DELETE FROM folder_template_nodes WHERE template_id=?').run(templateId);
       nodes.forEach((n, i) => {
         const realParentId = n.parent_id != null ? (idMap[n.parent_id] ?? null) : null;
-        const result = insert.run(templateId, realParentId, n.node_type, n.name, n.asset_path || null, n.slot_type || null, i);
+        const linkFlag = n.link_enabled ? 1 : 0;
+        const shortcut = n.link_enabled && n.link_shortcut ? String(n.link_shortcut) : null;
+        const result = insert.run(templateId, realParentId, n.node_type, n.name, n.asset_path || null, n.slot_type || null, linkFlag, shortcut, i);
         const key = n.tempId != null ? n.tempId : n.id;
         if (key != null) idMap[key] = result.lastInsertRowid;
       });
@@ -425,10 +488,13 @@ const folderTemplatesApi = {
   },
   assign(templateId, clientId, funnelId, taskId) {
     const d = getDb();
-    d.prepare('DELETE FROM folder_template_assignments WHERE template_id=? AND client_id IS ? AND funnel_id IS ? AND task_id IS ?')
-      .run(templateId, clientId || null, funnelId || null, taskId || null);
-    d.prepare('INSERT INTO folder_template_assignments (template_id, client_id, funnel_id, task_id) VALUES (?,?,?,?)')
-      .run(templateId, clientId || null, funnelId || null, taskId || null);
+    // One template per pair — evict any existing assignment for this combination before inserting.
+    d.transaction(() => {
+      d.prepare('DELETE FROM folder_template_assignments WHERE client_id IS ? AND funnel_id IS ? AND task_id IS ?')
+        .run(clientId || null, funnelId || null, taskId || null);
+      d.prepare('INSERT INTO folder_template_assignments (template_id, client_id, funnel_id, task_id) VALUES (?,?,?,?)')
+        .run(templateId, clientId || null, funnelId || null, taskId || null);
+    })();
   },
   unassign(templateId, clientId, funnelId, taskId) {
     getDb().prepare('DELETE FROM folder_template_assignments WHERE template_id=? AND client_id IS ? AND funnel_id IS ? AND task_id IS ?')
@@ -436,44 +502,58 @@ const folderTemplatesApi = {
   },
   resolve(clientId, funnelId, taskId) {
     const d = getDb();
-    // Priority: client + funnel + task → client + funnel → client only → null (caller uses default)
-    let row = d.prepare(`
+    const c = clientId || null;
+    const f = funnelId || null;
+    const t = taskId   || null;
+    // Priority — most specific first. 7 levels.
+    //   1. (C, F, T)
+    //   2. (C, F, *)
+    //   3. (C, *, T)
+    //   4. (*, F, T)
+    //   5. (C, *, *)
+    //   6. (*, F, *)
+    //   7. (*, *, T)
+    // Bound parameters use the actual value or NULL — both sides use IS for null-safe match.
+    const baseSql = `
       SELECT ft.* FROM folder_templates ft
       JOIN folder_template_assignments fta ON fta.template_id = ft.id
       WHERE fta.client_id IS ? AND fta.funnel_id IS ? AND fta.task_id IS ?
-      LIMIT 1
-    `).get(clientId || null, funnelId || null, taskId || null);
-    if (row) return row;
-    row = d.prepare(`
-      SELECT ft.* FROM folder_templates ft
-      JOIN folder_template_assignments fta ON fta.template_id = ft.id
-      WHERE fta.client_id IS ? AND fta.funnel_id IS ? AND fta.task_id IS NULL
-      LIMIT 1
-    `).get(clientId || null, funnelId || null);
-    if (row) return row;
-    row = d.prepare(`
-      SELECT ft.* FROM folder_templates ft
-      JOIN folder_template_assignments fta ON fta.template_id = ft.id
-      WHERE fta.client_id IS ? AND fta.funnel_id IS NULL AND fta.task_id IS NULL
-      LIMIT 1
-    `).get(clientId || null);
-    return row || null;
+      LIMIT 1`;
+    const tries = [
+      [c, f, t],         // 1
+      [c, f, null],      // 2
+      [c, null, t],      // 3
+      [null, f, t],      // 4
+      [c, null, null],   // 5
+      [null, f, null],   // 6
+      [null, null, t]    // 7
+    ];
+    for (const [pc, pf, pt] of tries) {
+      // Skip a try if it would query an all-NULL row (that is "default"; handled by caller)
+      if (pc === null && pf === null && pt === null) continue;
+      const row = d.prepare(baseSql).get(pc, pf, pt);
+      if (row) return row;
+    }
+    return null;
   },
   clone(sourceId) {
     const d = getDb();
     const src = d.prepare('SELECT * FROM folder_templates WHERE id=?').get(sourceId);
     if (!src) return null;
     const result = d.prepare(
-      'INSERT INTO folder_templates (name, is_default, prproj_path, open_mode, bins_json, sequences_json) VALUES (?,0,?,?,?,?)'
-    ).run(`${src.name} (copy)`, src.prproj_path, src.open_mode, src.bins_json || '[]', src.sequences_json || '[]');
+      'INSERT INTO folder_templates (name, is_default, prproj_path, open_mode, bins_json, sequences_json, template_type) VALUES (?,0,?,?,?,?,?)'
+    ).run(`${src.name} (copy)`, src.prproj_path, src.open_mode,
+          src.bins_json || '[]', src.sequences_json || '[]',
+          src.template_type || 'folder');
     const newId = result.lastInsertRowid;
     const nodes = d.prepare('SELECT * FROM folder_template_nodes WHERE template_id=? ORDER BY sort_order').all(sourceId);
     const idMap = {};
-    const ins = d.prepare('INSERT INTO folder_template_nodes (template_id, parent_id, node_type, name, asset_path, sort_order) VALUES (?,?,?,?,?,?)');
+    const ins = d.prepare('INSERT INTO folder_template_nodes (template_id, parent_id, node_type, name, asset_path, slot_type, link_enabled, link_shortcut, sort_order) VALUES (?,?,?,?,?,?,?,?,?)');
     const tx = d.transaction(() => {
       nodes.forEach((n, i) => {
         const realParent = n.parent_id != null ? (idMap[n.parent_id] ?? null) : null;
-        const nr = ins.run(newId, realParent, n.node_type, n.name, n.asset_path, i);
+        const sc = n.link_enabled && n.link_shortcut ? String(n.link_shortcut) : null;
+        const nr = ins.run(newId, realParent, n.node_type, n.name, n.asset_path, n.slot_type || null, n.link_enabled ? 1 : 0, sc, i);
         idMap[n.id] = nr.lastInsertRowid;
       });
     });

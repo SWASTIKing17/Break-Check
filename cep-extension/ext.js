@@ -1,5 +1,5 @@
 const csInterface = new CSInterface();
-const EXT_VERSION = '1.9.9';
+const EXT_VERSION = '2.0.0';
 // Derive extension folder from panel URL — works without the full CSInterface library.
 // CEP loads panel.html as file:///C:/path/to/extension/panel.html so stripping the filename gives the folder.
 var extensionPath = (function() {
@@ -14,12 +14,62 @@ let reconnectTimer = null;
 let projectCheckInterval = null;
 let lastProjectPath = '';
 let projectReadySent = false;
+let reconnectAttempts = 0;
+var MAX_RECONNECT = 30; // stop after 30 attempts (~90 s) if server never comes back
 
 function extLog(msg) {
     console.log('[freeXan] ' + msg);
     if (ws && ws.readyState === WebSocket.OPEN) {
         try { ws.send(JSON.stringify({ type: 'ext_log', msg: msg })); } catch(e) {}
     }
+}
+
+// BUG-24: uniform evalScript result checker — returns false and logs on any failure
+function evalResult(r, label) {
+    if (!r || r === 'undefined' || r === 'EvalScript error.' || r.indexOf('err:') === 0) {
+        extLog('[evalResult] FAILED ' + label + ': ' + r);
+        return false;
+    }
+    return true;
+}
+
+// F-OV-015: after a multi-file drop completes, switch the Project panel to the
+// target bin and select the imported items. ExtendScript ProjectItem.select() is
+// single-select; we select the most-recently-imported item and rely on
+// setCurrentBin to reveal the destination bin so the user sees everything that
+// landed there.
+function finalizeImportBatch(batchId) {
+    if (!window._batchCollector || !window._batchCollector[batchId]) return;
+    var batch = window._batchCollector[batchId];
+    delete window._batchCollector[batchId];
+    var bn = (batch.binName || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    var nameList = batch.files.map(function(f) {
+        return '"' + f.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    }).join(',');
+    var script = '(function(){' +
+        'try{' +
+        '  if(!app.project||!app.project.rootItem)return "err:no project";' +
+        '  function findBin(p,n){for(var i=0;i<2000;i++){var c=p.children[i];if(!c)break;if(c.name===n&&c.type===ProjectItemType.BIN)return c;if(c.type===ProjectItemType.BIN){var r=findBin(c,n);if(r)return r;}}return null;}' +
+        '  var bn="' + bn + '";' +
+        '  var tgt=bn?findBin(app.project.rootItem,bn):app.project.rootItem;' +
+        '  if(!tgt)tgt=app.project.rootItem;' +
+        '  try{app.project.setCurrentBin(tgt);}catch(e){}' +
+        '  var names=[' + nameList + '];' +
+        '  var matched=[];' +
+        '  for(var k=0;k<2000;k++){' +
+        '    var ch=tgt.children[k];if(!ch)break;' +
+        '    for(var n=0;n<names.length;n++){' +
+        '      if(ch.name===names[n]){matched.push(ch);break;}' +
+        '    }' +
+        '  }' +
+        '  if(matched.length===0)return "no_matches";' +
+        '  try{matched[matched.length-1].select();}catch(e){}' +
+        '  return "ok:"+matched.length;' +
+        '}catch(e){return "err:"+e;}' +
+        '})()';
+    csInterface.evalScript(script, function(r) {
+        extLog('[BATCH] finalize ' + batchId + ' (' + batch.files.length + ' file(s)) → ' + r);
+    });
 }
 
 function connectWebSocket() {
@@ -36,6 +86,7 @@ function connectWebSocket() {
     ws = new WebSocket('ws://localhost:4554');
 
     ws.onopen = function() {
+        reconnectAttempts = 0; // BUG-23: reset counter on successful connection
         statusText.innerText = 'Connected';
         statusText.className = 'status connected';
         pulse.className      = 'pulse connected';
@@ -45,6 +96,7 @@ function connectWebSocket() {
         lastProjectPath  = '';
         projectReadySent = false;
         startProjectTracking();
+        requestAudioLibrary();
         // extLog('WebSocket connected — ext v' + EXT_VERSION);
     };
 
@@ -58,11 +110,48 @@ function connectWebSocket() {
                 return;
             }
 
+            if (data.type === 'audio_library_data') {
+                audioLibrary = data.files || [];
+                renderAudioList();
+                return;
+            }
+
+            if (data.type === 'audio_library_changed') {
+                requestAudioLibrary();
+                return;
+            }
+
+            if (data.type === 'process_result') {
+                if (data.success && data.msgId === pendingProcessMsgId) {
+                    importAudioToPremiere(data.filePath);
+                } else if (!data.success && data.msgId === pendingProcessMsgId) {
+                    alert('Error processing audio: ' + data.error);
+                }
+                pendingProcessMsgId = null;
+                const btnImport = document.getElementById('btn-import');
+                if (btnImport) {
+                    btnImport.innerText = 'Import';
+                    btnImport.disabled = false;
+                }
+                return;
+            }
+
             if (data.type === 'import') {
+                if (typeof data.filePath !== 'string') return; // BUG-22: guard malformed message
                 var filePath = data.filePath;
                 var binName  = data.binName || null;
                 var fileName = filePath.substring(filePath.lastIndexOf('\\') + 1);
                 infoText.innerText = 'Importing: ' + fileName;
+
+                // F-OV-015: track batched drops so we can switch to the target bin
+                // and highlight what was just imported once the whole batch finishes.
+                if (data.batchId) {
+                    if (!window._batchCollector) window._batchCollector = {};
+                    if (!window._batchCollector[data.batchId]) {
+                        window._batchCollector[data.batchId] = { binName: binName, files: [] };
+                    }
+                    window._batchCollector[data.batchId].files.push(fileName);
+                }
                 // Inline IIFE — never call named hostscript.jsx functions (silent failure, fixed v1.8.3)
                 var ep = filePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
                 var bn = binName ? binName.replace(/\\/g, '\\\\').replace(/"/g, '\\"') : '';
@@ -78,12 +167,13 @@ function connectWebSocket() {
                 extLog('[IMPORT] params[3]  : false (addToRoot)');
                 // ─────────────────────────────────────────────────────────────
 
+                var fn = fileName.replace(/"/g, '\\"');
                 var script = '(function(){' +
                     'if(!app.project)return "err:no project";' +
                     'var f=new File("' + ep + '");' +
                     'if(!f.exists)return "err:file not found";' +
                     'function findBin(parent,name){' +
-                    '  for(var i=0;i<500;i++){' +
+                    '  for(var i=0;i<2000;i++){' +
                     '    var c=parent.children[i];' +
                     '    if(!c)break;' +
                     '    if(c.name===name&&c.type===ProjectItemType.BIN)return c;' +
@@ -96,6 +186,16 @@ function connectWebSocket() {
                     'var bn="' + bn + '";' +
                     'if(bn){var found=findBin(app.project.rootItem,bn);if(found){tgt=found;tgtDesc="bin:"+bn;}}' +
                     'var ok=app.project.importFiles(["' + ep + '"],true,tgt,false);' +
+                    'if(ok){' +
+                    '  try{app.project.setCurrentBin(tgt);}catch(e){}' +
+                    '  var iname="' + fn + '";' +
+                    '  for(var i=0;i<tgt.children.numItems;i++){' +
+                    '    if(tgt.children[i].name===iname){' +
+                    '      try{tgt.children[i].select();}catch(e){}' +
+                    '      break;' +
+                    '    }' +
+                    '  }' +
+                    '}' +
                     'return (ok?"ok":"import failed")+"|tgtDesc:"+tgtDesc;' +
                     '})()';
                 csInterface.evalScript(script, function(result) {
@@ -104,7 +204,15 @@ function connectWebSocket() {
                     var tgtDesc = tgtIdx >= 0 ? result.substring(tgtIdx + 9) : 'unknown';
                     extLog('[IMPORT] result     : ' + status);
                     extLog('[IMPORT] resolvedTgt: ' + tgtDesc);
-                    ws.send(JSON.stringify({ type: 'import_result', filePath: filePath, binName: binName, result: status }));
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        try { ws.send(JSON.stringify({ type: 'import_result', filePath: filePath, binName: binName, result: status })); } catch(e) {}
+                    }
+
+                    // F-OV-015: finalize batch — switch to bin and select all imported items
+                    if (data.isLast && data.batchId) {
+                        finalizeImportBatch(data.batchId);
+                    }
+
                     setTimeout(function() {
                         infoText.innerText = lastProjectPath
                             ? 'Project: ' + lastProjectPath.substring(lastProjectPath.lastIndexOf('\\') + 1)
@@ -114,26 +222,60 @@ function connectWebSocket() {
                 return;
             }
 
+            if (data.type === 'get_bin_files') {
+                // Linked-folder watcher requesting current contents of a bin so it
+                // can diff against the disk folder. Respond with the list of file
+                // names (top-level children of the bin, no recursion into sub-bins).
+                var requestId = data.requestId;
+                var binName = (data.binName || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                var script = '(function(){' +
+                    'try {' +
+                    '  if(!app.project) return JSON.stringify({err:"no project"});' +
+                    '  function findBin(parent,name){' +
+                    '    for(var i=0;i<2000;i++){var c=parent.children[i];if(!c)break;' +
+                    '      if(c.name===name&&c.type===ProjectItemType.BIN)return c;' +
+                    '      if(c.type===ProjectItemType.BIN){var r=findBin(c,name);if(r)return r;}' +
+                    '    }return null;' +
+                    '  }' +
+                    '  var bn="' + binName + '";' +
+                    '  var bin=bn?findBin(app.project.rootItem,bn):app.project.rootItem;' +
+                    '  if(!bin) return JSON.stringify({files:[]});' +
+                    '  var out=[];' +
+                    '  for(var i=0;i<2000;i++){var c=bin.children[i];if(!c)break;' +
+                    '    if(c.type!==ProjectItemType.BIN) out.push(c.name);' +
+                    '  }' +
+                    '  return JSON.stringify({files:out});' +
+                    '} catch(e) { return JSON.stringify({err:e.message}); }' +
+                    '})()';
+                csInterface.evalScript(script, function(result) {
+                    var files = [];
+                    try {
+                        var parsed = JSON.parse(result);
+                        if (parsed && parsed.files) files = parsed.files;
+                        if (parsed && parsed.err) extLog('[BIN_FILES] error: ' + parsed.err);
+                    } catch (parseErr) {
+                        extLog('[BIN_FILES] parse failed: ' + parseErr.message + ' | raw: ' + result);
+                    }
+                    try {
+                        ws.send(JSON.stringify({ type: 'bin_files', requestId: requestId, files: files }));
+                    } catch (sendErr) {
+                        extLog('[BIN_FILES] send failed: ' + sendErr.message);
+                    }
+                });
+                return;
+            }
+
             if (data.type === 'setup-project') {
-                // var ptLen = (data.premiereTree || []).length;
-                // var bLen  = (data.bins || []).length;
-                // var sLen  = (data.sequences || []).length;
-                // extLog('setup-project received — premiereTree:' + ptLen + ' bins:' + bLen + ' sequences:' + sLen);
                 infoText.innerText = 'Waiting for project to be ready…';
 
                 var seqPreset = data.sequencePreset || null;
-                if (data.premiereTree && data.premiereTree.length > 0) {
-                    // extLog('using premiereTree path — seqPreset:' + (seqPreset || 'default'));
-                    setupFromPremiereTree(data.premiereTree, seqPreset);
-                } else {
-                    // extLog('flat path — bins:' + JSON.stringify(data.bins || []) + ' seq:' + JSON.stringify(data.sequences || []) + ' seqPreset:' + (seqPreset || 'default'));
-                    setupProjectBinsAndSequences(data.bins || [], data.sequences || [], seqPreset);
-                }
-
                 var assets = data.assets || [];
-                if (assets.length > 0) {
+
+                var doImports = function() {
+                    if (assets.length === 0) return;
                     setTimeout(function() {
                         assets.forEach(function(asset) {
+                            if (!asset || typeof asset.sourcePath !== 'string') return;
                             var ep = asset.sourcePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
                             var bn = (asset.binName || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
                             var fileName = asset.sourcePath.split('\\').pop();
@@ -143,7 +285,7 @@ function connectWebSocket() {
                                 'var f=new File("' + ep + '");' +
                                 'if(!f.exists)return "err:file not found";' +
                                 'function findBin(parent,name){' +
-                                '  for(var i=0;i<500;i++){var c=parent.children[i];if(!c)break;' +
+                                '  for(var i=0;i<2000;i++){var c=parent.children[i];if(!c)break;' +
                                 '    if(c.name===name&&c.type===ProjectItemType.BIN)return c;' +
                                 '    if(c.type===ProjectItemType.BIN){var r=findBin(c,name);if(r)return r;}' +
                                 '  }return null;' +
@@ -159,6 +301,12 @@ function connectWebSocket() {
                             });
                         });
                     }, 800);
+                };
+
+                if (data.premiereTree && data.premiereTree.length > 0) {
+                    setupFromPremiereTree(data.premiereTree, seqPreset, doImports);
+                } else {
+                    setupProjectBinsAndSequences(data.bins || [], data.sequences || [], seqPreset, doImports);
                 }
                 return;
             }
@@ -171,10 +319,15 @@ function connectWebSocket() {
         statusText.innerText = 'Disconnected';
         statusText.className = 'status disconnected';
         pulse.className      = 'pulse disconnected';
-        infoText.innerText   = 'Waiting for Project Builder App...';
         stopProjectTracking();
         clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(connectWebSocket, 3000);
+        reconnectAttempts++;
+        if (reconnectAttempts <= MAX_RECONNECT) {
+            infoText.innerText = 'Waiting for Project Builder App...';
+            reconnectTimer = setTimeout(connectWebSocket, 3000);
+        } else {
+            infoText.innerText = 'App not found. Reload panel to retry.';
+        }
     };
 
     ws.onerror = function(err) {
@@ -217,7 +370,7 @@ function startProjectTracking() {
                     projectReadySent = false;
                     if (infoEl) infoEl.innerText = 'No active project';
                     if (ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'active_project', path: '' }));
+                        try { ws.send(JSON.stringify({ type: 'active_project', path: '' })); } catch(e) {}
                     }
                     // extLog('project closed');
                 }
@@ -230,7 +383,7 @@ function startProjectTracking() {
                 var projName = path.substring(path.lastIndexOf('\\') + 1);
                 if (infoEl) infoEl.innerText = 'Project: ' + projName + ' (loading…)';
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'active_project', path: path }));
+                    try { ws.send(JSON.stringify({ type: 'active_project', path: path })); } catch(e) {}
                 }
                 // extLog('project changed → "' + projName + '" | rootItem:' + state);
             }
@@ -241,7 +394,7 @@ function startProjectTracking() {
                 if (infoEl) infoEl.innerText = 'Project: ' + pn;
                 // extLog('project_ready → "' + pn + '"');
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'project_ready', path: path }));
+                    try { ws.send(JSON.stringify({ type: 'project_ready', path: path })); } catch(e) {}
                 }
             }
         });
@@ -297,7 +450,7 @@ function waitForProjectReady(callback) {
 //   Next injection waits adaptiveT ms (giving Premiere time to update children).
 //   Retries also wait adaptiveT ms — the same time Premiere needed to process the last command.
 //
-function setupFromPremiereTree(nodes, sequencePreset) {
+function setupFromPremiereTree(nodes, sequencePreset, onComplete) {
     var adaptiveT  = 200; // initial conservative estimate in ms
     var infoEl     = document.getElementById('info-text');
     var eExtPath   = extensionPath.replace(/\\/g, '\\\\');
@@ -358,7 +511,7 @@ function setupFromPremiereTree(nodes, sequencePreset) {
             +     'var pts=s.split("|");'
             +     'for(var i=0;i<pts.length;i++){'
             +       'var ok=false;'
-            +       'for(var j=0;j<500;j++){'
+            +       'for(var j=0;j<2000;j++){'
             +         'var c=p.children[j];'
             +         'if(!c)break;'
             +         'if(c.name===pts[i]&&c.type===ProjectItemType.BIN){p=c;ok=true;break;}'
@@ -417,7 +570,6 @@ function setupFromPremiereTree(nodes, sequencePreset) {
         });
     }
 
-    // Phase 1 + 2: process root bins one at a time (DFS into each subtree)
     function processRootBins(idx) {
         if (idx >= rootBins.length) {
             // Phase 3: all bins done — now create sequences
@@ -425,6 +577,7 @@ function setupFromPremiereTree(nodes, sequencePreset) {
                 var pn = lastProjectPath ? lastProjectPath.substring(lastProjectPath.lastIndexOf('\\') + 1) : '';
                 // extLog('setup complete — no sequences');
                 if (infoEl) infoEl.innerText = pn ? 'Project: ' + pn : 'Setup complete';
+                if (typeof onComplete === 'function') onComplete();
             } else {
                 // extLog('all bins done — creating ' + sequences.length + ' sequence(s)');
                 createNextSequence(0);
@@ -442,6 +595,7 @@ function setupFromPremiereTree(nodes, sequencePreset) {
             var pn = lastProjectPath ? lastProjectPath.substring(lastProjectPath.lastIndexOf('\\') + 1) : '';
             // extLog('setup complete — all ' + sequences.length + ' sequence(s) done');
             if (infoEl) infoEl.innerText = pn ? 'Project: ' + pn : 'Setup complete';
+            if (typeof onComplete === 'function') onComplete();
             return;
         }
         var seq    = sequences[idx];
@@ -494,7 +648,7 @@ function setupFromPremiereTree(nodes, sequencePreset) {
             // Find the sequence as a ProjectItem in rootItem.children by name
             // (skip BINs — sequences appear as CLIP or FILE type, not BIN)
             +   'var seqItem=null;'
-            +   'for(var k=0;k<500;k++){'
+            +   'for(var k=0;k<2000;k++){'
             +     'var item=app.project.rootItem.children[k];'
             +     'if(!item)break;'
             +     'if(item.name===sName&&item.type!==ProjectItemType.BIN){seqItem=item;break;}'
@@ -509,7 +663,7 @@ function setupFromPremiereTree(nodes, sequencePreset) {
             +   'var tgt=app.project.rootItem;'
             +   'for(var i=0;i<pts.length;i++){'
             +     'var found=false;'
-            +     'for(var j=0;j<500;j++){'
+            +     'for(var j=0;j<2000;j++){'
             +       'var c=tgt.children[j];'
             +       'if(!c)break;'
             +       'if(c.name===pts[i]&&c.type===ProjectItemType.BIN){tgt=c;found=true;break;}'
@@ -562,9 +716,9 @@ function setupFromPremiereTree(nodes, sequencePreset) {
 }
 
 // Flat path (no premiereTree): bins to root sequentially, then sequences to root
-function setupProjectBinsAndSequences(bins, sequences, sequencePreset) {
+function setupProjectBinsAndSequences(bins, sequences, sequencePreset, onComplete) {
     if (bins.length === 0 && sequences.length === 0) {
-        // extLog('setupProjectBinsAndSequences: nothing to create');
+        if (typeof onComplete === 'function') onComplete();
         return;
     }
     var infoEl     = document.getElementById('info-text');
@@ -603,6 +757,7 @@ function setupProjectBinsAndSequences(bins, sequences, sequencePreset) {
                 var pn = lastProjectPath ? lastProjectPath.substring(lastProjectPath.lastIndexOf('\\') + 1) : '';
                 // extLog('flat setup complete');
                 if (infoEl) infoEl.innerText = pn ? 'Project: ' + pn : 'Setup complete';
+                if (typeof onComplete === 'function') onComplete();
                 return;
             }
             var name    = sequences[idx];
@@ -635,3 +790,10 @@ function setupProjectBinsAndSequences(bins, sequences, sequencePreset) {
 }
 
 connectWebSocket();
+
+window.addEventListener('unload', function() {
+    stopProjectTracking();
+    if (ws) {
+        try { ws.close(); } catch(e) {}
+    }
+});

@@ -3,7 +3,11 @@
     "allow": [
       "PowerShell(ffmpeg *)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Swastik Development\\\\FreeXan Development\" -Depth 1 | ForEach-Object { $_.Name })",
-      "Bash(dir C:\\\\Swastik Development\\\\FreeXan Development\\\\docs *)"
+      "Bash(dir C:\\\\Swastik Development\\\\FreeXan Development\\\\docs *)",
+      "mcp__freexan__freexan_status",
+      "mcp__freexan__freexan_list_clients",
+      "mcp__freexan__freexan_create_project",
+      "mcp__freexan__freexan_import_files"
     ]
   }
 }

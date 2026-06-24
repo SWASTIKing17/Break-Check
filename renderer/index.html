@@ -12,11 +12,14 @@
     <header class="titlebar">
       <div class="titlebar-logo">
         <img src="../tray_icon.png" width="22" height="22" class="logo-icon" alt="freeXan">
-        <span class="brand-name">freeXan<span class="brand-by"> by BloomX</span></span>
+        <span class="brand-name">freeXan<span class="brand-by"> by BloomX</span><span class="brand-version" id="brand-version"></span></span>
       </div>
       <div class="titlebar-controls">
         <button id="btn-minimize" class="titlebar-btn" title="Minimize">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button id="btn-maximize" class="titlebar-btn" title="Maximize / Restore">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
         </button>
         <button id="btn-close" class="titlebar-btn btn-close" title="Close to Tray">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -29,17 +32,14 @@
       <aside class="sidebar">
         <nav class="nav-menu">
           <div id="nav-active-bar"></div>
-          <button class="nav-item active" data-tab="tab-builder">
+          <button class="nav-item active" data-tab="tab-builder" title="Builder">
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span>Builder</span>
           </button>
-          <button class="nav-item" data-tab="tab-settings">
+          <button class="nav-item" data-tab="tab-settings" title="Settings">
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span>Settings</span>
           </button>
-          <button class="nav-item" data-tab="tab-database">
+          <button class="nav-item" data-tab="tab-database" title="Database">
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            <span>Database</span>
           </button>
         </nav>
         <div class="sidebar-footer">
@@ -119,7 +119,14 @@
                 <div class="form-group">
                   <label for="input-project">Project Name / Number</label>
                   <input type="text" id="input-project" placeholder="e.g. 001_LaunchVideo" required>
-                  <span class="help-text">Use <code>{Date}</code> <code>{Month}</code> <code>{Year}</code> <code>{HH}</code> <code>{MM}</code> <code>{SS}</code> for live date/time</span>
+                  <span class="help-text" id="project-token-hint">Click to insert:
+                    <button type="button" class="token-chip" data-token="{Date}">{Date}</button>
+                    <button type="button" class="token-chip" data-token="{Month}">{Month}</button>
+                    <button type="button" class="token-chip" data-token="{Year}">{Year}</button>
+                    <button type="button" class="token-chip" data-token="{HH}">{HH}</button>
+                    <button type="button" class="token-chip" data-token="{MM}">{MM}</button>
+                    <button type="button" class="token-chip" data-token="{SS}">{SS}</button>
+                  </span>
                 </div>
 
                 <div id="resolved-template-hint" class="template-hint" style="display:none">
@@ -198,23 +205,31 @@
                 <p class="setting-description">When Premiere Pro is launched and on the Welcome Screen, the Project Builder overlay will automatically come to the front.</p>
               </div>
             </div>
-
-            <!-- Sequence Format -->
-            <div class="settings-group">
-              <label class="setting-label">Sequence Format</label>
+            
+            <!-- Watched Audio Library Folders -->
+            <div class="settings-group" style="margin-top: 20px; border-top: 1px solid #232335; padding-top: 15px;">
+              <label class="setting-label">Watched Audio Library Folders</label>
               <div class="input-action-group">
-                <select id="setting-seq-resolution">
-                  <option value="1920x1080">Landscape — 1920 × 1080</option>
-                  <option value="1080x1920">Portrait — 1080 × 1920</option>
-                  <option value="1080x1080">Square — 1080 × 1080</option>
-                </select>
-                <select id="setting-seq-fps">
-                  <option value="24">24 fps</option>
-                  <option value="25">25 fps</option>
-                  <option value="30">30 fps</option>
-                </select>
+                <input type="text" id="setting-new-audio-dir" placeholder="Select folder to watch SFX / Music..." readonly>
+                <button id="btn-browse-audio-dir" class="btn-secondary">Add Folder</button>
               </div>
-              <p class="setting-description">Used when creating sequences inside new projects.</p>
+              <p class="setting-description" style="margin-bottom: 8px;">Folders monitored for new, deleted, or updated audio files.</p>
+              <div id="watched-folders-list" style="background: #0d0d14; border: 1px solid #232335; border-radius: 6px; max-height: 120px; overflow-y: auto; padding: 4px;">
+                <!-- Watched folders populated here dynamically -->
+              </div>
+            </div>
+
+            <!-- Watched MOGRT Library Folders (MisterBloomX) -->
+            <div class="settings-group" style="margin-top: 20px; border-top: 1px solid #232335; padding-top: 15px;">
+              <label class="setting-label">Watched MOGRT Library Folders</label>
+              <div class="input-action-group">
+                <input type="text" id="setting-new-mogrt-dir" placeholder="Select folder to watch .mogrt files..." readonly>
+                <button id="btn-browse-mogrt-dir" class="btn-secondary">Add Folder</button>
+              </div>
+              <p class="setting-description" style="margin-bottom: 8px;">Folders monitored by MisterBloomX for new, deleted, or updated MOGRT files.</p>
+              <div id="mogrt-folders-list" style="background: #0d0d14; border: 1px solid #232335; border-radius: 6px; max-height: 120px; overflow-y: auto; padding: 4px;">
+                <!-- MOGRT folders populated here dynamically -->
+              </div>
             </div>
 
             <!-- Action buttons -->
@@ -288,12 +303,6 @@
             <div class="db-add-form db-add-form--col">
               <div class="db-add-row">
                 <input type="text" id="db-new-asset-name" placeholder="Asset name">
-                <select id="db-new-asset-category">
-                  <option value="other">Other</option>
-                  <option value="footage">Footage</option>
-                  <option value="audio">Audio</option>
-                  <option value="image">Image</option>
-                </select>
               </div>
               <div class="db-add-row">
                 <input type="text" id="db-new-asset-path" placeholder="File path" readonly>
@@ -336,7 +345,22 @@
                 <input type="text" id="fts-template-name" class="fts-template-name-input" disabled placeholder="Template name…">
                 <div class="fts-panel-actions">
                   <button type="button" id="fts-btn-edit" class="btn-secondary btn-sm">Edit</button>
-                  <button type="button" id="fts-btn-new"  class="btn-secondary btn-sm">New</button>
+                  <button type="button" id="fts-btn-save" class="btn-secondary btn-sm" hidden>Save</button>
+                </div>
+              </div>
+
+              <!-- Project file path — shown only for file-type templates -->
+              <div id="fts-prproj-section" class="fts-prproj-section" hidden>
+                <div class="fts-prproj-row">
+                  <input type="text" id="fts-prproj-input" class="fts-prproj-input" readonly placeholder="No .prproj linked…">
+                  <button type="button" id="fts-prproj-browse" class="btn-secondary btn-sm" disabled>Browse</button>
+                </div>
+                <div class="fts-openmode-row">
+                  <span class="fts-openmode-label">Open mode</span>
+                  <div class="fts-toggle-group" id="fts-openmode-toggle">
+                    <button type="button" class="fts-toggle-btn active" data-value="copy_to_new" disabled>Copy to new</button>
+                    <button type="button" class="fts-toggle-btn" data-value="open_existing" disabled>Open existing</button>
+                  </div>
                 </div>
               </div>
 
@@ -369,26 +393,6 @@
                   <span class="ft-icon">🗂</span>
                   <span>Add Bin</span>
                 </div>
-              </div>
-            </div>
-
-            <!-- Project file templates (.prproj assignments) -->
-            <div class="db-subsection-label">Project File Templates</div>
-            <div id="db-templates-list" class="db-list"></div>
-            <div class="db-add-form db-add-form--col">
-              <div class="db-add-row">
-                <input type="text" id="db-new-template-name" placeholder="Template name">
-                <input type="text" id="db-new-template-path" placeholder="Path to .prproj" readonly>
-                <button type="button" id="btn-browse-template" class="btn-secondary btn-sm">Browse</button>
-              </div>
-              <div class="db-add-row">
-                <select id="db-template-client-select">
-                  <option value="">Global (no client)</option>
-                </select>
-                <select id="db-template-funnel-select">
-                  <option value="">No funnel scope</option>
-                </select>
-                <button type="button" id="btn-db-add-template" class="btn-secondary btn-sm">Add</button>
               </div>
             </div>
           </div>
@@ -444,6 +448,37 @@
     </div>
   </div>
 </div>
+<!-- New Template type chooser modal -->
+<div id="fts-new-modal-overlay" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">New Template</span>
+      <button id="fts-new-modal-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color: var(--text-secondary, #9A9DAC); font-size: 12px; margin: 0 0 14px;">Choose how to create the new template:</p>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button id="fts-modal-btn-fresh" class="btn-secondary btn-sm" style="text-align:left; padding: 10px 14px;">
+          <div style="font-weight:600; margin-bottom:2px;">Start Fresh</div>
+          <div style="font-size:11px; opacity:0.65;">Empty folder and Premiere structure</div>
+        </button>
+        <button id="fts-modal-btn-duplicate" class="btn-secondary btn-sm" style="text-align:left; padding: 10px 14px;">
+          <div style="font-weight:600; margin-bottom:2px;">Duplicate Current</div>
+          <div style="font-size:11px; opacity:0.65;">Copy the selected template as a starting point</div>
+        </button>
+        <button id="fts-modal-btn-browse" class="btn-secondary btn-sm" style="text-align:left; padding: 10px 14px;">
+          <div style="font-weight:600; margin-bottom:2px;">Browse Template</div>
+          <div style="font-size:11px; opacity:0.65;">Link an existing .prproj file</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+  <script src="utils.js"></script>
+  <script src="builder.js"></script>
+  <script src="settings.js"></script>
+  <script src="database-tab.js"></script>
+  <script src="folder-templates.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -3,6 +3,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <ExtensionList>
         <Extension Id="com.bloomx.freexan.link.panel" Version="1.0.0" />
+        <Extension Id="com.bloomx.freexan.audio.panel" Version="1.0.0" />
     </ExtensionList>
     <ExecutionEnvironment>
         <HostList>
@@ -33,8 +34,8 @@
                     </StartOn>
                 </Lifecycle>
                 <UI>
-                    <Type>Panel</Type>
-                    <Menu>freeXan Link</Menu>
+                    <Type>Custom</Type>
+                    <Menu>Link freeXan</Menu>
                     <Geometry>
                         <Size>
                             <Width>250</Width>
@@ -43,6 +44,38 @@
                         <MinSize>
                             <Width>100</Width>
                             <Height>100</Height>
+                        </MinSize>
+                    </Geometry>
+                </UI>
+            </DispatchInfo>
+        </Extension>
+        <Extension Id="com.bloomx.freexan.audio.panel">
+            <DispatchInfo >
+                <Resources>
+                    <MainPath>./audio.html</MainPath>
+                    <ScriptPath>./hostscript.jsx</ScriptPath>
+                    <CEFCommandLine>
+                        <Parameter>--enable-nodejs</Parameter>
+                        <Parameter>--mixed-context</Parameter>
+                    </CEFCommandLine>
+                </Resources>
+                <Lifecycle>
+                    <AutoVisible>true</AutoVisible>
+                    <StartOn>
+                        <Event>applicationActivate</Event>
+                    </StartOn>
+                </Lifecycle>
+                <UI>
+                    <Type>Panel</Type>
+                    <Menu>Audio freeXan</Menu>
+                    <Geometry>
+                        <Size>
+                            <Width>300</Width>
+                            <Height>450</Height>
+                        </Size>
+                        <MinSize>
+                            <Width>200</Width>
+                            <Height>300</Height>
                         </MinSize>
                     </Geometry>
                 </UI>

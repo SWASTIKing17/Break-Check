@@ -7,12 +7,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v2.2.4] — 2026-05-29
 
 ### Fix
 - **Project creation crashed with EPERM when a preset asset was a folder:** `create-project` used `fs.copyFileSync()` for all preset assets unconditionally — that call throws EPERM on Windows when the source path is a directory. Added `fs.statSync` check: folders are now copied with `fs.cpSync(src, dest, { recursive: true })` into the project root; files continue using `getDestSubfolder()` + `copyFileSync` as before. Same guard added to `import-dropped-files` for dropped folders. (`main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v2.2.3] — 2026-05-29
 
@@ -21,6 +37,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v2.2.2] — 2026-05-29
 
 ### Fix
@@ -28,12 +52,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v2.2.1] — 2026-05-29
 
 ### Fix
 - **Browse button in Assets section could not select folders:** The handler called `window.api.selectFiles()` which uses `openFile` only. Swapped to `window.api.ft.selectAsset()` which already passes `['openFile', 'openDirectory']` — the same dialog used in the folder template asset picker. (`renderer/app.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v2.2.0] — 2026-05-29
 
@@ -48,6 +88,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v2.1.4] — 2026-05-29
 
 ### Fix
@@ -55,6 +103,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **EXT_VERSION bumped 1.9.7 → 1.9.8** to force panel reload. (`cep-extension/ext.js`, `main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v2.1.3] — 2026-05-29
 
@@ -64,12 +120,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v2.1.2] — 2026-05-29
 
 ### Refactor
 - **Silenced all general debug logging; added targeted import parameter debug:** All existing `extLog()` call sites in `ext.js` and all `dbg()` / `console.log` debug calls in `main.js` have been commented out. In their place, the `import` message handler in `ext.js` now logs every `app.project.importFiles()` call with its exact parameters (`params[0]` file array, `params[1]` suppressWarnings, `params[2]` resolved target bin or rootItem, `params[3]` addToRoot flag) plus the actual resolved target after the bin search. `main.js` `import-dropped-files` logs file type detection, slot-map routing, dest folder/path, bin name, and the exact WebSocket payload sent to CEP — all prefixed `[IMPORT]`. (`cep-extension/ext.js`, `main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v2.1.1] — 2026-05-29
 
@@ -78,6 +150,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **EXT_VERSION bumped 1.9.5 → 1.9.6** to force panel reload and pick up the fix. (`cep-extension/ext.js`, `main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v2.1.0] — 2026-05-29
 
@@ -93,6 +173,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **`folder_template_nodes.slot_type` column:** Auto-migration adds `slot_type TEXT DEFAULT NULL` on first launch. `setNodes()` INSERT updated to persist it. (`db.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v2.0.0] — 2026-05-27
 
@@ -116,12 +204,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.9.9] — 2026-05-27
 
 ### Build
 - **Windows installer built and signed:** `dist/freeXan Setup 1.9.7.exe` — NSIS one-click, per-user, x64. `package.json` version bumped from `1.2.0` → `1.9.7`. Signed via signtool.exe. (`package.json`, `electron-builder.yml`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.9.8] — 2026-05-27
 
@@ -131,6 +235,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **`EXT_VERSION` → `'1.9.5'`, `EXPECTED_EXT_VERSION` → `'1.9.5'`** (`cep-extension/ext.js`, `main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.9.7] — 2026-05-27
 
@@ -142,6 +254,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **`EXT_VERSION` → `'1.9.4'`, `EXPECTED_EXT_VERSION` → `'1.9.4'`** (`cep-extension/ext.js`, `main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.9.6] — 2026-05-27
 
@@ -156,6 +276,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.9.5] — 2026-05-27
 
 ### Fix
@@ -166,6 +294,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.9.4] — 2026-05-27
 
 ### Fix
@@ -174,6 +310,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **`EXT_VERSION` → `'1.9.1'`, `EXPECTED_EXT_VERSION` → `'1.9.1'`** (`cep-extension/ext.js`, `main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.9.3] — 2026-05-27
 
@@ -188,6 +332,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.9.2] — 2026-05-27
 
 ### Fix
@@ -200,6 +352,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.9.1] — 2026-05-27
 
 ### Fix
@@ -209,6 +369,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **Resolved vars applied to prproj filename:** `projectName` in the file parts now also goes through `resolveVars()`, consistent with how the folder name is built. (`main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.9.0] — 2026-05-27
 
@@ -222,6 +390,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.8.9] — 2026-05-26
 
 ### Fix
@@ -230,6 +406,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - One-time manual cleanup performed: removed the legacy extension folder and its stale CEP cache entries (`%LOCALAPPDATA%\Temp\cep_cache\PPRO_25.3.0_com.swastik.projectbuilder.link.panel` and `…\PPRO_25.3.0_com.projectbuilder.link`).
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.8.8] — 2026-05-26
 
@@ -240,6 +424,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.8.7] — 2026-05-26
 
 ### Perf
@@ -247,12 +439,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.8.6] — 2026-05-26
 
 ### Fix
 - **Restored fallback dispatch for panels running pre-v1.8.5 code:** v1.8.5 moved `setup-project` dispatch exclusively to the `project_ready` handler. Old panels (not yet restarted after the update) only send `active_project`, so nothing was ever dispatched. Fixed by reinstating a 3-second delayed dispatch inside the `active_project` handler — if `project_ready` fires first and clears `pendingProjectSetup`, the delayed fallback detects the reference change and cancels itself. New panels use `project_ready` (instant, guaranteed-ready); old panels fall back to the delayed path with a 3-second buffer for `rootItem` to become accessible. (`main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.8.5] — 2026-05-26
 
@@ -263,12 +471,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.8.4] — 2026-05-26
 
 ### Perf
 - **Debug logging for bin/sequence insertion:** Full timestamped log written to `%APPDATA%/freeXan/debug.log` at every step of the project setup flow — template data read from DB, `pendingProjectSetup` contents, path comparison (both sides shown), `setup-project` payload summary, plus `waitForProjectReady` retry count and each IIFE result in the CEP panel console. Open the log file in Notepad while the app is running to watch entries arrive live. (`main.js`, `cep-extension/ext.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.8.3] — 2026-05-26
 
@@ -280,6 +504,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.8.2] — 2026-05-26
 
 ### Fix
@@ -290,6 +522,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.8.1] — 2026-05-26
 
 ### Feature
@@ -299,6 +539,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
   - `main.js`: `premiereTree` added to `pendingProjectSetup` in both Mode A and Mode B paths; broadcast in `setup-project` WebSocket message
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.8.0] — 2026-05-26
 
@@ -316,12 +564,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.7.2] — 2026-05-26
 
 ### UI
 - **Premiere Pro tab redesigned to match Folder Structure tab:** Bins and Sequences now render as `ft-node` rows inside bordered `ft-tree` containers — same icon/name/hover-delete layout as the folder tree. Replaced pill/tag layout (`fts-tags-list`, `fts-tag`) with tree-row layout. Empty state shows "No bins yet" / "No sequences yet". Add buttons relabelled "+ Bin" / "+ Sequence". (`renderer/index.html`, `renderer/app.js` — `renderFtsBins`, `renderFtsSequences`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.7.1] — 2026-05-26
 
@@ -330,12 +594,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.7.0] — 2026-05-26
 
 ### Fix
 - **Funnel dropdown shows only the selected client's funnels:** Added `refreshFunnelDropdown()` — when a client is selected, filters `dbFunnels` to entries where `client_id` matches or is null (global funnels). Previous funnel selection is cleared on client change. (`renderer/app.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.6.9] — 2026-05-26
 
@@ -344,6 +624,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - **Builder tree appears immediately on Client select:** `updatePreviews()` moved before `await refreshTaskDropdownForPair()` in client and funnel change handlers so the hierarchy renders the moment a Client is chosen. (`renderer/app.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.5.0] — 2026-05-25
 
@@ -364,6 +652,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.4.0] — 2026-05-25
 
 ### Feature
@@ -378,12 +674,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.3.2] — 2026-05-25
 
 ### Logic
 - When user opens the panel from the tray (menu click or double-click), the Premiere monitor no longer auto-hides the window when a project is detected. The window stays visible until the user manually minimizes or closes it, at which point normal auto-hide behaviour resumes. (`main.js` — `userOpenedManually` flag, tray handlers, `mainWindow.on('hide')` reset, monitor guard)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.3.1] — 2026-05-25
 
@@ -392,6 +704,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 - Settings — Browse selection only updated in-memory state but never wrote to disk; settings were lost on every restart. Added `savePathSettings()` auto-save helper that persists immediately after Browse returns a value. Also added `change` event listeners on both inputs so manually typed or pasted paths are saved when the user leaves the field. (`renderer/app.js` — `bindSettingsEvents()`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.3.0] — 2026-05-25
 
@@ -403,12 +723,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.2.1] — 2026-05-25
 
 ### Fix
 - Prevent multiple app instances launching simultaneously. Second launch focuses existing window. (`main.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.2.0] — 2026-05-25 (Baseline — Logging Begins)
 
@@ -449,12 +785,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.2.1] — 2026-05-25
 
 ### Fix
 - Prevent multiple app instances from launching simultaneously. Second launch attempt now focuses the existing window instead of opening a duplicate. (`main.js` — `app.requestSingleInstanceLock()` + `second-instance` handler before `app.whenReady()`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.6.0] — 2026-05-25
 
@@ -475,6 +827,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.5.3] — 2026-05-25
 
 ### UI
@@ -482,12 +842,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.5.2] — 2026-05-25
 
 ### UI
 - Removed "Default Premiere Bins" and "Default Premiere Sequences" sections from the Settings tab. (`renderer/index.html`, `renderer/app.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.5.1] — 2026-05-25
 
@@ -499,12 +875,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.6.8] — 2026-05-25
 
 ### Fix
 - **Builder Folder Hierarchy blank on cold start:** `refreshBuilderTree` relied solely on the `ftsTemplates` in-memory cache to find the Default template. If the cache wasn't populated yet (race on startup), `resolveFtsTemplateForBuilder()` returned null and the tree stayed blank. Fixed by adding `ft-get-default` IPC handler (`main.js`), `window.api.ft.getDefault()` in `preload.js`, and a direct DB fallback in `refreshBuilderTree` — if the cache returns null, the Default template is fetched from the DB directly. (`main.js`, `preload.js`, `renderer/app.js`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.6.7] — 2026-05-25
 
@@ -513,6 +905,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.6.6] — 2026-05-25
 
 ### Logic
@@ -520,12 +920,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.6.5] — 2026-05-25
 
 ### Feature
 - **Builder tab — live folder hierarchy preview:** The Folder Hierarchy panel now shows the actual folder template structure instead of the flat settings list. On startup it shows the Default template's full folder tree. When Client, Funnel, and/or Task are selected, it resolves the matching template (same priority: Client+Funnel+Task → Client+Funnel → Client → Default) and updates the tree live. Sub-folders are indented. The `.prproj` filename appears inside `01_Project_Files` when present. (`renderer/app.js` — `resolveFtsTemplateForBuilder`, `refreshBuilderTree`, `renderBuilderTree`, `renderBuilderTreeNode`; `loadFtsTemplates` pre-loads default nodes on startup)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [v1.6.4] — 2026-05-25
 
@@ -537,6 +953,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.6.3] — 2026-05-25
 
 ### Fix
@@ -545,6 +969,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.6.2] — 2026-05-25
 
 ### UI
@@ -552,12 +984,28 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
+
 ## [v1.6.1] — 2026-05-25
 
 ### UI
 - **Template Structure panel — 2-tab layout:** The panel now has two inner tabs: **Folder Structure** (folder tree + add-root row) and **Premiere Pro** (Bins + Sequences). Assignment dropdowns and Edit/New buttons remain above the tabs and apply to both. (`renderer/index.html`, `renderer/app.js` — `switchFtsTab()`, `bindFtsEvents()`, `renderer/styles.css` — `.fts-inner-tabs`, `.fts-inner-tab`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 ## [Unreleased]
 
@@ -568,6 +1016,14 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 > - Description of change (file: `path/to/file.js:line`)
 
 ---
+
+## [v3.5.1] - 2026-06-24
+
+### Fix
+- **freeXan Caption Engine Crash Fixes.** Resolved a critical bug causing the ExtendScript engine to crash entirely upon loading the extension.
+  - Fixed a regex parser bug in `core/mogrt.jsx` where an unescaped forward slash `/[^/]/` inside a character class crashed the ExtendScript ES3 interpreter.
+  - Fixed a reserved word violation in `core/timeline.jsx` where `var char` threw a SyntaxError. Renamed to `cChar` to restore full engine functionality.
+
 
 <!-- ENTRY TEMPLATE (copy this block for each new change):
 
@@ -592,3 +1048,4 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 -
 
 -->
+

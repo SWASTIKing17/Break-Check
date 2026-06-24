@@ -11,18 +11,44 @@ directories:
 files:
   - "**/*"
   - "!dist/**"
+  - "!CEPs/**"
+  - "!cep-extension/**"   # superseded by plugins/Link_freeXan + plugins/Audio_freeXan
   - "!**/*.md"
   - "!node_modules/.cache/**"
   - "!node_modules/.bin/**"
+  - "!.claude/**"
+  - "!.agent/**"
+  - "!graphify-out/**"
+  - "!docs/**"
 
 # Native modules and runtime files must live outside the ASAR archive
 # so Node can load them as regular files from disk.
 asarUnpack:
   - "node_modules/better-sqlite3/**/*"
   - "node_modules/@ffmpeg-installer/**/*"
-  - "cep-extension/**/*"
+  - "plugins/**/*"
   - "blank_template.prproj"
+  - "Premiere Pro Utilities/**"
   - "tray_icon.png"
+
+# Extra resources placed next to the executable (not inside ASAR).
+# Plugins must be reachable from NSIS at install time to copy them into
+# %APPDATA%/Adobe/CEP/extensions/ based on user component selection.
+extraResources:
+  - from: "plugins"
+    to: "plugins"
+    filter:
+      - "**/*"
+  # Bundle release notes for in-app "What's New" access at runtime
+  # (readable via `process.resourcesPath + '/RELEASE_NOTES.md'`).
+  - from: "RELEASE_NOTES.md"
+    to: "RELEASE_NOTES.md"
+
+# Files copied directly to the install dir root (next to the .exe) so users
+# can find them via File Explorer / "Open file location" on the shortcut.
+extraFiles:
+  - from: "RELEASE_NOTES.md"
+    to: "RELEASE_NOTES.md"
 
 # ── Windows ───────────────────────────────────────────────────────────────────
 win:
@@ -36,8 +62,9 @@ win:
 
 # ── NSIS Installer ────────────────────────────────────────────────────────────
 nsis:
-  # Single-click install — no wizard pages, just a progress bar.
-  oneClick: true
+  # Wizard install — shows a components page so the user can pick which
+  # CEP plugins to install alongside freeXan. All checked by default.
+  oneClick: false
 
   # Per-user install — no admin/UAC prompt required.
   perMachine: false
@@ -51,6 +78,9 @@ nsis:
   # Launch the app automatically after installation finishes.
   runAfterFinish: true
 
-  # Custom installer/uninstaller script — adds startup registry entry
-  # and shows a friendly finish message.
+  # Allow the user to change the install directory.
+  allowToChangeInstallationDirectory: true
+
+  # Custom installer/uninstaller script — adds the plugin components page,
+  # writes plugins-enabled.json, sets startup + CEP debug registry.
   include: "build/installer.nsh"

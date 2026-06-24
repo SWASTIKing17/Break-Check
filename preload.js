@@ -8,6 +8,13 @@ window.addEventListener('dragover', (e) => {
 }, true);
 
 window.addEventListener('drop', (e) => {
+  // CRITICAL: Electron's default behaviour on file drop is to navigate the
+  // renderer to the file's file:// URL, which would replace the overlay's
+  // HTML with the dropped file (or a blank page if the file can't render).
+  // That broke the halo picker — clicks died and the renderer flashed white.
+  e.preventDefault();
+  e.stopPropagation();
+
   const filePaths = [];
   const filesDetails = [];
   
@@ -36,7 +43,14 @@ window.addEventListener('drop', (e) => {
   });
 
   if (filePaths.length > 0 && onDropCallback) {
-    onDropCallback(filePaths);
+    // Forward modifier state so the overlay can detect Ctrl (route picker)
+    // and Shift (move mode). These are reliable on drop events even when
+    // the source window (e.g. File Explorer) holds keyboard focus.
+    onDropCallback(filePaths, {
+      ctrlKey:  !!e.ctrlKey,
+      shiftKey: !!e.shiftKey,
+      altKey:   !!e.altKey
+    });
     return;
   }
 
@@ -52,6 +66,12 @@ window.addEventListener('drop', (e) => {
 }, true);
 
 contextBridge.exposeInMainWorld('api', {
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  log: (component, msg) => ipcRenderer.send('write-log', { component, msg }),
+  resolveDroppedPath: (file) => {
+    try { return webUtils.getPathForFile(file); }
+    catch (_) { return null; }
+  },
   saveConfig: (config) => ipcRenderer.invoke('save-config', config),
   getConfig: () => ipcRenderer.invoke('get-config'),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
@@ -61,11 +81,14 @@ contextBridge.exposeInMainWorld('api', {
   openFolder: (path) => ipcRenderer.send('open-folder', path),
   closeWindow: () => ipcRenderer.send('close-window'),
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
+  maximizeWindow: () => ipcRenderer.send('maximize-window'),
 
   // Overlay specific APIs
   setIgnoreMouseEvents: (ignore, options) => ipcRenderer.send('set-ignore-mouse-events', ignore, options),
-  importDroppedFiles: (filePaths) => ipcRenderer.invoke('import-dropped-files', filePaths),
+  importDroppedFiles: (filePaths, opts) => ipcRenderer.invoke('import-dropped-files', filePaths, opts || null),
   onOverlayUpdate: (callback) => ipcRenderer.on('overlay-update', (event, data) => callback(data)),
+  onLinkMapUpdated: (callback) => ipcRenderer.on('overlay-link-map', (event, data) => callback(data || [])),
+  overlayLog: (msg) => ipcRenderer.send('overlay-log', String(msg)),
   onMainWindowShown: (callback) => ipcRenderer.on('main-window-shown', () => callback()),
   requestStatus: () => ipcRenderer.send('request-status'),
   onFilesDropped: (callback) => { onDropCallback = callback; },
@@ -105,15 +128,27 @@ contextBridge.exposeInMainWorld('api', {
 
     getAssets: () => ipcRenderer.invoke('db-get-assets'),
     addAsset: (clientId, funnelId, name, filePath, category, tags) => ipcRenderer.invoke('db-add-asset', clientId, funnelId, name, filePath, category, tags),
+    updateAsset: (id, name, filePath, clientId, funnelId) => ipcRenderer.invoke('db-update-asset', id, name, filePath, clientId, funnelId),
     deleteAsset: (id) => ipcRenderer.invoke('db-delete-asset', id),
+
+    getWatchedFolders: () => ipcRenderer.invoke('db-get-watched-folders'),
+    addWatchedFolder: (folderPath) => ipcRenderer.invoke('db-add-watched-folder', folderPath),
+    deleteWatchedFolder: (id) => ipcRenderer.invoke('db-delete-watched-folder', id),
+    selectAudioFolder: () => ipcRenderer.invoke('db-select-audio-folder'),
+
+    // MOGRT library (MisterBloomX) — mirrors the audio folder API.
+    getMogrtFolders: () => ipcRenderer.invoke('mogrt-get-watched-folders'),
+    addMogrtFolder: (folderPath) => ipcRenderer.invoke('mogrt-add-folder', folderPath),
+    deleteMogrtFolder: (id) => ipcRenderer.invoke('mogrt-delete-folder', id),
+    selectMogrtFolder: () => ipcRenderer.invoke('mogrt-select-folder'),
   },
 
   // Folder Template API
   ft: {
     getAll:         ()                                          => ipcRenderer.invoke('ft-get-all'),
     getNodes:       (id)                                        => ipcRenderer.invoke('ft-get-nodes', id),
-    create:         (name, prprojPath, openMode, bins, seqs)    => ipcRenderer.invoke('ft-create', name, prprojPath, openMode, bins, seqs),
-    update:         (id, name, prprojPath, openMode, bins, seqs) => ipcRenderer.invoke('ft-update', id, name, prprojPath, openMode, bins, seqs),
+    create:         (name, prprojPath, openMode, bins, seqs, templateType) => ipcRenderer.invoke('ft-create', name, prprojPath, openMode, bins, seqs, templateType),
+    update:         (id, name, prprojPath, openMode, bins, seqs, templateType) => ipcRenderer.invoke('ft-update', id, name, prprojPath, openMode, bins, seqs, templateType),
     delete:         (id)                                        => ipcRenderer.invoke('ft-delete', id),
     setDefault:     (id)                                        => ipcRenderer.invoke('ft-set-default', id),
     setNodes:       (id, nodes)                                 => ipcRenderer.invoke('ft-set-nodes', id, nodes),
