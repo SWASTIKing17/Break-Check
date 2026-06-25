@@ -7,6 +7,64 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.5.4] — 2026-06-24
+
+### Feature
+- **Caption plugin WebSocket → ExtendScript bridge (Phase 3 of plugin-level MCP).** The freeXan Caption panel now listens for `plugin_action` messages from the main process and dispatches them to ExtendScript via `csi.callJSX`. With this in place, the full pipeline is alive: CLI/MCP/Claude → HTTP `POST /plugin-action` → main.js `dispatchToPlugin` → Caption panel WS → JSX `runCaptionWorkflow` → Premiere timeline. (`CEPs/freeXan_Caption/panel-src/src/lib/captionMcpHandlers.ts`, `panel-src/src/hooks/useFreeXanWs.ts`)
+- **New file `panel-src/src/lib/captionMcpHandlers.ts`** — action dispatcher with two handlers in v0.1:
+  - `caption_create` — full Workflow-tab equivalent. Validates `args`, calls `runCaptionWorkflow`, surfaces JSX-side `status:"Error"` responses as thrown errors so the main bridge maps them to HTTP 500.
+
+### Perf
+- **Fast Add/Remove Word Tools.** Replaced lengthy O(N) searching and redundant full-phrase Master Style re-injections with a blazing fast duplicate-and-trim model for Add Word and gap-fill extension model for Remove Word. Execution time reduced from ~3s to near-instantaneous.
+
+### Feature
+- **Reset Word Progression Tool.** Added Reset Word Progression button to Tools tab Word Edit group. Select scrambled clips of a phrase on timeline and click to sequentially re-assign Word Progression from 1 to N.
+  - `caption_ping` — health check. Probes whether `runCaptionWorkflow` is defined in the ExtendScript engine and returns the list of supported actions.
+- **`useFreeXanWs.ts:onmessage` extended** — new branch matches `msg.type === 'plugin_action'`, calls `dispatchPluginAction(action, args)`, and sends back `{ type: 'plugin_action_result', requestId, result | error }` on either path. Send-side failures are caught + logged so the panel can never crash from a missing/closed socket.
+- **Explicit plugin identity on connect** — Caption panel now sends `{ type: 'ext_hello', plugin: 'caption', version: 'caption-1.0.0' }` immediately on `ws.onopen`. The main process already auto-tagged us via `get_project_state` (which still runs right after), but the explicit hello makes the registration deterministic and forward-compatible with future protocol changes.
+- **Built bundle updated.** `panel/dist/freexan-caption.js` rebuilt with `npm run build` (TypeScript type-check passed; Vite emitted 1,867 KB IIFE bundle).
+
+### Build
+- `package.json` version bumped 3.5.3 → 3.5.4 (patch — Phase 3 of plugin MCP plumbing; user-visible feature still pending Phase 4 MCP tool wrapper).
+
+### Notes
+- **Restart required** — Premiere must be closed and reopened (or at minimum, the Caption panel closed and reopened via `Window → Extensions → freeXan Caption`) to load the new bundle. The ExtendScript engine also re-reads `mogrt.jsx` on Premiere restart, so this picks up Phase 2's `runCaptionWorkflow` at the same time.
+- **End-to-end test path** — after restart, `curl -X POST http://127.0.0.1:4555/plugin-action -d '{"plugin":"caption","action":"caption_ping"}'` should now return `{"success":true,"result":{"pluginConnected":true,"jsxLoaded":true,"supportedActions":["caption_create","caption_ping"]}}` instead of the 504 timeout we got after Phase 1.
+
+---
+
+## [v3.5.3] — 2026-06-24
+
+### Feature
+- **Caption workflow JSX wrapper (Phase 2 of plugin-level MCP).** New `runCaptionWorkflow(args)` function in `panel/jsx/core/mogrt.jsx` that bundles the entire 4-step Workflow tab pipeline into ONE ExtendScript call: read the Hinglish word-by-word SRT from disk, parse it into a `wordsList`, apply phrasing logic (alternating tracks, char-per-phrase splitting on `.!?`), call `getData()`, then loop `createCaptions()` per word. Returns a JSON summary `{ status, wordsRendered, phrasesCreated, totalWords, mogrtName, mogrtMode, failures[] }`. (`CEPs/freeXan_Caption/panel/jsx/core/mogrt.jsx:807-1088`)
+- **SRT parsing in ExtendScript** — new helpers `_rcwTrim()` and `_rcwTsToMs()`. Parses standard SubRip format with both `,` and `.` decimal separators. Reads file via the ExtendScript `File` API in UTF-8 mode. (`mogrt.jsx:1071-1089`)
+- **Phrasing algorithm ported 1:1 from `StepRender.tsx:168-241`** — same `charsPerPhrase` limit (default 100), same alternate-track behaviour (1↔2 on punctuation), same `phraseNumber`/`numWords`/`progressionValue`/`videoTrack` fields. Output is bit-identical to today's Workflow tab.
+- **Failure tracking** — per-word failures are accumulated in a `failures[]` array instead of throwing, so a single bad word doesn't abort the whole batch. Each entry: `{ wordNumber, wordText, error }`.
+
+### Build
+- `package.json` version bumped 3.5.2 → 3.5.3 (patch — additive JSX function; no existing function modified; no panel rebuild required).
+
+### Notes
+- **No `npm run build` needed for this phase.** ExtendScript reloads on Premiere restart and the changes are in `panel/jsx/core/mogrt.jsx` (the runtime artifact). The TypeScript source under `panel-src/src/` is untouched.
+- **Plugin side still doesn't know about this yet.** Phase 3 wires `useFreeXanWs.ts` to receive `plugin_action` messages and call `csi.callJSX('runCaptionWorkflow', args)` — that step requires the Vite build.
+- **Smoke test path (manual, ExtendScript console in Premiere):** open Premiere with the freeXan Caption panel, open the ExtendScript Toolkit / VS Code debugger, paste `runCaptionWorkflow({ hinglishSrtPath: '...', mogrtPath: '...' })` and check the returned JSON. This proves the wrapper works before we wire up Phase 3.
+
+---
+
+## [v3.5.2] — 2026-06-24
+
+### Feature
+- **Plugin Bridge plumbing (Phase 1 of plugin-level MCP control).** New generic dispatcher in `main.js` that lets the CLI/MCP address any individual CEP plugin via WebSocket, with request/response correlation by `requestId` and clean timeout/disconnect handling. Future plugin-level MCP tools (caption_create, audio_search, mogrt_insert, etc.) build on top of this — no Caption/Audio/BloomX plugin code touched yet. (`main.js`, `httpApi.js`)
+- **Plugin connection registry** — new `pluginConnections` Map in `main.js` keyed by plugin name (`link`, `caption`, `bloomx`). Plugins are auto-registered on their first identifying message: `ext_hello` → `link`, `get_project_state` → `caption`, `get_mogrt_library` → `bloomx`. `ext_hello` also now accepts an explicit `plugin` field for forward compat — back-compat preserved (missing field defaults to `link`). (`main.js:526–555`)
+- **`dispatchToPlugin(plugin, action, args, timeoutMs)`** — Promise-returning helper that finds the named plugin's ws connection, sends `{ type: 'plugin_action', requestId, action, args }`, and awaits a `plugin_action_result` reply with the same requestId. Times out after `timeoutMs` (default 30 s, clamped 1 s–10 min). Pending requests are rejected cleanly if the target plugin disconnects mid-call. (`main.js:557–598`)
+- **HTTP route `POST /plugin-action`** — Generic JSON endpoint that wraps `dispatchToPlugin`. Body: `{ plugin, action, args?, timeoutMs? }`. Maps errors to status codes: 503 = plugin not connected, 504 = plugin connected but didn't reply in time, 500 = other. (`httpApi.js:185–220`)
+- **`GET /status` extended** — now returns `connectedPlugins: string[]` so the CLI/MCP can see which plugins are live before dispatching. (`main.js` httpApi context)
+
+### Build
+- `package.json` version bumped 3.5.1 → 3.5.2 (patch — plumbing only, no user-visible feature yet; all four plugins' source code is untouched).
+
+---
+
 ## [v3.5.1] - 2026-06-24
 
 ### Fix

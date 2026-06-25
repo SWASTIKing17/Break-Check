@@ -2,10 +2,12 @@
 
 **Purpose:** Map for agents, developers, and non-coder users.  
 Use this file to find: which file does what, which function controls which feature.  
-**Version:** v3.5.1 | **Last Updated:** 2026-06-24
+**Version:** v3.5.4 | **Last Updated:** 2026-06-24
 
 ---
 
+
+[2026-06-25] Rewrote Add Word, Remove Word, and Reset Progression logic in 	imeline.jsx and WordEditGroup.tsx.
 
 [2026-06-24] Implemented 'Save WBW Srt.' and 'Save Phrased Srt.' functionality within EditView.tsx and a new utility file exportUtils.ts.
 ## Quick Index
@@ -55,6 +57,10 @@ Use this file to find: which file does what, which function controls which featu
 | Audio panel controller, custom trim handles, & waveform spikes | `plugins/Audio_freeXan/audio.js` → `initPlayer()`, `drawWaveform()` |
 | Audio player drawer and search/card grid styles | `plugins/Audio_freeXan/audio-player.css` |
 | HTTP API door for CLI + MCP (port 4555) | `httpApi.js` → `startHttpApi()`, `handleRequest()` |
+| Plugin bridge (CLI/MCP → individual CEP plugin) | `main.js` → `pluginConnections`, `dispatchToPlugin()`, `POST /plugin-action` in `httpApi.js` |
+| One-shot Caption workflow (parse SRT + render captions) | `CEPs/freeXan_Caption/panel/jsx/core/mogrt.jsx` → `runCaptionWorkflow(args)` |
+| Caption plugin MCP/CLI action dispatcher | `CEPs/freeXan_Caption/panel-src/src/lib/captionMcpHandlers.ts` → `dispatchPluginAction()`, action: `caption_create` & `caption_ping` |
+| Caption plugin WS `plugin_action` listener | `CEPs/freeXan_Caption/panel-src/src/hooks/useFreeXanWs.ts` → onmessage `plugin_action` branch |
 | CLI commands (`freexan status`, `clients`, `new`, …) | `cli/freexan.js` |
 | MCP tools for Claude Code | `mcp/server.js` |
 
@@ -778,6 +784,7 @@ Retry: up to 8 attempts on "parent not found" errors
 | `GET` | `/templates` | All folder templates (deduplicated by id) |
 | `POST` | `/project` | Body: `{ clientId, funnelId, taskId?, projectName }` — looks up names + targetDir, calls `create-project` IPC handler |
 | `POST` | `/import` | Body: `{ filePaths[], opts? }` — calls `import-dropped-files` IPC handler |
+| `POST` | `/plugin-action` | Body: `{ plugin, action, args?, timeoutMs? }` — generic dispatcher to any individual CEP plugin via WebSocket. 503 = plugin offline; 504 = timeout. *(v3.5.2+)* |
 | `POST` | `/open` | Body: `{ filePath }` — calls `shell.openPath()` |
 
 **Key design points:**
@@ -786,15 +793,65 @@ Retry: up to 8 attempts on "parent not found" errors
 - 1 MB body cap (these payloads are tiny).
 - EADDRINUSE: logs a warning and disables the door instead of crashing.
 - Bridges to existing IPC handlers via `ipcMain._invokeHandlers.get(channel)(fakeEvent, ...args)` — private Electron API, stable for years, used because none of the reachable handlers reference `event.sender`. Fallback if Electron ever removes this: extract handler bodies into named functions.
+- `/plugin-action` route delegates to `ctx.dispatchToPlugin(plugin, action, args, timeoutMs)` exposed by `main.js`.
 
 **Key functions:**
 
 | Function | What it does |
 |---|---|
-| `startHttpApi(ctx)` | Create and listen on the HTTP server. `ctx` provides `{ db, shell, appConfig, appVersion, getStatus, invokeHandler }` |
+| `startHttpApi(ctx)` | Create and listen on the HTTP server. `ctx` provides `{ db, shell, appConfig, appVersion, getStatus, invokeHandler, dispatchToPlugin }` |
 | `stopHttpApi()` | Close the server (called in `before-quit`) |
 | `invokeIpcHandler(channel, ...args)` | Calls a registered `ipcMain.handle` handler from non-IPC contexts |
+| `pluginActionRoute(res, ctx, body)` | Handler for `POST /plugin-action` — validates body, maps errors to 503/504/500 |
 | `handleRequest(req, res, ctx)` | Request router |
+
+---
+
+### Plugin Bridge — `main.js` (v3.5.2)
+
+**What it does:** Generic CLI/MCP → CEP plugin dispatcher with `requestId` correlation. Lets any code (HTTP route, IPC handler, anything) send a message to a *specific* plugin and await its reply — in contrast to `broadcastToAll()` which fans out to every panel.
+
+**Plugin registration is automatic** — no plugin code changes were needed. Each plugin gets tagged on its first identifying message:
+
+| Plugin | Identifying message | Registry key |
+|---|---|---|
+| Link | `ext_hello` (optionally with `plugin: 'link'`) | `'link'` |
+| Caption | `get_project_state` | `'caption'` |
+| MisterBloomX | `get_mogrt_library` | `'bloomx'` |
+
+**State:**
+
+| Variable | Purpose |
+|---|---|
+| `pluginConnections` | Map: plugin name → ws connection |
+| `pendingPluginRequests` | Map: requestId → `{ resolve, reject, timer, plugin, action }` |
+| `pluginRequestCounter` | Monotonic counter for unique requestIds |
+
+**Key functions:**
+
+| Function | What it does |
+|---|---|
+| `registerPluginConnection(ws, name)` | Tags a ws connection with a plugin name. If the same ws was previously registered under another name, drops the old mapping first. |
+| `unregisterPluginConnection(ws)` | Called from `ws.on('close')`. Removes the entry and rejects all in-flight requests for that plugin so callers don't hang. |
+| `dispatchToPlugin(plugin, action, args, timeoutMs)` | Promise. Looks up the connection, sends `{ type:'plugin_action', requestId, action, args }`, awaits the matching `plugin_action_result`. Timeout default 30 s (clamped 1 s–10 min). |
+| `handlePluginActionResult(data)` | Called on incoming `plugin_action_result`. Resolves or rejects the pending Promise by `requestId`. Logs warning for unknown requestIds. |
+
+**Wire protocol (main.js ↔ plugin):**
+
+```jsonc
+// Main → plugin:
+{ "type": "plugin_action", "requestId": "req_1234_5", "action": "create", "args": {...} }
+
+// Plugin → main (success):
+{ "type": "plugin_action_result", "requestId": "req_1234_5", "result": {...} }
+
+// Plugin → main (failure):
+{ "type": "plugin_action_result", "requestId": "req_1234_5", "error": "message" }
+```
+
+**Status surface:** `GET /status` includes `connectedPlugins: string[]` so the CLI/MCP can verify a plugin is online before calling.
+
+**Next phases (not yet built):** the plugin side of this contract — each CEP panel needs to listen for `plugin_action` and dispatch to its own handlers. Caption is the first target (Phase 3).
 
 ---
 
@@ -1039,10 +1096,10 @@ External clients (v3.5.1+)
 
 ---
 
-*Last updated: 2026-06-24 | v3.5.1*
+*Last updated: 2026-06-24 | v3.5.4*
 
 ---
-## [2026-06-22 13:21] � freeXan Caption Bug Fix
+## [2026-06-22 13:21] � freeXan Caption Bug Fix
 
 **Files Touched:**
 - CEPs/freeXan_Caption/panel/jsx/core/sync.jsx
@@ -1051,23 +1108,23 @@ External clients (v3.5.1+)
 - CEPs/freeXan_Caption/panel-src/src/hooks/useFreeXanWs.ts
   - WS reconnect: 4000ms ? 1000ms
 - CEPs/freeXan_Caption/panel/dist/freexan-caption.js (rebuilt via npm run build)
-| Connection status debug logging | CEPs/freeXan_Caption/panel-src/src/hooks/usePremiereState.ts | poll() ? setAndLog() � every disconnect path tagged [DISC-n] |
-| CSI raw result logging | CEPs/freeXan_Caption/panel-src/src/lib/csi.ts | evalScriptRaw() callback � logs exact Premiere return value |
+| Connection status debug logging | CEPs/freeXan_Caption/panel-src/src/hooks/usePremiereState.ts | poll() ? setAndLog() � every disconnect path tagged [DISC-n] |
+| CSI raw result logging | CEPs/freeXan_Caption/panel-src/src/lib/csi.ts | evalScriptRaw() callback � logs exact Premiere return value |
 
 ---
 
-| Connection debug log (React) | `%APPDATA%\Adobe\CEP\extensions\com.bloomx.freexan.caption\panel\logs\connection_debug.log` | Written by `usePremiereState.ts` � connection/DISC-n events only |
-| ExtendScript debug log | `%APPDATA%\Adobe\CEP\extensions\com.bloomx.freexan.caption\panel\logs\debug_jsx.log` | Written by `jsxLog()` in all JSX files � everything ExtendScript logs |
+| Connection debug log (React) | `%APPDATA%\Adobe\CEP\extensions\com.bloomx.freexan.caption\panel\logs\connection_debug.log` | Written by `usePremiereState.ts` � connection/DISC-n events only |
+| ExtendScript debug log | `%APPDATA%\Adobe\CEP\extensions\com.bloomx.freexan.caption\panel\logs\debug_jsx.log` | Written by `jsxLog()` in all JSX files � everything ExtendScript logs |
 
-| Master CEP installer | `CEPs/install_plugins.bat` | Installs all 5 plugins via robocopy � no Admin needed |
+| Master CEP installer | `CEPs/install_plugins.bat` | Installs all 5 plugins via robocopy � no Admin needed |
 | Caption-only installer | `CEPs/freeXan_Caption/Install_freeXan_Caption.bat` | Installs only freeXan Caption, excludes dev artifacts |
 
-| getPlayheadTime connection guard | `CEPs/freeXan_Caption/panel-src/src/tabs/edit/EditView.tsx` | line ~134 � `useEffect` playhead follower, `connection !== 'connected'` guard |
-| smParseClipParams stack overrun fix | `CEPs/freeXan_Caption/panel/jsx/core/mogrt_editor.jsx` | `smParseClipParams()` � `SM_MAX_PROPS` cap + per-property try/catch |
+| getPlayheadTime connection guard | `CEPs/freeXan_Caption/panel-src/src/tabs/edit/EditView.tsx` | line ~134 � `useEffect` playhead follower, `connection !== 'connected'` guard |
+| smParseClipParams stack overrun fix | `CEPs/freeXan_Caption/panel/jsx/core/mogrt_editor.jsx` | `smParseClipParams()` � `SM_MAX_PROPS` cap + per-property try/catch |
 ## [2026-06-22 13:35] -- useFreeXanWs.ts: ?? fallback for bloomxOpen/connected. Rebuilt + copied to installed.
 
 ---
-## [2026-06-22 13:37] � Link_freeXan Bug Fix #3
+## [2026-06-22 13:37] � Link_freeXan Bug Fix #3
 
 **Bugs Fixed:**
 - **Audio List Not Loading:** Restored missing 

@@ -1,6 +1,6 @@
 {
   "name": "freexan",
-  "version": "3.5.0",
+  "version": "3.5.4",
   "description": "freeXan by BloomX Solutions — invisible workflow infrastructure for Adobe Premiere Pro",
   "main": "main.js",
   "scripts": {

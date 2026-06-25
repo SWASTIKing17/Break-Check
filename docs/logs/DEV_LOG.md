@@ -5,7 +5,9 @@ Record decisions, blockers, ideas, and progress here — not in code comments.
 
 ---
 
-## Current Version: v3.5.1
+## Current Version: v3.5.4
+
+[2026-06-25] Highly optimized sm_tools_add_word_v28 and sm_tools_remove_word_v28 in 	imeline.jsx. Created sm_tools_reset_progression_v28 and added UI button in WordEditGroup.tsx.
 
 [2026-06-24] Added SRT export functionality to freeXan Caption. Created exportUtils.ts with generateWbwSrt and generatePhrasedSrt. Added buttons in EditView.tsx to save files locally using Adobe CEP File System.
 
@@ -28,6 +30,208 @@ Record decisions, blockers, ideas, and progress here — not in code comments.
 ---
 
 ## Session Log
+
+### 2026-06-24 | Session 089 — Caption Plugin WS Bridge / Phase 3 (v3.5.3 → v3.5.4)
+
+**By:** Claude (AI assistant) + Swastik
+**Version:** v3.5.3 → v3.5.4
+**Status:** Built. Awaiting Premiere restart for live smoke test.
+
+**Why this session existed:** Phase 3 of plugin-level MCP — wire the Caption panel side. After Phase 1 (generic main.js bridge) and Phase 2 (JSX wrapper inside Premiere), the missing link was the Caption panel listening for `plugin_action` messages and dispatching to `runCaptionWorkflow`. This session adds that piece and rebuilds the panel bundle.
+
+**Approach chosen:** new file `captionMcpHandlers.ts` for the action dispatcher (keeps `useFreeXanWs.ts` uncluttered + future actions are easy to add). One new `plugin_action` branch in the WS onmessage handler. Explicit `ext_hello` with `plugin: 'caption'` on connect so the bridge registration is deterministic (not just via the existing `get_project_state` auto-tag).
+
+**Done:**
+- `CEPs/freeXan_Caption/panel-src/src/lib/captionMcpHandlers.ts` (new file) — ~80 lines. Exports:
+  - `dispatchPluginAction(action, args)` — looks up the handler in a `Record<string, Handler>` map, throws on unknown action with a useful message listing all supported actions.
+  - `getSupportedActions()` — for debugging / introspection.
+  - Two handlers in v0.1:
+    - `caption_create` — argv validation (requires `hinglishSrtPath` + `mogrtPath` as strings), then `csi.callJSX('runCaptionWorkflow', args)`. ExtendScript-side `{status: "Error"}` responses are surfaced as thrown errors so the main bridge maps them to HTTP 500.
+    - `caption_ping` — health check. Calls `csi.probeFunction('runCaptionWorkflow')` to verify the JSX is loaded, returns `{ pluginConnected: true, jsxLoaded: bool, supportedActions: [] }`.
+- `CEPs/freeXan_Caption/panel-src/src/hooks/useFreeXanWs.ts`:
+  - New import: `import { dispatchPluginAction } from '@/lib/captionMcpHandlers';`
+  - `ws.onopen` now sends an explicit `{ type: 'ext_hello', plugin: 'caption', version: 'caption-1.0.0' }` BEFORE `get_project_state`. Forward-compatible — main.js's Phase 1 `ext_hello` handler already accepts an explicit `plugin` field.
+  - `onmessage` got a new `else if (msg.type === 'plugin_action')` branch. Calls `dispatchPluginAction(action, args)`, then sends `{ type: 'plugin_action_result', requestId, result | error }` back via the same `ws` from closure. Both success + failure paths wrap `ws.send` in try/catch so a closed socket can't crash the panel.
+- `panel/dist/freexan-caption.js` rebuilt via `npm run build` (inside `panel-src/`). TypeScript type-check passed first (`tsc --noEmit`), then Vite emitted the IIFE bundle (1,867 KB, up ~67 KB from 1,800 KB pre-Phase-3 — the captionMcpHandlers module + the imports added).
+
+**Decisions:**
+- **Dedicated handlers file, not inline in useFreeXanWs.** Keeps the hook focused on connection state. Future actions (`caption_replace_style`, `caption_sync_phrase`, etc.) all become single entries in the `handlers` map. Zero further changes to useFreeXanWs.ts.
+- **Surfaced ExtendScript-side `{status:"Error"}` as thrown errors** instead of passing them through as `result`. Reason: the main.js Phase 1 bridge already maps `error` field to HTTP 500. Passing through as `result` would mean the MCP/CLI side gets HTTP 200 with a confusing `{status:"Error"}` payload — easy to misinterpret as success.
+- **`caption_ping` action** — added a health-check companion to `caption_create`. Without it, the only way to test Phase 3 was to run a real caption job (which has side effects). With ping, we can verify the panel is loaded + JSX is reachable without touching the timeline.
+- **Explicit `ext_hello` send** — the main.js code already auto-tags Caption via `get_project_state`. The explicit hello is **defensive duplicate** — if anyone later refactors get_project_state to not set clientType, the explicit hello still registers us. Idempotent in main.js (the registry update is a Map.set; second call overwrites with the same value).
+- **try/catch around ws.send in both result paths** — covers the corner case where the socket closed between message receipt and result send. Without the wrap, the panel could throw an unhandled error mid-render.
+
+**Files changed:**
+- `CEPs/freeXan_Caption/panel-src/src/lib/captionMcpHandlers.ts` (new)
+- `CEPs/freeXan_Caption/panel-src/src/hooks/useFreeXanWs.ts`
+- `CEPs/freeXan_Caption/panel/dist/freexan-caption.js` (rebuilt)
+- `CEPs/freeXan_Caption/panel/dist/freexan-caption.css` (rebuilt — no real change)
+- `package.json`
+- `docs/logs/CHANGELOG.md`
+- `docs/logs/DEV_LOG.md`
+- `docs/logs/NAVIGATION_LOG.md`
+
+**Verification path (manual — Swastik should restart Premiere, then I'll curl):**
+1. Close Premiere Pro completely (verify no `Adobe Premiere Pro.exe` in Task Manager).
+2. Open Premiere, open a project with an **empty active sequence** (V1+V2 should be free for the caption clips).
+3. Open `Window → Extensions → freeXan Caption`. The new bundle loads + WS connects + announces plugin identity.
+4. Tell me you're ready. I'll run from my side:
+   ```bash
+   curl -X POST http://127.0.0.1:4555/plugin-action \
+     -H "Content-Type: application/json" \
+     -d '{"plugin":"caption","action":"caption_ping"}'
+   ```
+   Expect: `{"success":true,"result":{"pluginConnected":true,"jsxLoaded":true,"supportedActions":["caption_create","caption_ping"]}}`
+5. Then the real test — `caption_create` with Swastik's SRT + MOGRT paths from the previous message. Expect 66 caption MOGRT clips on V1/V2 within ~10–30 seconds.
+
+**Blockers:** None. Live test pending Premiere restart.
+
+**Notes:**
+- Phase 4 (the actual MCP tool registration) is now a 15-min add to `mcp/server.js`. After Phase 3 passes live, Phase 4 just registers `freexan_caption_create` and `freexan_caption_ping` MCP tools that wrap the same HTTP call.
+- The `caption_ping` action design pattern (probe + supported-actions list) is the template every future plugin should follow — gives Claude a way to discover capabilities at runtime without hard-coded knowledge.
+- Bundle grew ~67 KB. Sourcemap is also rebuilt (3,200 KB) but it's gitignored.
+
+**Next:**
+- Live smoke test once Premiere is restarted with the new Caption panel bundle.
+- If green: Phase 4 — MCP tool wrappers.
+
+---
+
+### 2026-06-24 | Session 088 — Caption Workflow JSX Wrapper / Phase 2 (v3.5.2 → v3.5.3)
+
+**By:** Claude (AI assistant) + Swastik
+**Version:** v3.5.2 → v3.5.3
+**Status:** Done (Phase 2 only — JSX wrapper added. Phase 3 next — wire up the plugin's WS handler.)
+
+**Why this session existed:** Phase 2 of the plan to flatten the Caption Workflow tab into a single MCP call. Phase 1 added the generic plugin bridge in main.js (all tests passed). Phase 2 adds the ExtendScript side: one function that does the entire SRT-parse → phrasing → getData → word-loop pipeline so the Caption plugin can invoke it with a single `csi.callJSX('runCaptionWorkflow', args)` once Phase 3 wires the WS handler.
+
+**Approach chosen:** keep the wrapper entirely in ExtendScript (no panel-side dependency), so Phase 2 needs no Vite rebuild. The wrapper reads the SRT itself via the `File` object and runs the same phrasing algorithm currently in `StepRender.tsx:168-241`.
+
+**Done:**
+- `CEPs/freeXan_Caption/panel/jsx/core/mogrt.jsx` — new top-level function `runCaptionWorkflow(args)` at line 807. Bundles:
+  - Validation of `args.hinglishSrtPath` and `args.mogrtPath` (required) plus `args.charsPerPhrase` (default 100) and `args.trackStart` (default 1).
+  - SRT file read via `File("path"); file.encoding='UTF-8'; file.open('r'); file.read(); file.close()`.
+  - Block-by-block parse into `wordsList` — same shape as `StepRender.tsx:120-162` (`wordText`, `wordDuration`, `characterDuration`, `wordCharacters`, `wordStart`, `wordEnd`).
+  - Phrasing loop ported 1:1 from `StepRender.tsx:177-241` — same variable names (`s`, `phraseText`, `M`, `P`, `J`), same `phrases[]` accumulator, same alternate-track behaviour, same end-of-loop flush.
+  - 2nd pass to overwrite each word's `phraseText` with the final phrase (mirrors `StepRender.tsx:238-241`).
+  - Call to existing `getData({ srtFilePath, mogrtFilePath })`. Parses returned JSON, checks `status` and `activeSequence`, logs frame-rate mismatches as warnings (matches existing UX).
+  - Word-loop calling existing `createCaptions(r)` per word, enriched with `mogrtName/mogrtProjectItem/mogrtNodeId/firstVideoTrack/secondVideoTrack/thirdVideoTrack/totalWords/wordNumber/isLastWordInPhrase/mogrtMode`.
+  - Per-word failure tracking — instead of throwing on any failure, accumulates into `failures[]` and continues. The last word always has `isLastWordInPhrase = true` (the React side doesn't explicitly set this for the last word; my wrapper does so the trailing phrase closes cleanly).
+  - Returns JSON: `{ status: "Success" | "Error", wordsRendered, phrasesCreated, totalWords, firstVideoTrack, secondVideoTrack, mogrtName, mogrtMode, sequenceFrameRate, mogrtFrameRate, failures }`.
+- Two new helpers near the runCaptionWorkflow function:
+  - `_rcwTrim(s)` — defensive trim (avoids any ambiguity over `String.prototype.trim` in older ExtendScript engines).
+  - `_rcwTsToMs(ts)` — parses both `HH:MM:SS,mmm` (SubRip) and `HH:MM:SS.mmm` formats.
+
+**Decisions:**
+- **No `npm run build`** — this phase is JSX-only. The TypeScript source under `panel-src/src/` is not touched. ExtendScript reloads on Premiere restart.
+- **All-or-most semantics** — `createCaptions` failures are accumulated and reported in the return JSON instead of aborting the whole batch. A typo in one word shouldn't kill the other 200.
+- **Phrasing algorithm copied 1:1** — every line of the TS phrasing loop has a direct ES3 counterpart. Same field names, same logic, even kept the apparent bug at `StepRender.tsx:181-184` where `d.wordEnd = nextWord.wordStart` is followed by a check `nextWord.wordStart - d.wordEnd > 5` (which is always 0 — never triggers). Replicated exactly because we want the new path to produce identical timeline output to today's UX. If that turns out to be a real bug, fix it in BOTH places at once.
+- **Last word always closes phrase** — added a single line `else { r.isLastWordInPhrase = true; }` at the end of the createCaptions loop. The original React code never sets this for the final word because the loop ends; in JSX I prefer to be explicit so the last clip uses the phrase-end duration rule in `createCaptions`.
+- **Reused existing helpers** — `getData`, `createCaptions`, `jsxLog`, `reportError`, the regex patterns. Did not duplicate any logic from elsewhere in `mogrt.jsx`. The wrapper is roughly 280 lines because it has to inline the SRT parser + phrasing + word enrichment, but ZERO existing functions were modified.
+- **Syntax-checked via `node --check` after copying to `.js`** — JSX parses cleanly as JavaScript. ExtendScript runtime objects (`File`, `XMPMeta`, `app.project`, etc.) aren't a syntax concern.
+
+**Files changed:** `CEPs/freeXan_Caption/panel/jsx/core/mogrt.jsx`, `package.json`, `docs/logs/CHANGELOG.md`, `docs/logs/DEV_LOG.md`, `docs/logs/NAVIGATION_LOG.md`
+
+**Verification path (manual — Swastik should do this BEFORE Phase 3):**
+1. Close Premiere completely (so it picks up the updated `mogrt.jsx` next launch).
+2. Open Premiere, open a project with an **active sequence**, open the freeXan Caption panel.
+3. Pick a real Hinglish word-by-word SRT from your machine (one that's been through the existing Workflow tab successfully before — that proves the SRT is well-formed). Note the full path.
+4. Pick a `.mogrt` template path (e.g. one of the BloomX caption MOGRTs).
+5. Open ExtendScript Toolkit / VS Code's ExtendScript Debugger / the CEP DevTools console, attach to Premiere, and run:
+   ```js
+   runCaptionWorkflow({
+     hinglishSrtPath: "D:/Reels/episodeXX/hinglish_session1.srt",
+     mogrtPath:       "D:/MOGRTs/your-caption.mogrt"
+   })
+   ```
+6. Check the return JSON: `status: "Success"`, `wordsRendered > 0`, `failures: []`. The timeline should now have caption clips on V1/V2 alternating, color-labeled.
+7. If something errors — paste the JSON error back to me. Most likely cause: invalid SRT format or MOGRT path.
+
+**Blockers:** none.
+
+**Notes:**
+- This wrapper is the LAST piece on the ExtendScript side. Phases 3 and 4 are JS/TS only.
+- Phase 3 task: add a `plugin_action` listener inside `useFreeXanWs.ts` (or a new dedicated handler). On receiving `{ type: "plugin_action", requestId, action: "caption_create", args }`, call `csi.callJSX('runCaptionWorkflow', args)`, then send back `{ type: "plugin_action_result", requestId, result }`. Also announces `plugin: 'caption'` in the WS handshake (today auto-tags via `get_project_state`). That phase IS a Vite rebuild.
+- Phase 4 task: add `freexan_caption_create({ hinglishSrtPath, mogrtPath?, charsPerPhrase?, trackStart? })` to `mcp/server.js`. Optionally a `freexan_caption_get_state()` companion. ~30 lines total.
+
+**Next:**
+- Smoke test the JSX wrapper in the ExtendScript console (manual).
+- If green: Phase 3 — TypeScript-side WS handler + rebuild.
+
+---
+
+### 2026-06-24 | Session 087 — Plugin Bridge Phase 1 (v3.5.1 → v3.5.2)
+
+**By:** Claude (AI assistant) + Swastik
+**Version:** v3.5.1 → v3.5.2
+**Status:** Done (Phase 1 only — plumbing in main.js + httpApi.js. Phases 2-4 still pending. Live smoke-test pending freeXan restart.)
+
+**Why this session existed:** Phase 1 of the plan to drive CEP plugin actions from Claude via MCP. The whole goal is to flatten the Caption plugin's 4-step Workflow tab into a single MCP command (`freexan_caption_create`). This session adds the **generic plumbing** — a request/response WebSocket bridge from `main.js` to any individual plugin. No Caption/Audio/BloomX code touched yet; that's Phases 2-3.
+
+**Architecture chosen:** Extend the existing WebSocket server (port 4554) with a per-plugin connection registry. CLI/MCP → HTTP door `POST /plugin-action` → `dispatchToPlugin(plugin, action, args)` → WS message with `requestId` → plugin responds with `plugin_action_result` carrying same `requestId` → Promise resolves → HTTP response → MCP.
+
+**Done:**
+- `main.js` — new plugin bridge module (lines ~514–598):
+  - `pluginConnections` Map (plugin name → ws connection)
+  - `pendingPluginRequests` Map (requestId → {resolve, reject, timer, plugin, action})
+  - `registerPluginConnection(ws, name)` — auto-drops old name if same ws re-registers under a new one
+  - `unregisterPluginConnection(ws)` — on disconnect, rejects all in-flight requests for that plugin so callers never hang
+  - `dispatchToPlugin(plugin, action, args, timeoutMs)` — returns a Promise; clamps timeout 1 s–10 min; default 30 s
+  - `handlePluginActionResult(data)` — looks up requestId, resolves or rejects
+- `main.js` — auto-register plugins on first identifying message (no plugin code changes needed):
+  - `ext_hello` → `'link'` (back-compat: optional `plugin` field for forward compat)
+  - `get_project_state` → `'caption'`
+  - `get_mogrt_library` → `'bloomx'`
+- `main.js` — `ws.on('close')` now calls `unregisterPluginConnection` BEFORE the existing bloomx-disconnect broadcast so the registry stays clean.
+- `main.js` — new `plugin_action_result` branch in the message handler (line 743) forwards to `handlePluginActionResult`.
+- `main.js` — `GET /status` payload extended with `connectedPlugins: Array.from(pluginConnections.keys())`.
+- `main.js` — `dispatchToPlugin` exported via `httpApi.startHttpApi` context.
+- `httpApi.js` — new route `POST /plugin-action`:
+  - Body: `{ plugin, action, args?, timeoutMs? }`
+  - Validates required string fields
+  - Maps errors: 503 = "is not connected" / "disconnected before responding", 504 = "did not respond within Nms", 500 = other
+- `package.json` — version 3.5.1 → 3.5.2
+
+**Decisions:**
+- **Generic dispatcher, not action-specific routes.** The bridge knows nothing about Caption or BloomX; it just knows how to deliver a labelled message to a labelled connection and await a labelled reply. Future plugin tools (caption_create, audio_search, mogrt_insert) all use the same `/plugin-action` endpoint with a different `{plugin, action}`. Less duplication.
+- **Auto-registration via existing messages, not a new handshake.** I considered making each plugin send a new `plugin_announce` message but that requires editing all four plugins. Instead I piggyback on the message they already send first (`ext_hello`, `get_project_state`, `get_mogrt_library`). Zero plugin changes needed today.
+- **Back-compat for `ext_hello`:** if a future plugin sends `ext_hello` with a `plugin: 'caption'` field, we honour it. Today's Link plugin doesn't send `plugin`, so the default is `'link'`. Nothing breaks.
+- **Pending requests rejected on disconnect.** Without this, if the Caption plugin crashes mid-render, the MCP tool would hang for the full 30 s timeout. With it, the caller gets an immediate `"Plugin "caption" disconnected before responding to "..."`.
+- **Hadn't smoke-tested live yet** — freeXan wasn't running when I tried `curl /health` (connection refused). Code is syntactically valid (`node --check` passes for both files) and all the registration/dispatch paths are wired correctly. Live verification deferred to next time Swastik restarts the app.
+- **CHANGELOG had been reset since v3.5.0 was added in Session 086** — `v3.5.1` is now used by Swastik's manual session on 2026-06-24 (Caption engine crash fixes + SRT export buttons). My CLI/MCP entry for v3.5.0 is gone from the file but the work is intact on disk (`cli/`, `mcp/`, `httpApi.js` all still present and working). Bumped to **v3.5.2** to avoid colliding.
+
+**Files changed:** `main.js`, `httpApi.js`, `package.json`, `docs/logs/CHANGELOG.md`, `docs/logs/DEV_LOG.md`, `docs/logs/NAVIGATION_LOG.md`
+
+**Verification path (manual — Swastik should run after restart):**
+1. Quit freeXan completely (tray → Quit, verify no `freeXan.exe`/`electron.exe` left in Task Manager).
+2. `cd "C:\Swastik Development\FreeXan Development" && npm start` — watch for `[HTTP API] freeXan API door listening on http://127.0.0.1:4555`.
+3. From PowerShell: `curl http://127.0.0.1:4555/health` → should return `{"ok":true,"port":4555,"appVersion":"3.5.2"}`.
+4. `curl http://127.0.0.1:4555/status` → should now include a `"connectedPlugins"` array. Initially `[]` until you open a CEP panel in Premiere.
+5. Open Premiere with the freeXan Link panel → re-run `curl /status` → `connectedPlugins` should now contain `"link"`.
+6. Open MisterBloomX panel → `connectedPlugins` adds `"bloomx"`.
+7. Open freeXan Caption panel → `connectedPlugins` adds `"caption"`.
+8. Negative test — call a plugin action while no plugin handler exists:
+   ```
+   curl -X POST http://127.0.0.1:4555/plugin-action ^
+        -H "Content-Type: application/json" ^
+        -d "{\"plugin\":\"caption\",\"action\":\"ping\",\"timeoutMs\":3000}"
+   ```
+   - If Caption panel is NOT open → 503 "Plugin \"caption\" is not connected."
+   - If Caption panel IS open but has no `plugin_action` handler yet → 504 "did not respond within 3000ms" after 3 s.
+   - Either result confirms the bridge is working end-to-end on the main.js side.
+
+**Blockers:** none.
+
+**Notes:**
+- The bridge is intentionally dumb. It does NOT know what actions a plugin supports — it just forwards. Action validation lives inside each plugin (Phase 3 work).
+- Phase 2 next: add `runCaptionWorkflow(hinglishSrtPath, mogrtPath, charsPerPhrase, trackStart)` JSX wrapper in `panel/jsx/core/mogrt.jsx` that bundles `getData` + word-loop into one call. Phase 3: extend `useFreeXanWs.ts` to handle `plugin_action` messages and route to the wrapper. Phase 4: add `freexan_caption_create` MCP tool.
+- The auto-registration approach only covers plugins that send one of the three known first-messages. If we ever add a new plugin that doesn't fit one of these patterns, we'll need to either: (a) have it send `ext_hello` with `plugin: 'newname'`, or (b) add a new auto-tag rule. Either is cheap.
+
+**Next:**
+- Smoke test with Swastik on his machine (restart freeXan, run the 8-step verification above).
+- If green: Phase 2 — JSX wrapper.
+
+---
 
 ### 2026-06-20 | Session 086 — CLI + MCP Prototype (v3.4.3 → v3.5.0)
 
@@ -1934,7 +2138,7 @@ In `ext.js`, the `setup-project` assets handler was fixed from a silent-failing 
 -->
 
 ---
-## [2026-06-22 13:21] � freeXan Caption Bug Fix Session
+## [2026-06-22 13:21] � freeXan Caption Bug Fix Session
 
 **Session Goal:** Fix 5 confirmed bugs in freeXan Caption CEP plugin.
 
@@ -1951,13 +2155,13 @@ In `ext.js`, the `setup-project` assets handler was fixed from a silent-failing 
 
 ---
 
-## 2026-06-24 � Fix Session: BAT Installers Rewritten
+## 2026-06-24 � Fix Session: BAT Installers Rewritten
 
 **Problems found and fixed:**
-1. install_plugins.bat used mklink /J � silently fails without Admin. Missing Link_freeXan. CSXS registry only up to v16. No robustness.
+1. install_plugins.bat used mklink /J � silently fails without Admin. Missing Link_freeXan. CSXS registry only up to v16. No robustness.
 2. Install_freeXan_Caption.bat copied the full dev tree (33 items including node_modules, .claude, panel-src) into the CEP extensions folder.
-3. Audio_freeXan and MISTER_BloomX sources are in plugins/, not CEPs/ � old master BAT pointed to empty CEP folders.
-4. freeXan_DebugLog has no manifest in CEPs/ � installer now skips gracefully.
+3. Audio_freeXan and MISTER_BloomX sources are in plugins/, not CEPs/ � old master BAT pointed to empty CEP folders.
+4. freeXan_DebugLog has no manifest in CEPs/ � installer now skips gracefully.
 
 **Files changed:**
 - CEPs/install_plugins.bat
@@ -1965,17 +2169,17 @@ In `ext.js`, the `setup-project` assets handler was fixed from a silent-failing 
 
 ---
 
-## 2026-06-24 � Fix Session: Disconnect Root Causes Patched
+## 2026-06-24 � Fix Session: Disconnect Root Causes Patched
 
 **Goal:** Fix the two root causes of unexpected DISCONNECTED status found via log analysis.
 
-**Fix 1 � Stack overrun in smParseClipParams (mogrt_editor.jsx)**
+**Fix 1 � Stack overrun in smParseClipParams (mogrt_editor.jsx)**
 - Root cause: some MOGRTs with corrupted/deep property trees had 
 umItems > 200+, causing ExtendScript's call stack to overflow mid-iteration. This crashed the JSX engine, making the panel report DISCONNECTED.
 - Fix: added SM_MAX_PROPS = 200 cap, null guards on getMGTComponent() and .properties, and per-property try/catch so one bad property can't abort the whole clip.
 
-**Fix 2 � 171K getPlayheadTime calls (EditView.tsx)**
-- Root cause: playhead follower polled at 250ms with no connection guard. When no sequence was open, every tick threw "No active sequence" � 171,000+ times per session, saturating the ExtendScript bridge.
+**Fix 2 � 171K getPlayheadTime calls (EditView.tsx)**
+- Root cause: playhead follower polled at 250ms with no connection guard. When no sequence was open, every tick threw "No active sequence" � 171,000+ times per session, saturating the ExtendScript bridge.
 - Fix: interval slowed to 500ms; tick skips the JSX call entirely when connection !== 'connected'.
 
 **Files changed:**
@@ -1985,22 +2189,22 @@ umItems > 200+, causing ExtendScript's call stack to overflow mid-iteration. Thi
 
 ---
 
-## 2026-06-24 � Debug Session: Connection Status Investigation
+## 2026-06-24 � Debug Session: Connection Status Investigation
 
 **Goal:** Instrument the connection status pipeline to diagnose unexpected disconnects in freeXan Caption.
 
 **What was done:**
 - Audited 7 files in the connection pipeline: csi.ts, usePremiereState.ts, useFreeXanWs.ts, useCsxsEvent.ts, sessionStore.ts, AppBar.tsx, StatusRail.tsx.
-- Found 7 bugs (2 critical, 3 moderate, 2 minor) � logged in connection_audit.md artifact.
+- Found 7 bugs (2 critical, 3 moderate, 2 minor) � logged in connection_audit.md artifact.
 - Added targeted debug logging:
   - usePremiereState.ts: unique [DISC-n] tags on every failure path, tick counter, timestamps, raw value dumps, state-change-only logging via setAndLog.
   - csi.ts: log raw ExtendScript callback value before rejection decision (OK / REJECTED / empty).
 - Rebuilt bundle: 
-pm run build:fast � clean, no errors.
+pm run build:fast � clean, no errors.
 
 **Key bugs to fix next:**
-1. sequenceFps stored as string tick count, not a real number � causes garbled FPS display.
-2. WebSocket reconnects every 1s forever with no backoff � CPU churn when BloomX is closed.
+1. sequenceFps stored as string tick count, not a real number � causes garbled FPS display.
+2. WebSocket reconnects every 1s forever with no backoff � CPU churn when BloomX is closed.
 
 **Files changed:**
 - CEPs/freeXan_Caption/panel-src/src/hooks/usePremiereState.ts
@@ -2011,7 +2215,7 @@ pm run build:fast � clean, no errors.
 ## [2026-06-22 13:35] -- OFFLINE root cause: msg.bloomxOpen vs msg.connected key mismatch in project_state handler.
 
 ---
-## [2026-06-22 13:37] � Link_freeXan Bug Fix #3
+## [2026-06-22 13:37] � Link_freeXan Bug Fix #3
 
 **Bugs Fixed:**
 - **Audio List Not Loading:** Restored missing 

@@ -512,6 +512,91 @@ function broadcastToAll(payload) {
   });
 }
 
+// ── Plugin Bridge (v3.5.1+ — generic MCP/CLI → plugin dispatcher) ─────────────
+// Maps plugin name → ws connection so any plugin can be addressed individually
+// (in contrast to broadcastToAll, which fans out to every panel). Plugins
+// register themselves on their first identifying message:
+//   ext_hello              → "link"     (Link plugin)
+//   get_project_state      → "caption"  (Caption plugin)
+//   get_mogrt_library      → "bloomx"   (MisterBloomX plugin)
+//
+// dispatchToPlugin() sends a `plugin_action` message and resolves when the
+// panel replies with `plugin_action_result` carrying the same requestId. If the
+// plugin disconnects mid-request, the pending promise rejects cleanly.
+const pluginConnections = new Map();          // plugin name → ws
+const pendingPluginRequests = new Map();      // requestId → { resolve, reject, timer, plugin }
+let pluginRequestCounter = 0;
+
+function registerPluginConnection(ws, pluginName) {
+  if (!ws || !pluginName) return;
+  // If a connection was previously registered under a different name, drop the old mapping.
+  if (ws.pluginName && ws.pluginName !== pluginName && pluginConnections.get(ws.pluginName) === ws) {
+    pluginConnections.delete(ws.pluginName);
+  }
+  pluginConnections.set(pluginName, ws);
+  ws.pluginName = pluginName;
+  dbg(`[Plugin Bridge] Registered "${pluginName}" connection`);
+}
+
+function unregisterPluginConnection(ws) {
+  if (!ws || !ws.pluginName) return;
+  if (pluginConnections.get(ws.pluginName) === ws) {
+    pluginConnections.delete(ws.pluginName);
+    dbg(`[Plugin Bridge] Unregistered "${ws.pluginName}" connection`);
+  }
+  // Reject any in-flight requests targeted at this plugin so callers don't hang.
+  for (const [requestId, pending] of pendingPluginRequests.entries()) {
+    if (pending.plugin === ws.pluginName) {
+      clearTimeout(pending.timer);
+      pendingPluginRequests.delete(requestId);
+      pending.reject(new Error(`Plugin "${ws.pluginName}" disconnected before responding to "${pending.action}"`));
+    }
+  }
+}
+
+function dispatchToPlugin(plugin, action, args, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const ws = pluginConnections.get(plugin);
+    if (!ws || ws.readyState !== 1) {
+      return reject(new Error(`Plugin "${plugin}" is not connected. Open its panel in Premiere first.`));
+    }
+    const requestId = `req_${Date.now()}_${++pluginRequestCounter}`;
+    const ms = Math.max(1000, Math.min(timeoutMs || 30000, 600000));   // clamp 1s–10min
+    const timer = setTimeout(() => {
+      const pending = pendingPluginRequests.get(requestId);
+      if (!pending) return;
+      pendingPluginRequests.delete(requestId);
+      pending.reject(new Error(`Plugin "${plugin}" did not respond to "${action}" within ${ms}ms`));
+    }, ms);
+    pendingPluginRequests.set(requestId, { resolve, reject, timer, plugin, action });
+    try {
+      ws.send(JSON.stringify({ type: 'plugin_action', requestId, action, args: args || {} }));
+      dbg(`[Plugin Bridge] → ${plugin}.${action} (requestId=${requestId}, timeout=${ms}ms)`);
+    } catch (sendErr) {
+      clearTimeout(timer);
+      pendingPluginRequests.delete(requestId);
+      reject(new Error(`Failed to send to "${plugin}": ${sendErr.message}`));
+    }
+  });
+}
+
+function handlePluginActionResult(data) {
+  const pending = pendingPluginRequests.get(data.requestId);
+  if (!pending) {
+    dbg(`[Plugin Bridge] ⚠ plugin_action_result with unknown requestId="${data.requestId}"`);
+    return;
+  }
+  clearTimeout(pending.timer);
+  pendingPluginRequests.delete(data.requestId);
+  if (data.error) {
+    pending.reject(new Error(String(data.error)));
+    dbg(`[Plugin Bridge] ← ${pending.plugin}.${pending.action} ERROR: ${data.error}`);
+  } else {
+    pending.resolve(data.result == null ? null : data.result);
+    dbg(`[Plugin Bridge] ← ${pending.plugin}.${pending.action} OK`);
+  }
+}
+
 function broadcastMogrtChange(change) {
   broadcastToAll(JSON.stringify({ type: 'mogrt_library_changed', change }));
 }
@@ -530,6 +615,12 @@ function startWebSocketServer() {
       try {
         const data = JSON.parse(message);
         if (data.type === 'ext_hello') {
+          // Register this connection in the plugin registry for MCP/CLI dispatch.
+          // Plugins MAY announce themselves via `plugin: 'link' | 'caption' | 'bloomx' | …`.
+          // Back-compat: a hello without an explicit `plugin` field is treated as
+          // the Link plugin (the only one sending ext_hello today).
+          registerPluginConnection(ws, data.plugin || 'link');
+
           if (data.version !== EXPECTED_EXT_VERSION) {
             // dbg(`[CEP] Panel v${data.version} is stale (expected v${EXPECTED_EXT_VERSION}) — sending reload`);
             ws.send(JSON.stringify({ type: 'reload' }));
@@ -582,6 +673,7 @@ function startWebSocketServer() {
         } else if (data.type === 'get_project_state') {
           if (ws.clientType !== 'caption') {
             ws.clientType = 'caption';
+            registerPluginConnection(ws, 'caption');
           }
           const knownPath = activeProjectPath || nativeProjectPath || null;
           const isBloomXOpen = Array.from(wss.clients).some(c => c.clientType === 'bloomx');
@@ -648,6 +740,9 @@ function startWebSocketServer() {
         } else if (data.type === 'bin_files') {
           // CEP response to get_bin_files — forward to linkWatcher's diff queue.
           linkWatcher.handleBinFiles(data.requestId, data.files || []);
+        } else if (data.type === 'plugin_action_result') {
+          // Result of a dispatchToPlugin() call — resolve the pending promise.
+          handlePluginActionResult(data);
         } else if (data.type === 'get_audio_library') {
           const search = data.search || '';
           const favoritesOnly = !!data.favoritesOnly;
@@ -678,6 +773,7 @@ function startWebSocketServer() {
         } else if (data.type === 'get_mogrt_library') {
           if (ws.clientType !== 'bloomx') {
             ws.clientType = 'bloomx';
+            registerPluginConnection(ws, 'bloomx');
             broadcastToAll(JSON.stringify({ type: 'bloomx_status', open: true }));
           }
           const files = mogrtDb.mogrtApi.getAll(data.search || '', !!data.favoritesOnly, data.category || '');
@@ -1061,6 +1157,9 @@ function startWebSocketServer() {
 
     ws.on('close', () => {
       // dbg(`[CEP] Panel disconnected`);
+      // Clean up plugin registry + reject any in-flight MCP requests for this plugin.
+      unregisterPluginConnection(ws);
+
       const anyStillOpen = Array.from(wss.clients).some(c => c.readyState === 1);
       isCepConnected = anyStillOpen;
       if (!anyStillOpen) {
@@ -2409,9 +2508,11 @@ app.whenReady().then(() => {
         const p = activeProjectPath || nativeProjectPath;
         return p ? path.basename(p, path.extname(p)) : null;
       })(),
-      targetDir: appConfig.targetDir || null
+      targetDir: appConfig.targetDir || null,
+      connectedPlugins: Array.from(pluginConnections.keys())
     }),
-    invokeHandler: httpApi.invokeIpcHandler
+    invokeHandler: httpApi.invokeIpcHandler,
+    dispatchToPlugin
   });
 
   // Initialize Audio Watchers
