@@ -37,6 +37,11 @@ function switchView(viewId, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('view-' + viewId).classList.add('active');
     el.classList.add('active');
+    document.getElementById('sidebar').classList.remove('open'); // Auto-close on mobile
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
 }
 
 /* ── Helpers ──────────────────────────────────── */
@@ -153,7 +158,7 @@ async function refreshDashboard() {
     icon.style.animation = 'spin 0.7s linear infinite';
 
     try {
-        
+        document.querySelectorAll('.card').forEach(c => c.classList.add('is-loading'));
         const empId = document.getElementById('employeeSelect').value;
         _rawData = await fetchData(empId);
         if (_rawData.length > 0) {
@@ -169,6 +174,7 @@ async function refreshDashboard() {
     } catch (e) {
         console.error('Dashboard refresh error:', e);
     } finally {
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('is-loading'));
         btn.disabled = false;
         icon.style.animation = '';
     }
@@ -262,31 +268,27 @@ function renderActivityFlow(data) {
         if (ctx && !b.isIdle) projectTimes[ctx] = (projectTimes[ctx] || 0) + 1;
     });
 
-    // ── Activity Line Chart ──
+    // ── Activity Mixed Chart ──
     const today = new Date();
     const defMin = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 8, 0).getTime();
     const defMax = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 22, 0).getTime();
 
     const keysDS = timeLabels.map(t => ({ x: t, y: buckets[t].keys }));
-    const curDS  = timeLabels.map(t => ({ x: t, y: buckets[t].cursor }));
-    const idleDS = timeLabels.map(t => ({ x: t, y: buckets[t].isIdle ? 1 : null }));
+    const activeDS = timeLabels.map(t => ({ x: t, y: buckets[t].isIdle ? null : 1 }));
+    const activeColors = timeLabels.map(t => buckets[t].isIdle ? 'transparent' : appColor(buckets[t].dominant));
 
     const ctxA = document.getElementById('activityChart').getContext('2d');
-    const grad = ctxA.createLinearGradient(0, 0, 0, 320);
-    grad.addColorStop(0, 'rgba(59,130,246,0.4)');
-    grad.addColorStop(1, 'rgba(59,130,246,0)');
 
     if (activityChart) {
-        activityChart.data.datasets[0].data = idleDS;
+        activityChart.data.datasets[0].data = activeDS;
+        activityChart.data.datasets[0].backgroundColor = activeColors;
         activityChart.data.datasets[1].data = keysDS;
-        activityChart.data.datasets[2].data = curDS;
         activityChart.update();
     } else {
         activityChart = new Chart(ctxA, {
             data: { datasets: [
-                { type:'line', label:'Idle', data:idleDS, borderColor:'#ef444488', borderWidth:6, pointRadius:0, spanGaps:false, stepped:'middle', yAxisID:'yBg', order:0 },
-                { type:'line', label:'Keystrokes', data:keysDS, borderColor:'#8b5cf6', backgroundColor:'transparent', tension:0.35, borderWidth:2, order:1 },
-                { type:'line', label:'Cursor Events', data:curDS, borderColor:'#3b82f6', backgroundColor:grad, fill:true, tension:0.35, borderWidth:2, order:2 },
+                { type:'bar', label:'Active App', data:activeDS, backgroundColor:activeColors, barPercentage:1.0, categoryPercentage:1.0, yAxisID:'yBg', order:1 },
+                { type:'line', label:'KPM (Keystrokes/Min)', data:keysDS, borderColor:'#8b5cf6', backgroundColor:'transparent', tension:0.35, borderWidth:2, pointRadius:0, order:0 }
             ]},
             options: {
                 responsive:true, maintainAspectRatio:false, animation:true,
@@ -295,8 +297,8 @@ function renderActivityFlow(data) {
                     zoom:{ limits:{x:{min:defMin,max:defMax,minRange:60000}}, zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'}, pan:{enabled:true,mode:'x'} }
                 },
                 scales: {
-                    x:{ type:'time', time:{unit:'hour'}, min:defMin, max:defMax },
-                    y:{ beginAtZero:true, title:{display:true,text:'Count'} },
+                    x:{ type:'time', time:{unit:'hour'}, min:defMin, max:defMax, grid:{display:false} },
+                    y:{ beginAtZero:true, title:{display:true,text:'KPM'} },
                     yBg:{ display:false, min:0, max:1 }
                 }
             }
