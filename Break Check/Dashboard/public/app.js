@@ -287,7 +287,7 @@ function renderActivityFlow(data) {
     } else {
         activityChart = new Chart(ctxA, {
             data: { datasets: [
-                { type:'bar', label:'Active App', data:activeDS, backgroundColor:activeColors, barPercentage:1.0, categoryPercentage:1.0, yAxisID:'yBg', order:1 },
+                { type:'bar', label:'Active App', data:activeDS, backgroundColor:activeColors, barPercentage:1.0, categoryPercentage:1.0, yAxisID:'yBg', order:1, animation: { delay: (ctx) => ctx.type === 'data' ? ctx.dataIndex * 10 : 0 } },
                 { type:'line', label:'KPM (Keystrokes/Min)', data:keysDS, borderColor:'#8b5cf6', backgroundColor:'transparent', tension:0.35, borderWidth:2, pointRadius:0, order:0 }
             ]},
             options: {
@@ -344,7 +344,7 @@ function renderActivityFlow(data) {
         scrollAppChart = new Chart(ctxScroll, {
             type:'bar',
             data:{ labels:sortedScroll.map(s=>s[0]), datasets:[{ data:sortedScroll.map(s=>s[1]), backgroundColor:sortedScroll.map(s=>appColor(s[0])), borderRadius:6, borderSkipped:false }] },
-            options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:true, plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true,title:{display:true,text:'Scroll Ticks'}}, y:{grid:{display:false}} } }
+            options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{ delay: (ctx) => ctx.type === 'data' ? ctx.dataIndex * 50 : 0 }, plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true,title:{display:true,text:'Scroll Ticks'}}, y:{grid:{display:false}} } }
         });
     }
 
@@ -629,7 +629,7 @@ function renderFriction(data) {
         switchChart = new Chart(ctxSW, {
             type:'bar',
             data:{ datasets:[{ label:'Switches/Hr', data:swLabels.map(t=>({x:t,y:switchByHour[t]})), backgroundColor:swGrad, borderColor:'#f59e0b', borderWidth:1, borderRadius:4 }] },
-            options:{ responsive:true, maintainAspectRatio:false, animation:true, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'}}, y:{beginAtZero:true,title:{display:true,text:'Context Switches'}} } }
+            options:{ responsive:true, maintainAspectRatio:false, animation:{ delay: (ctx) => ctx.type === 'data' ? ctx.dataIndex * 30 : 0 }, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'}}, y:{beginAtZero:true,title:{display:true,text:'Context Switches'}} } }
         });
     }
 }
