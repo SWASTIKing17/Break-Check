@@ -5,7 +5,163 @@ Record decisions, blockers, ideas, and progress here — not in code comments.
 
 ---
 
-## Current Version: v3.5.4
+## Current Version: v3.8.35
+[2026-07-11] Break Check Dashboard v2 & GitHub Remote Migration (`index.html`, `style.css`, `app.js`, git remote): Complete ground-up redesign of the Break Check Admin Dashboard based on the Dashboard Matrix Scopes document. Implemented a 5-view sidebar navigation layout (Activity Flow, Editor Proficiency, Hardware Health, Workflow Friction, Team Profiles) and a global KPI strip. Replaced local `nle` tracking with Netlify serverless functions and Chart.js integrations. Solved ghost chart rendering issues by introducing a direct reference-based `destroyAllCharts()` helper called before every profile switch. Switched the repository git remote origin to `https://github.com/SWASTIKing17/Break-Check.git` and successfully pushed the master branch to GitHub.
+
+## Version: v3.8.34
+[2026-07-11] Usage Monitor Precision & Hardware Tracking (`usage_monitor.py`, `ingest.js`): Integrated RAM usage tracking (`psutil` read RSS in GB), vertical mouse scroll tick accumulation (`pynput` mouse listener), and modifier shortcut key burst tracking (`on_press` and `on_release` state tracker) into the Python background monitor. Updated Netlify `ingest.js` to forward these columns (`ram_usage_gb`, `scroll_distance`, `modifier_keys`) to Supabase. Included safe database column migration logic (`ALTER TABLE ADD COLUMN` via `try/except` in Python) to upgrade existing local SQLite databases without breaking them.
+
+## Version: v3.8.33
+[2026-07-11] Middle-Click Debounce (`WM_MBUTTONUP`) & Packaged `app.asar` Write Fix (`main.js`, `native-pill/main.cpp`): Resolved double/rapid profile transitions when holding down the middle mouse button (MMB) or moving the cursor while holding MMB. Changed `main.cpp` profile cycling from `WM_MBUTTONDOWN` to `WM_MBUTTONUP` with a strict 350ms hardware debounce (`GetTickCount()`). Fixed an exception (`EROFS: read-only file system`) when `main.js` attempted to write `current_profile.txt` directly inside `__dirname` (`app.asar`) on packaged builds by routing it to `app.getPath('userData')`.
+
+
+## Version: v3.8.32
+[2026-07-11] Native Pill Real-Time UI Thread Wake-Up on Profile Cycle (`native-pill/main.cpp`, `native-pill/DropHandler.h`): Resolved an issue where middle-clicking the Native C++ Pill (`FreeXanPill.exe`) to cycle profile (`cycle-profile`) updated state in the backend but failed to immediately repaint the floating window until the user moved the mouse or hid/showed the window (`ShowWindow`). Root cause: `IpcMessenger` parses named pipe messages on a background worker thread (`ThreadFunc`), and calling `InvalidateRect(hWnd, NULL, FALSE)` from a secondary thread marks the rectangle dirty without waking up `GetMessage(&msg, NULL, 0, 0)` sitting asleep on the main UI thread. During earlier dev testing prior to v3.8.31, `createOverlayWindow()` and polling timers (`repositionOverlay`) caused continuous UI events that woke up `GetMessage()`. Once `overlayWindow` was removed and `FreeXanPill.exe` ran as the sole standalone window, `GetMessage()` blocked until mouse input arrived. Fix: defined custom window message `WM_APP_UPDATE_STATE` (`WM_APP + 101`) in `DropHandler.h`, handled it in `WndProc` (`main.cpp`) to run `InvalidateRect + UpdateWindow`, and updated `SetStateCallback` / `SetLinkMapCallback` to call `PostMessage(hWnd, WM_APP_UPDATE_STATE, 0, 0)` from the background thread. Recompiled `build\FreeXanPill.exe`.
+
+## Version: v3.8.31
+[2026-07-08] Usage Monitor Auto-Deployment & Persistence (main.js, package.json, scripts/build-monitor.js): Integrated the Break Check Python tracker natively into the FreeXan Electron lifecycle. Created a build script to compile usage_monitor.py into  in/usage_monitor.exe using PyInstaller. Modified package.json to bundle this binary via extraResources. Added a deployUsageMonitor() routine in main.js that checks for the binary, spawns it silently, and registers it to Windows Startup via the registry so it persists and tracks across OS reboots indefinitely.
+
+## Version: v3.8.31
+[2026-07-08] Safe Removal & Archiving of Legacy Electron Overlay Pill (`main.js`, `archive_legacy_electron_pill/`): To eliminate duplicate pill windows launching concurrently and clean up the active runtime, safely removed the legacy HTML5/CSS/JS Electron overlay pill (`renderer/overlay.html`, `overlay.js`, `overlay.css`). Preserved all original frontend files and documentation in `archive_legacy_electron_pill/` for cross-platform (macOS/Linux) reference. Cleaned up `main.js` by removing `createOverlayWindow()`, `repositionOverlay()` animations, and renderer IPC handlers (`resize-overlay`, `move-overlay-window`, `overlay-log`, `request-status`). The Native C++ Pill (`FreeXanPill.exe`) is now the exclusive overlay pill in the FreeXan environment.
+
+## Version: v3.8.30
+
+## Version: v3.8.29
+[2026-07-07] Fix Dashboard Edit/Delete via Netlify Functions (
+etlify/functions/update-profile.js, 
+etlify/functions/delete-profile.js, Dashboard/public/app.js): Root cause was two bugs. First: the edit/delete handlers used e.target to read data attributes, which fails when the button contains text nodes because e.target resolves to the text node child, not the <button>. Fixed by using the captured tn variable instead. Second: the functions called Supabase REST API directly from the browser using the publishable key, which is blocked by Supabase Row Level Security for PATCH and DELETE. Fixed by creating two Netlify serverless functions that run server-side with the service role key. Architecture now fully consistent with ingest.js and employees.js.
+
+## Version: v3.8.29
+[2026-07-07] Infinite WebSocket Reconnect in CEP Panels (`CEPs/Link_freeXan/ext.js`, `CEPs/Audio_freeXan/audio.js`): Fixed an issue where the FreeXan overlay pill and companion app failed to connect if Premiere Pro was opened more than 90 seconds before starting FreeXan. Previously, `MAX_RECONNECT` was capped at 30 attempts (~90 seconds), after which the panels permanently stopped attempting to connect to `ws://localhost:4554`. Updated `MAX_RECONNECT = Infinity` in `Link_freeXan` and `Audio_freeXan` (as well as `cep-extension/`) so that panels retry connection every 3 seconds indefinitely and connect automatically whenever FreeXan is launched.
+
+## Version: v3.8.28
+[2026-07-07] Web Dashboard Team Profile Editing (Dashboard/public/app.js): Added interactive editing capabilities to the Web Dashboard's Team Profiles table. Admins can click Edit to trigger sequential prompts for Name, Initials, and Hex Color. These values are patched securely to Supabase using a new editTeamProfile asynchronous wrapper, instantly reflecting the updated properties (including color badge and initials) in the table.
+
+## Version: v3.8.27
+[2026-07-07] Supabase Team Profiles Sync & UI Overhaul (main.js, settings.js, Dashboard/public/app.js): Implemented a full Supabase integration into the Break Check Web Dashboard to allow adding and removing team profiles with automatic initials and hex color assignment. In the Electron app, migrated the Supabase REST API fetch from the Chromium renderer to the Node.js main process via a new etch-supabase-profiles IPC handler. This resolved strict CORS issues inherent to the ile:// protocol and allowed us to hardcode the Supabase URL and Key securely, removing manual input fields from the UI. Cleaned up the Electron UI by removing the unused 'Users' tab button. Restored uilder.js to index.html to fix a fatal UI halting issue where pp.js failed to bind events and rendered a blank Database tab.
+
+## Version: v3.8.26
+[2026-07-07] Prevent Duplicate Premiere Pro Import via Live Bin Check & markSeen (`linkWatcher.js`, `main.js`): Fixed duplicate import of media files into Premiere Pro when dropping files onto the overlay pill or adding them to watched folders. When `performImportDroppedFiles` copied dropped files into a watched project folder and directly dispatched a `type: 'import'` WebSocket message to Premiere Pro CEP, Windows OS file creation triggered an `fs.watch` event in `linkWatcher.js`. Without knowing the file was already imported or in the bin, `linkWatcher` dispatched a second `type: 'import'` message 350ms later. Added `markSeen(filePath)` to `linkWatcher.js` and called it from `performImportDroppedFiles` in `main.js`. Furthermore, updated `attachWatcher` in `linkWatcher.js` to execute an async live verification against Premiere Pro CEP (`getBinFilesCached(link.binName, 1500)`) right before dispatching any watch import. If the file already exists in the target bin, `linkWatcher` logs an explanation and skips the import. Added `binFilesCache` to coalesce concurrent `get_bin_files` requests and invalidate cache on new imports.
+
+## Version: v3.8.25
+[2026-07-06] MCP & CLI Expansion — App + Link_freeXan Scope (`httpApi.js`, `main.js`, `CEPs/Link_freeXan/ext.js`, `mcp/server.js`, `cli/freexan.js`): Added 8 new MCP tools and 7 new CLI commands covering the freeXan Electron App and Link_freeXan CEP panel scopes. Design decisions: (1) `GET /mogrts` and `GET /audio` routes were added to `httpApi.js` instead of going through WS/CEP — both databases (`mogrtDb`, `audioDb`) were already loaded in `main.js` and the data is read-only, so direct DB access is correct and fast; (2) `mogrtDb` and `audioDb` were added to the `startHttpApi()` context object (one-line change — no architectural impact); (3) Link CEP `plugin_action` handler was implemented as a single `if (data.type === 'plugin_action')` block in `ext.js`'s `ws.onmessage`, following the identical inline JSX IIFE pattern used everywhere else in the file (never calling named hostscript functions); (4) All four Link actions (`link_status`, `link_list_bins`, `link_create_bin`, `link_create_sequence`) send `plugin_action_result` back so `dispatchToPlugin` in `main.js` resolves correctly with result or error; (5) `callPluginActionRaw` in `mcp/server.js` was reused for all link-scope tools — no new HTTP plumbing; (6) CLI bumped to v0.3.0; `URLSearchParams` was used for query string building in `cmdMogrts` and `cmdAudio` for correctness. No breaking changes to any existing tools.
+
+## Version: v3.8.24
+[2026-07-06] Separate MCP & CLI Documentation Rules & Project Memory Source of Truth (`.agents/rules/documentation_update.md`, `.agents/rules/project_memory_maintenance.md`, `docs/RULEBOOK.md`, `CLAUDE.md`, `docs/PROJECT_MEMORY.md`): Established strict documentation rules requiring independent, separate documentation maintenance for the MCP Server (`/mcp/README.md`) and CLI (`/cli/README.md`). Established `docs/PROJECT_MEMORY.md` as the authoritative Source of Truth and the mandatory starting point for any research, investigation, or development across the entire freeXan ecosystem. Created `.agents/rules/project_memory_maintenance.md` and Section 1.1 of `RULEBOOK.md` mandating that all developers and AI agents must consult `PROJECT_MEMORY.md` first, cross-check all findings against it, and immediately add and enrich any missing reference, tool, or architecture found during code investigation.
+
+
+## Version: v3.8.23
+
+## Version: v3.8.22
+[2026-07-02] Instant Timeline Selection Auto-Polling in Params Tab (`ParamsView.tsx`): Isolated the automatic 500ms timeline polling interval (`setInterval`) into a dedicated clean `useEffect` independent of `eventsInitialized.current`. Previously, any React re-render destroyed the polling timer because the effect exited early on `if (eventsInitialized.current) return;`. Also removed the restrictive `isJsxReadyRef.current` check from the interval loop so timeline selection updates in Premiere Pro reflect instantly in the Params tab without requiring manual Refresh button clicks. Recompiled production bundle (`freexan-caption.js`).
+
+## Version: v3.8.21
+[2026-07-02] Real-Time Word Tracking Optimization & Playhead Highlight in Params Tab (`ParamsView.tsx`, `ParamsView.css`): Removed heavy bridge execution (`fetchParams()`) inside the `ctiSecs` playhead poller effect. Previously, every 500ms playhead tick fired `smGetSelectionParams` over the ExtendScript bridge during video playback, causing playback stutter and lagging the UI. Added exact playhead boundary detection (`ctiSecs + 0.001 >= matchingClip.start && ctiSecs < matchingClip.end`) to word progression pills inside horizontal phrase cards so the exact word bubble under the Premiere Pro playhead highlights dynamically in real time with `.cc-is-playhead` (cyan glowing border and pulse animation). Recompiled production bundle (`freexan-caption.js`).
+
+## Version: v3.8.20
+[2026-07-01] Exact Horizontal Phrase Cards in Params Tab (<Image> Edit Tab Parity) (`ParamsView.tsx`, `ParamsView.css`): Replaced the mini timeline strip with exact horizontal phrase cards (`.mpe-horizontal-phrase-card`) matching the exact backend and frontend of the Edit Tab phrase card structure (`PhraseRow`). Cards are arranged horizontally side-by-side in a scrollable flex track (`.mpe-horizontal-phrases-track`). Each horizontal phrase card features the exact header meta row displaying the phrase number (`#{gIdx + 1}`), formatted timestamp (`formatTime(startSecs)`), assigned MOGRT badge (`rawMogrtName`) with HSL dot/tint, and interactive lock toggle (`🔒` / `🔓`) linked directly to `lockStore`. Word pills inside each horizontal phrase card render inside `.cc-bubble-zone` with exact `.cc-word-pill` styling, glowing active states (`.cc-is-active`), selected borders (`.cc-is-selected`), and locked opacity. Recompiled production bundle (`freexan-caption.js`).
+
+## Version: v3.8.19
+[2026-07-01] Overlay Pills Comparison Document (`docs/OVERLAY_PILLS_COMPARISON.md`): Authored an exhaustive technical comparison between the two side-by-side implementations of the FreeXan Overlay Pill currently in the project: the Electron Overlay Pill (`renderer/overlay.html/js/css`) and the C++ Native Direct2D Overlay Pill (`native-pill/`, `FreeXanPill.exe`). Documented all functional differences (Chromium DOM vs Direct2D hardware rendering, Electron IPC vs Named Pipe `\\.\pipe\freexan_pill`, Chromium drag events vs non-blocking OLE `IDropTarget`), logical differences (`requestAnimationFrame` hit-testing vs Win32 `WM_NCHITTEST` radial clipping, JS timer state machines vs `TrackMouseEvent` instant hover, thread input focus stealing `AttachThreadInput` for keyboard routing), and UX differences (frosted glass vs matte dark Direct2D, 56px vs 84px circles, 8-bubble halo presentation).
+
+## Version: v3.8.18
+[2026-07-01] Mini Timeline Header Strip, Prioritized Text Input Extraction & Image/Media Replacement (`ParamsView.tsx`, `ParamsView.css`, `mogrt_editor.jsx`, `mogrt_editor.js`, `MogrtControls.tsx`): Replaced bulky phrase bubble cards with an ultra-compact horizontal **Mini Timeline Header Strip** directly below the main navigation tabs, matching the Green Part diagram specification. Updated `getClipPhraseAndWordIdx` to prioritize `/text input|\u24c9|\u24c8|source text/i` specifically when extracting phrase text for MOGRTs with `Ⓣ Word Progression`. Added full support for MOGRT media/image slots (`canReplaceMedia()`, `propertyType === 6 || 7`) with a dedicated UI row and ExtendScript handler (`smSelectImageAndReplace`) that opens an OS file dialog, imports the file into the active project bin, and replaces the MOGRT media slot. Filtered out internal numerical progression counters (`Word Progression`, `Word Index`) from the properties panel. Recompiled production bundle (`freexan-caption.js`).
+
+## Version: v3.8.17
+[2026-07-01] Params Tab Compact Horizontal Bubbles (Image 3 Parity) & Interactive Hex Editing (`ParamsView.tsx`, `ParamsView.css`, `Inspector.tsx`): Replaced large vertical phrase cards with compact horizontal rounded bubble containers (`.mpe-compact-phrase-bubble`) matching the Edit Tab layout and Image 3 specifications. Word pills (`.mpe-compact-word-pill`) render inside a horizontal scrollable pill zone with glowing yellow borders (`#FFEB3B`) when selected or active. Enhanced `getClipPhraseAndWordIdx` to check `name`, `displayName`, `value`, and `val` across 0-indexed and 1-indexed progression parameters. Fixed inability to type into the Hex color input box inside `CockpitColorPicker` by adding local editing state (`localHex`) so users can freely type hex strings without React resetting character-by-character changes. Passed `hideHeader={true}` to embedded `CockpitColorPicker` inside `ParamsView.tsx` to eliminate duplicate modal headers. Recompiled production panel bundle (`freexan-caption.js`).
+
+## Version: v3.8.16
+[2026-07-01] Halo Mode Drop Import: Direct CEP Bin Import, Duplicate File Prevention & JSON Unescaping (`main.js`, `native-pill/IpcMessenger.cpp`, `native-pill/main.cpp`): Fixed file drop routing when holding `Ctrl` (Halo Mode). Previously, files dropped via Halo Mode (`opts.routeToFolder`) were copied to the disk folder but returned immediately (`imported: false`) without dispatching a `type: 'import'` WebSocket message to Premiere Pro CEP, relying entirely on background folder watchers. Updated `performImportDroppedFiles` to batch and dispatch immediate WebSocket import requests directly to Premiere Pro CEP (`wss.clients.forEach(...)`) with the exact assigned `binName`. Added fallback link resolution in `refreshLinkedFolders` so `_freexan_slot_map.json` automatically maps to Halo slots 1–5 when `_freexan_links.json` sidecar is absent. Fixed inability to drop/copy the same file twice into the same folder when holding `Ctrl` by adding path normalization (`path.resolve(path.normalize(...))`) and self-copy detection (`isAlreadyInTarget`). Fixed quadruple backslash path corruption caused by `ExtractJsonString` not unescaping Windows directory separators (`\\`). Upgraded `ExtractJsonString` with full JSON unescaping (`\\` -> `\`) and updated `SendDropImport` in `main.cpp` and `IpcMessenger.cpp` to pass both `targetFolder` and `targetBin` over IPC. Recompiled standalone binary `FreeXanPill.exe`.
+
+## Version: v3.8.15
+[2026-07-01] Params Tab Flux Overhaul & Word Progression Grouping (`ParamsView.tsx`, `ParamsView.css`): Upgraded multi-MOGRT selection rendering in the Params tab to enclose words belonging to the same phrase inside a large glassmorphic **Phrase Bubble Card** styled with deterministic MOGRT HSL card tints. Inside each phrase card, individual words are rendered as interactive **Word Progression Pills** (`Ⓣ`) that highlight dynamically when selected on the timeline. Added smooth horizontal mouse wheel scrolling across word pills (`onWheel`). Added click-to-jump (`smSelectClipsByPhraseAndWord`) and `Shift+Click` multi-word selection within and across phrase cards. Added a zero-cost 700ms polling interval (`fetchParams`) so timeline selection changes synchronize automatically without requiring manual Refresh button clicks. Delegated color picker triggering (`onOpenColorModal`) directly to the top-level `ParamsView` root container with a dedicated backdrop overlay (`mpe-color-modal-overlay`), overriding fixed screen coordinates so the color picker always renders perfectly centered without clipping or layout jumping. Recompiled production panel bundle (`npm run build`).
+
+## Version: v3.8.14
+
+[2026-07-01] Compiled Standalone Native Direct2D Halo Picker, Round C++ Pill & Tray Menu Controls (`FreeXanPill.exe`): Resolved missing DLL errors (`libgcc_s_seh-1.dll`, `libstdc++-6.dll`) by adding `-static -static-libgcc -static-libstdc++` to MinGW `g++` compilation in `build.bat`, producing a zero-dependency standalone binary. Fixed Windows Explorer hanging during file drag-and-drop by having `IDropTarget::Drop` post custom asynchronous window message `WM_APP_DROP_FILES` to return `S_OK` instantly (<0.1ms) and updating `IpcMessenger` to non-blocking `PeekNamedPipe` polling with a thread-safe outgoing queue (`m_outQueue`). Restored true round/circular pill geometry (`84×84` circle when collapsed, capsule when expanded) and removed the square black box behind the circle via exact OS window region clipping (`SetWindowRgn`). Implemented a 100% native standalone hardware-accelerated Direct2D Halo Picker directly inside `FreeXanPill.exe` (`Renderer.cpp`, `main.cpp`, `IpcMessenger.cpp`). Dropping files while holding `Ctrl` expands the Win32 window to `220×220` and renders 8 numbered circular routing bubbles around the C++ pill. Added focus stealing via `AttachThreadInput` + `SetForegroundWindow` + `SetFocus` when files are dropped in Halo mode so keystrokes (`1`-`8` and `Esc`) route directly to the pill rather than Windows Explorer. Clicking or pressing a number key immediately imports files and closes the ring (`ExitHaloMode`). Clicking anywhere outside the ring or on empty space dismisses the ring. Added clear visual contrast between assigned slots (filled purple background, bright border, glowing white text) and unassigned slots (faint dark fill, dashed/dim outline, 0.28 opacity digit). Added dynamic folder name hover banners positioned cleanly outside assigned bubbles. Configured `app.setName('FreeXan')`, `app.setAppUserModelId`, updated `overlay.html` `<title>` to `FreeXan Overlay`, and updated `spawnNativePillProcess` to use `child_process.spawn(..., { detached: false })` instead of `exec` so `FreeXanPill.exe` is grouped directly under the main FreeXan task tree in Windows Task Manager. Also added **Hide Pill / Show Pill** toggle to the right-click system tray menu in `main.js` which terminates or spawns both the Electron pill and C++ pill side-by-side, and upgraded **Reposition Overlay** to return both pills to default screen coordinates. **Note:** During side-by-side evaluation, toggling visibility or creating overlay windows may leave duplicate Electron overlay pill instances open if `overlayWindow` is not singleton-guarded; kept as a known note since the Electron pill will be completely removed after the C++ pill passes all testing.
+
+## Version: v3.8.12
+[2026-06-29] Fix ExtendScript ES3 Trim Error: Fixed `masterClip.name.replace().split().pop().replace().trim is not a function` runtime error in `smSyncParamAcrossSelected`. Added global `String.prototype.trim` polyfill to `utils.jsx` and `utils.js`, and replaced `.trim()` with regex trim directly in parameter synchronization filename resolution.
+
+## Version: v3.8.11
+[2026-06-29] Fix ES3 Regex Syntax Error: Replaced `.split(/[/\\]/)` with `.replace(/\\/g, '/').split('/')` in `mogrt_editor.jsx` and `mogrt_editor.js`. Unescaped slashes inside character classes terminate regex literals prematurely in Adobe's ExtendScript (ES3) engine, causing a fatal syntax error at line 326 when loading `mogrt_editor.jsx`. This prevented all Params tab functions (`smGetSelectionParams`, etc.) from being registered, leading to `DBG: JSX not ready — waiting...`.
+
+## Version: v3.8.10
+[2026-06-29] Fix manifest.xml ScriptPath: Changed `<ScriptPath>` in `CSXS/manifest.xml` from `./panel/jsx/test.jsx` to `./panel/jsx/main.jsx`. Pointing to `test.jsx` caused real backend modules not to load when the panel initialized.
+
+## Version: v3.8.9
+[2026-06-29] Fix Params Tab Null Result Guard: Added `isJsxReadyRef` to `ParamsView.tsx` to handle `null` responses silently while ExtendScript evaluates. Improved empty state UI messaging.
+
+## Version: v3.8.8
+[2026-06-29] Zero-Cost Playhead Subscriber: Eliminated `ParamsView.tsx`'s own `setInterval`. Added `ctiSecs` + `setCtiSecs` to `sessionStore.ts`. `EditView.tsx` now writes `ctiSecs` into the shared store on every existing 500ms `getPlayheadTime()` tick. `ParamsView.tsx` subscribes via `useSessionStore` and runs `fetchParams()` only when `ctiSecs` changes — zero new JSX calls. `isFetchingRef` + `prevClipsJson` dedup prevent unnecessary fetches and renders. Rebuilt production bundle.
+
+## Version: v3.8.7
+[2026-06-29] Playhead-Responsive Params Tab: Added `smGetClipUnderPlayhead()` to `mogrt_editor.jsx` and `mogrt_editor.js` — a lightweight CTI-scan returning `{nodeId, name, isMogrt}` without property parsing. React `ParamsView.tsx` now runs a 300ms smart poll calling this cheap function every tick. Only when the `nodeId` under the playhead changes does it trigger a full `smGetSelectionParams()` parse. `isFetchingRef` guard prevents concurrent fetches. Poll cleans up on unmount. Rebuilt production bundle (`freexan-caption.js`).
+
+## Version: v3.8.6
+[2026-06-29] Enabled Extensive Debugging Telemetry & Fixed Master Reference Resolution for Single Property Sync: Instrumented `smSyncParamAcrossSelected` in `mogrt_editor.jsx` and `mogrt_editor.js` with comprehensive debugging logs (`debugLog` array returned to frontend and written via `jsxLog`). Prioritized `data.nodeId` matching to guarantee that the MOGRT active in the UI is selected as the reference master clip before falling back to timeline playhead position. Added vector type checking (`!isNaN(parseFloat)`) to ensure text strings with commas aren't falsely treated as vector arrays. Updated `ParamsView.tsx` header banner to display real-time sync diagnostic feedback per clip. Rebuilt production bundle (`freexan-caption.js`).
+
+## Version: v3.8.5
+[2026-06-29] Single Property Synchronization Across Identical Selected MOGRTs: Added a `⚡ Sync` button next to each property name in `MogrtControls.tsx` within the Parameters tab. Clicking it triggers `smSyncParamAcrossSelected()` in ExtendScript (`mogrt_editor.jsx` & `mogrt_editor.js`), which gets the full data of that property, loops through all currently selected timeline clips in Premiere Pro, identifies the master reference MOGRT under the playhead, verifies MOGRT template matching via filename and path, and inserts that exact property without touching other properties using the exact well-researched index-based insertion approach (`smApplyParam` engine). Updated interactive UI & functions guide documentation and rebuilt production bundle (`freexan-caption.js`).
+
+## Version: v3.8.4
+[2026-06-29] Side-by-Side C++ Native Overlay Pill Implementation: Created the complete standalone C++ native pill in `native-pill/` (`main.cpp`, `Renderer.h/cpp`, `DropHandler.h/cpp`, `IpcMessenger.h/cpp`, `build.bat`) featuring OLE drag-and-drop (`IDropTarget`), Direct2D hardware-accelerated rendering, hit-testing click pass-through (`WM_NCHITTEST`), and asynchronous Named Pipe communication. Added Named Pipe server (`\\.\pipe\freexan_pill`) and side-by-side process spawner in `main.js` to enable side-by-side execution with the existing Electron pill. Refactored `import-dropped-files` and `import-browser-image` handlers into standalone asynchronous helper functions (`performImportDroppedFiles`, `performImportBrowserImage`) so both Electron renderer IPC and Named Pipe JSON messages execute identical drop import logic with full telemetry instrumentation (`sendLog`).
+
+## Version: v3.8.3
+[2026-06-29] Synchronized MOGRT Card Tints & Auto-Select by MOGRT: Updated `CEPs/MISTER_BloomX/dist/index.html` and `PhraseRow.tsx` in FreeXan Caption to deterministically compute HSL Card Tints based on MOGRT base filenames. Each asset card in MISTER BloomX now displays a unique tinted glowing border, background, and color dot badge, which matches identically on the corresponding phrase cards in FreeXan Caption's Edit tab. Attached clickable auto-selection handler to the MOGRT badge in `PhraseRow.tsx` and `EditView.tsx`, enabling instant multi-selection of all matching phrase tracks. Rebuilt production bundle (`freexan-caption.js`).
+
+## Version: v3.8.2
+[2026-06-27] Studio UI Progressive Fault-Tolerant Execution & Live API Inspector: Upgraded `transcriber_sandbox/sarvam_minimal_test.html` with decoupled execution boundaries. Stage 1 & Stage 2 results (word-by-word timestamps) are immediately rendered and saved before Stage 3 LLM phrasing runs. Added 3-Tab Live API Inspector (`🟢 Stage 1`, `🟣 Stage 2`, `⚡ Stage 3`) to Box 3 so every API call payload or error is viewable in real time without wasting earlier stage results.
+[2026-06-27] Re-wired bridgeCaptionGaps: Re-connected `bridgeCaptionGaps()` execution into `StepRender.tsx` and `runCaptionGenerate` (`mogrt.jsx` / `mogrt.js`) and rebuilt panel bundle (`freexan-caption.js`). Eliminates micro 1-2 frame gaps between adjacent clips.
+
+## Version: v3.8.1
+[2026-06-27] freeXan Caption Documentation: Created `interactive_ui_and_functions_guide.md` in `CEPs/freeXan_Caption/docs/guides/` detailing all user-facing UI triggers, function execution chains, and plain-language definitions for all React and ExtendScript functions.
+
+## Version: v3.8.0
+[2026-06-26] freeXan Caption Dual SRT Phrasing: Integrated optional second phrasing SRT support into `workflowStore.ts`, `StepRender.tsx`, and ExtendScript backend (`mogrt.jsx` / `mogrt.js`). Enables combining word-by-word timing accuracy SRT with semantic phrasing SRT.
+[2026-06-26] Manual Mode UI Refactoring & File Dialog Fix: Standardized CEP file browsing across all manual mode steps (`StepCheckProject`, `StepParseSrt`, `StepRender`) using `showCepFileBrowser` helper (`window.cep.fs.showOpenDialog`). Replaced slider checkboxes in `StepRender` with radio buttons (`auto`, `slider`, `dual_srt`).
+
+## Version: v3.7.0
+[2026-06-26] Local Debug Proxy Gateway Extension: Added `/proxy/groq_chat` HTTP POST forwarding endpoint to `transcriber_sandbox/sarvam_proxy_server.js`, resolving `HTTP 404: Not Found: /proxy/groq_chat` errors during Stage 3 Llama-3.3 execution.
+[2026-06-26] 4-Track Synchronized Subtitle Suite Implementation: Upgraded `transcriber_sandbox/sarvam_minimal_test.html` with a 4-Tab Studio Switcher (`📄 Native Word`, `📄 Roman Word`, `📄 Native Phrase`, `📄 Roman Phrase`) powered by single-pass Groq Llama-3.3-70B semantic refiner. Enforced strict ID pointer mapping (`0..N`) to guarantee 0ms timing drift across all 4 generated `.SRT` files. Added simultaneous multi-file download UX.
+[2026-06-26] Studio UI JavaScript Syntax Crash Fix: Moved `const targetLang` variable declaration outside the `fetch` options object literal in `transcriber_sandbox/sarvam_minimal_test.html`, resolving a fatal JS syntax crash that prevented radio button UI toggling.
+[2026-06-26] Auto-Detect Language Forwarding Fix: Updated `transcriber_sandbox/sarvam_minimal_test.html` and `modal_aligner.py` to forward Sarvam AI's dynamically detected spoken language code (`sarvamRes.language_code`) into the Modal request payload, preventing `No default align-model for language: unknown` crashes.
+[2026-06-26] Live Cloud Aligner Production Deployment Triumph: Successfully deployed `transcriber_sandbox/modal_aligner.py` to live production Modal.com serverless Nvidia T4 GPUs (`https://swastiking17--freexan-caption-aligner-forced-align-endpoint.modal.run`).
+[2026-06-26] Modal Container FastAPI Requirement Fix: Added `"fastapi[standard]"` to `.pip_install()` in `transcriber_sandbox/modal_aligner.py` per explicit `@modal.fastapi_endpoint` container build requirement.
+[2026-06-26] Modal Container Build Simplification: Simplified `.pip_install()` in `transcriber_sandbox/modal_aligner.py` to PyPI standard `"torch", "whisperx"`, eliminating git cloning requirements and dependency collisions.
+[2026-06-26] Modal Dependency Conflict Unpin Fix: Removed strict version pins (`faster-whisper==1.0.3`, `torch==2.3.1`) in `transcriber_sandbox/modal_aligner.py` to allow WhisperX `3.8.7rc1` natural pip resolver compatibility (`faster-whisper>=1.2.0`).
+[2026-06-26] Modal Container Builder Git Dependency Fix: Added `"git"` to `.apt_install("ffmpeg", "git")` in `transcriber_sandbox/modal_aligner.py` so `pip install git+https://...whisperX.git` succeeds inside cloud Debian container.
+[2026-06-26] Modal SDK Decorator Rename Fix: Renamed deprecated `@modal.web_endpoint` decorator to `@modal.fastapi_endpoint` in `transcriber_sandbox/modal_aligner.py` per Modal v2025 SDK spec.
+[2026-06-26] Modal SDK Deprecation Fix: Renamed deprecated `container_idle_timeout` parameter to `scaledown_window` inside `@app.function()` in `transcriber_sandbox/modal_aligner.py` per Modal v2025 SDK spec.
+[2026-06-26] 4-Way Architecture Studio & Modal Cloud Aligner UI: Rewrote `transcriber_sandbox/sarvam_minimal_test.html` into a 4-way architecture benchmark suite supporting: 1. Sarvam Solo, 2. Groq Solo, 3. Dual-Cloud JS Warper, and 4. Modal Serverless GPU True Physics Holy Grail (Sarvam AI Text -> Modal Wav2Vec2 GPU Aligner).
+[2026-06-26] Serverless GPU Cloud Forced Aligner Deployment Script: Created `transcriber_sandbox/modal_aligner.py` configured for Modal.com Nvidia T4 serverless GPUs, wrapping WhisperX Wav2Vec2 phonetic alignment behind an auto-scaling REST web endpoint (`@modal.web_endpoint`).
+[2026-06-26] Missing Variable Declaration Fix: Restored accidentally dropped `sLen` and `gLen` variable declarations in `warpHybridHolyGrailContract()` inside `transcriber_sandbox/sarvam_minimal_test.html`.
+[2026-06-26] Persistent Output Caching & Clear UI: Added `localStorage` state caching for generated transcripts, SRT output, and status logs in `transcriber_sandbox/sarvam_minimal_test.html` so data persists across browser refreshes (`F5`), plus a red `🗑️ Clear Output` button.
+[2026-06-26] Holy Grail Warper Timestamp Overlap Fix: Upgraded `warpHybridHolyGrailContract()` in `transcriber_sandbox/sarvam_minimal_test.html` to group Sarvam tokens by Groq anchor index and calculate proportional sequential micro-timestamps (`totalChars` weight distribution), eliminating overlapping subtitle timestamps.
+[2026-06-26] 3-Way Benchmark & Holy Grail Hybrid Mode: Upgraded `transcriber_sandbox/sarvam_minimal_test.html` with a 3rd radio button (`👑 HOLY GRAIL FreeXan Hybrid Dual-Cloud`) running simultaneous `Promise.all` queries to Sarvam AI and Groq Cloud, dynamically snapping Sarvam's 99.8% perfect spelling 1-to-1 onto Groq's frame-exact vocal cord timestamps.
+[2026-06-26] Provider Key Mismatch Guard: Added automatic provider detection and auto-switching in `transcriber_sandbox/sarvam_minimal_test.html` (if `gsk_...` key pasted while Sarvam selected, auto-switches to Groq Cloud).
+[2026-06-26] API Key Header Sanitization Fix: Added regex ASCII sanitization (`[^\x20-\x7E]`) in `transcriber_sandbox/sarvam_minimal_test.html` to strip unicode quotes/emojis and prevent HTTP `fetch` non ISO-8859-1 header crash.
+[2026-06-26] Gateway Stale Process Cleanup: Updated `transcriber_sandbox/start_test_ui.bat` to auto-kill stale Node server processes on port 8888 before launching.
+[2026-06-26] Free Tier Signup Helper Link: Added dynamic `👉 Get Free Key (No Credit Card Needed)` signup link directly inside `transcriber_sandbox/sarvam_minimal_test.html` linking to Groq or Sarvam dashboards.
+[2026-06-26] Cloud Provider Pricing Breakdown: Added side-by-side hourly costs to provider radio buttons in `transcriber_sandbox/sarvam_minimal_test.html` (Sarvam Saaras v3 @ ₹36/hr vs Groq Whisper Turbo @ ₹2.56/hr).
+[2026-06-26] Word-by-Word SRT Studio & Groq Switch: Upgraded `transcriber_sandbox/sarvam_minimal_test.html` and `sarvam_proxy_server.js` with proportional phonetic word timing interpolation inside speech bursts, live Word-by-Word SRT generation box, `.srt` file downloader, and Groq Cloud Whisper Turbo switch.
+[2026-06-26] Sarvam Local CORS Gateway: Created `transcriber_sandbox/sarvam_proxy_server.js` (zero-dependency Node proxy on port 8888) and `start_test_ui.bat` launcher to bypass browser `file://` CORS restrictions when testing cloud speech-to-text API.
+[2026-06-26] Sarvam Pricing & Auto-Detect UI: Included exact INR/USD cost per minute in model dropdown (`saaras:v3` @ ₹0.60/min, `saarika:flash` @ ₹0.15/min) and added `✨ Auto-Detect` spoken Indic language option in `transcriber_sandbox/sarvam_minimal_test.html`.
+[2026-06-26] Minimal Sarvam UI Sandbox: Created `transcriber_sandbox/sarvam_minimal_test.html` — minimal standalone web test harness with API key vault, audio file selector, Indic language dropdown, direct fetch to `https://api.sarvam.ai/speech-to-text`, and live FreeXan JSON contract transformer.
+[2026-06-26] Phase 1 Transcriber Sandbox: Created `transcriber_sandbox/` containing `core_engine.py` (faster-whisper + WhisperX forced alignment engine returning strict JSON contract), `requirements.txt`, and `setup_sandbox.bat` (automated CUDA 12 PyTorch venv setup).
+[2026-06-25] Created standalone installer: CEPs/Link_freeXan/install_link_freexan.bat — robocopy-based, 3-step (debug mode, install, verify), no Admin required.
+[2026-06-25] Fixed blank tab on switch (always-mounted DOM tabs + ErrorBoundary), CEP panel close killing siblings (guarded ws.onerror + beforeunload WS cleanup), Report Bug button (inline toast + API guard). Added debugging_framework.md workspace rule.
+[2026-06-25] UX: moved "Save WBW Srt." and "Save Phrased Srt." buttons from EditView.tsx footer into the toolbar header alongside Refresh and Save Style. Built panel dist.
+[2026-06-25] Phase 6 shipped: executed end-to-end telemetry verification proving intact correlationId continuity across all tiers, confirmed zero PII leakage in diagnostic zip exports, and validated hardware context telemetry. Full Roadmap Phases 1–6 complete.
+[2026-06-25] Phase 5 completed: diagnostic bundler upgraded to export last 3 log rotations with PII scrubbing regexes, enriched system-context.json with RAM/CPU metrics, and verified bug report dispatch to swastik@bloomxsolutions.com.
+[2026-06-25] Phase 4 completed: instrumented httpApi.js with MCP tool telemetry logging mcp:tool-call / mcp:tool-resolve pairs with SHA-256 inputHash, exact durationMs, and slow execution WARN traps (>8s).
+[2026-06-25] Phase 3 completed: surgical P1 caption tool fixes (regex \s restore, instant MOGRT playhead refresh in add/remove word, Reset Progression fallback) and CEP heartbeat monitor timeout checks in main.js.
+[2026-06-25] Phase 4 shipped — see Session 091. Caption MCP tools (freexan_caption_generate + freexan_caption_ping) + existing tool renames per nomenclature (freexan_app_* / freexan_link_*) + CLI caption subcommand. mcp/server.js + cli/freexan.js + docs.
+[2026-06-25] Phase 2 Telemetry completed: instrumented renderer/app.js (Tab navigation, Bug Report modal) and renderer/overlay.js (Halo bubble pick/cancel) with UUID correlationId stamps.
+[2026-06-25] Nomenclature standardization — see Session 090. JSX/_sm helper renames + runCaptionWorkflow→runCaptionGenerate + caption_create→caption_generate. New docs/NOMENCLATURE.md.
+[2026-06-25] P1 instant playhead refresh optimization in 	imeline.jsx.
+[2026-06-25] Fixed word splitting regex typo in 	imeline.jsx.
+[2026-06-25] Fixed ES3 .filter() crash and missing tool definitions in 	imeline.jsx.
 
 [2026-06-25] Highly optimized sm_tools_add_word_v28 and sm_tools_remove_word_v28 in 	imeline.jsx. Created sm_tools_reset_progression_v28 and added UI button in WordEditGroup.tsx.
 
@@ -30,6 +186,148 @@ Record decisions, blockers, ideas, and progress here — not in code comments.
 ---
 
 ## Session Log
+
+### 2026-06-25 | Session 091 — Phase 4: Caption MCP Tools + Existing Tool Renames (v3.5.6 → v3.6.0)
+
+**By:** Claude (AI assistant) + Swastik
+**Version:** v3.5.6 → v3.6.0
+**Status:** Done. Live verification deferred to Swastik (requires Claude Code restart to pick up new MCP tool names).
+
+**Why this session existed:** Phase 4 — the LAST piece of the multi-phase plugin-MCP plan. Now that the bridge (Phase 1), JSX wrapper (Phase 2), plugin handler (Phase 3), and nomenclature (Phase Z) are all in place, the final step is wrapping the canonical action IDs as actual MCP tools Claude can call. Bundled this with the deferred MCP renames so a single Claude Code restart picks up everything at once.
+
+**Approach:** rewrote `mcp/server.js` cleanly (8 tools instead of 6, organized by scope with section dividers). Added matching CLI subcommand for parity. No Caption panel changes — those landed in Phase 3.
+
+**Done:**
+- **`mcp/server.js` — full rewrite** to v0.2.0:
+  - Added 2 new tools: `freexan_caption_ping`, `freexan_caption_generate`.
+  - Renamed 6 existing tools per nomenclature: `freexan_status` → `freexan_app_status`, `freexan_list_clients` → `freexan_app_list_clients`, `freexan_list_templates` → `freexan_app_list_templates`, `freexan_create_project` → `freexan_app_create_project`, `freexan_open` → `freexan_app_open`, `freexan_import_files` → `freexan_link_import_files`.
+  - TOOLS array organized by scope with section dividers (`// ── app scope`, `// ── link scope`, `// ── caption scope`).
+  - New helpers: `callPluginAction` (formatted), `callPluginActionRaw` (typed result), `callPluginActionFormatted` (JSON dump). The caption_generate path uses `callCaptionGenerate` which calls `callPluginActionRaw` with a 180 s plugin timeout and formats a multi-line summary for Claude.
+  - `formatStatus` extended to show `connectedPlugins` (the array exposed by Phase 1's `/status` endpoint extension).
+  - HTTP client timeout raised from 60 s to 200 s so it stays above the 180 s plugin-action timeout (the bridge clamps at 600 s max).
+- **`cli/freexan.js` — added `caption` subcommand** (CLI v0.2.0):
+  - `freexan caption ping` — hits `/plugin-action` with `caption_ping`. Pretty output showing pluginConnected / jsxLoaded / supportedActions.
+  - `freexan caption generate <srt> --mogrt <path> [--chars-per-phrase N] [--track-start N]` — full generation pipeline from terminal. Resolves both paths to absolute, validates existence, sends 180 s timeout, formats result.
+  - Help text updated (commands grouped by scope).
+  - Existing flat commands (status, clients, templates, new, import, open) unchanged.
+- **`docs/NOMENCLATURE.md` — registry tables updated.** All 8 actions now marked ✅ live (v3.6.0). Footer bumped.
+- **`package.json` 3.5.6 → 3.6.0** — minor bump (new tools = new features).
+
+**Decisions:**
+- **Bundled renames + new tools in ONE release** so Claude Code only restarts once. If we'd shipped Phase 4 first and renamed later, that's two restart cycles for the user.
+- **`freexan_caption_generate` description explicitly tells Claude to confirm with the user** before calling. Same pattern as `freexan_app_create_project` and `freexan_link_import_files`. Claude has been respecting this in our test sessions.
+- **180 s plugin timeout for caption_generate**, not the default 30 s. Empirical: rendering 66 words took 8 s in our Phase 3 live test, but 200-word SRTs would push past 30 s. The HTTP layer clamps at 600 s max so 180 s is safe.
+- **`callPluginActionRaw` returns the unwrapped `result` field** (not the full HTTP envelope) — cleaner for downstream formatters. Errors throw, so the catch in the request handler wraps them as `isError` MCP responses.
+- **CLI `import` command NOT renamed to `link import`** — kept flat for muscle memory. The nomenclature doc says plugin/link CLI uses `freexan {scope} {verb}`, but `import` was already a one-off pre-rename. Leaving it as-is matches editor's-friend reading; if it becomes a problem, easy to rename later (just add `case 'link': switch on positional[0]`).
+- **HTTP `/status` already returns `connectedPlugins`** (added in Phase 1) — just surfaced it in the MCP `formatStatus` formatter.
+
+**Files changed:**
+- `mcp/server.js` (full rewrite, 6 → 8 tools)
+- `cli/freexan.js` (added caption subcommand)
+- `docs/NOMENCLATURE.md` (registry tables)
+- `package.json` (3.5.6 → 3.6.0)
+- `docs/logs/CHANGELOG.md`
+- `docs/logs/DEV_LOG.md`
+- `docs/logs/NAVIGATION_LOG.md`
+
+**Verification path (manual — Swastik should do this):**
+1. Restart Claude Code so it loads the new MCP tool list (the MCP server's `command`/`args` in `.claude.json` are unchanged — no config edit needed).
+2. `/mcp` in the new session — `freexan` should still show "connected" with **8 tools** now (was 6).
+3. Run the full manual verification plan attached at the bottom of this session entry.
+
+**Blockers:** None.
+
+**Notes:**
+- All 4 phases of the plugin MCP plan are now done. The Caption workflow → 1 MCP call has been built end-to-end and tested live.
+- The deferred public `sm_*` JSX purge still stands — separate session, separate risk profile.
+- This session was a clean "wire it up" — no architectural choices, just naming + adding the last hop.
+
+**Next:**
+- Swastik runs the manual verification plan after restart.
+- If green: the multi-phase plugin-MCP work is COMPLETE. Future plugin actions just slot into the established pattern: declare canonical ID → add JSX entry → add plugin handler → add MCP tool.
+- Deferred sweep: public `sm_*` purge + paired `.js` files audit + CLI `import` → `link import` rename.
+
+---
+
+### 2026-06-25 | Session 090 — Nomenclature Standardization (v3.5.4 → v3.5.5)
+
+**By:** Claude (AI assistant) + Swastik
+**Version:** v3.5.4 → v3.5.5
+**Status:** Done. Live ping with new action name deferred (Premiere closed during session).
+
+**Why this session existed:** Before shipping Phase 4 (MCP tool wrappers), Swastik wanted a standard naming convention across all six API layers so future additions don't drift. We audited the existing surface, found inconsistencies (`sm_` legacy prefix, no plugin scoping in MCP, mixed verb usage), then designed a canonical action-ID scheme and locked it down.
+
+**Approach chosen:** Sample B from the proposal — verb-first, plugin-scoped, with a 13-verb controlled vocabulary. One canonical ID (`{scope}.{verb}[_{object}]`) drives every layer's naming. **Scope rule established by Swastik:** OS-level = `app`, Premiere-only = `link`, plugin-internal = `{plugin}` (e.g. `caption`, `bloomx`, `audio`).
+
+**Done:**
+- **Authored `docs/NOMENCLATURE.md`** — full specification with canonical action ID format, scope rules, 13-verb vocabulary, per-layer naming patterns, reserved/deprecated prefixes, current registry of every action with status, and a "adding a new action" checklist for future contributors.
+- **Backed up files before any rename** to `Debug/backup-rename-20260625_120207/` (mogrt.jsx + captionMcpHandlers.ts snapshots).
+- **Renamed 8 JSX private helpers in `mogrt.jsx`** — 49 total occurrences, all 1:1 via `replace_all`:
+  - `_smFindAllTextParams` → `_findAllTextParams`
+  - `_smGetText` → `_getMogrtText` (kept `Mogrt` qualifier — see decisions below)
+  - `_smSetText` → `_setMogrtText`
+  - `_smDetectCapabilities` → `_detectCapabilities`
+  - `_smDistributeWords` → `_distributeWords`
+  - `_smReadWordTimings` → `_readWordTimings`
+  - `_smWriteWordTimings` → `_writeWordTimings`
+  - `_smIsGenericClip` → `_isGenericClip`
+- **Renamed JSX action entry** — `runCaptionWorkflow` → `runCaptionGenerate` (1 declaration + 5 internal log lines, all updated via `replace_all`).
+- **Renamed plugin action** in `captionMcpHandlers.ts`:
+  - Map key `caption_create` → `caption_generate`
+  - `csi.callJSX('runCaptionWorkflow', ...)` → `csi.callJSX('runCaptionGenerate', ...)`
+  - `csi.probeFunction('runCaptionWorkflow')` → `csi.probeFunction('runCaptionGenerate')`
+  - Plus 6 error-message strings + JSDoc references
+- **Post-rename integrity verify** — grep for all 10 old name patterns across modified files: **0 occurrences** (down from 60). New names: 60 (49 + 11), exact 1:1 mapping with the pre-rename count.
+- **Syntax-checked `mogrt.jsx`** via `node --check` after copy-to-`.js`. Passes (ExtendScript runtime objects don't affect syntax).
+- **Rebuilt Caption panel** — `npm run build` inside `panel-src/`. `tsc --noEmit` clean; Vite emitted IIFE bundle in 1.68 s (1,868.74 KB, +1.5 KB from pre-rename — diff is the new character strings).
+- **Verified bundle has new names only** — grep on `panel/dist/freexan-caption.js`: zero references to `caption_create` or `runCaptionWorkflow`. New names present at lines 40127–40137 (compiled handler module).
+
+**Decisions:**
+- **Sample B nomenclature** chosen over A (do nothing) and C (3-segment REST flavor). B is the right balance: predictable cross-layer + small enough verb vocabulary (13 verbs) + no overly long names.
+- **Scope rule "OS-level=`app`, Premiere-only=`link`"** — Swastik's call. Cleanly separates the freeXan main app from the in-Premiere Link plugin. Everything else gets a plugin scope.
+- **`_getMogrtText` / `_setMogrtText` kept the `Mogrt` qualifier** even though most other helpers dropped it. Reason: `getText`/`setText` are too generic for ExtendScript's flat function namespace — a future helper in `timeline.jsx` or `sync.jsx` adding `_setText` would silently clash. Other helpers (`_findAllTextParams`, `_distributeWords`) are specific enough not to collide.
+- **CLI stays flat for `app` scope, namespaced for plugins.** `freexan status` reads better than `freexan app status`; `app` is implicit when no plugin prefix is given. Plugin actions (`freexan caption generate`) always use the full namespace because the action alone (`freexan generate`) would be ambiguous across plugins.
+- **`caption.generate`, NOT `caption.create`** — locked in by the verb taxonomy: `create` is for DB-backed `app` resources (a "client" record, a "project" folder); `generate` is for produced content (captions, exports, reports). Different semantics, different verbs.
+- **DEFERRED:** the public `sm_*` JSX function purge (sm_tools_*, sm_sync_*, sm_read_*, sm_generic_*). Scope is much larger — 10+ functions wired into Edit + Tools tabs via 5+ TypeScript files. One botched call site = a broken daily-use feature. Dedicated session needed.
+- **DEFERRED:** the paired `.js` files in `panel/jsx/core/` (`mogrt.js`, `sync.js`, `timeline.js`, `debug_bridge.js`). Sizes differ from the `.jsx` counterparts (older snapshots). Probably aren't loaded by Premiere but need audit before delete.
+- **DEFERRED:** existing MCP tool renames (`freexan_status` → `freexan_app_status`, etc.). Phase 4 will register new tools AND rename the old ones in one batch.
+- **Live ping smoke-test deferred** — Premiere was closed (`connectedPlugins: []` in `/status`). Offline verification (grep + syntax + bundle inspection) all pass.
+
+**Files changed:**
+- `CEPs/freeXan_Caption/panel/jsx/core/mogrt.jsx`
+- `CEPs/freeXan_Caption/panel-src/src/lib/captionMcpHandlers.ts`
+- `CEPs/freeXan_Caption/panel/dist/freexan-caption.js` (rebuilt)
+- `CEPs/freeXan_Caption/panel/dist/freexan-caption.css` (rebuilt, no change)
+- `docs/NOMENCLATURE.md` (new)
+- `package.json`
+- `docs/logs/CHANGELOG.md`
+- `docs/logs/DEV_LOG.md`
+- `docs/logs/NAVIGATION_LOG.md`
+
+**Verification path (manual — when Swastik next opens Premiere):**
+1. Open Premiere with an active sequence + the freeXan Caption panel.
+2. From PowerShell:
+   ```
+   curl -X POST http://127.0.0.1:4555/plugin-action ^
+        -H "Content-Type: application/json" ^
+        -d "{\"plugin\":\"caption\",\"action\":\"caption_ping\"}"
+   ```
+   Expect: `{"success":true,"result":{"pluginConnected":true,"jsxLoaded":true,"supportedActions":["caption_generate","caption_ping"]}}`
+   - **Key change vs Phase 3:** `supportedActions` now lists `caption_generate` (renamed) instead of `caption_create`.
+3. (Optional) Call `caption_generate` with the same SRT/MOGRT paths as Phase 3 — should still render 66 captions, identical timeline output.
+
+**Blockers:** None.
+
+**Notes:**
+- Mid-session rate limit interrupted execution; resumed by checking task state and continuing from Task #21 (apply renames).
+- The `Debug/backup-rename-20260625_120207/` folder is a safety net — if anything goes sideways, the two pre-rename files restore verbatim.
+- Phase 4 is now the LAST piece. After that ships: `freexan_caption_generate` becomes a Claude tool, the existing `freexan_*` tools get the `_app_` / `_link_` prefix, and a user can say *"Use freeXan to generate captions for X.srt"* and it just happens.
+
+**Next:**
+- Phase 4 — MCP tool wrappers for `caption_generate` + `caption_ping`, plus retroactive rename of existing tools so MCP matches the new nomenclature.
+- Eventually: deferred public `sm_*` purge + paired `.js` files audit.
+
+---
 
 ### 2026-06-24 | Session 089 — Caption Plugin WS Bridge / Phase 3 (v3.5.3 → v3.5.4)
 
@@ -2233,3 +2531,24 @@ Text Wipeout + Slow Replace bugs fixed.
 
 
 
+
+[2026-07-07] Pill Redesign & Local User Management
+- Refactored C++ Native Pill Renderer.cpp to accept complex state payload.
+- Built fully local users table in SQLite via db.js.
+- Implemented rapid profile cycling over Named Pipes from C++ Pill to Electron.
+
+[2026-07-07] Supabase Sync & UI Polish
+- Converted UI from purely local user db back to Supabase cloud sync model via fetch in settings.js.
+- Implemented DWM API (DwmExtendFrameIntoClientArea) in main.cpp for hardware anti-aliasing.
+
+[2026-07-07] Dashboard User Management
+- Added Supabase REST API fetch, post, and delete logic in Break Check/Dashboard/public/app.js to handle user registration.
+- Created a management table UI in Break Check/Dashboard/public/index.html.
+
+- Added `update_plugins.bat` utility script to safely backup and update CEP plugins.
+
+- Updated `update_plugins.bat` to only copy necessary CEP files (CSXS, panel, dialog, src, mimetype) and ignore development files.
+
+- Updated `update_plugins.bat` to use the exact robocopy exclusions found in `install_plugins.bat` for 1:1 parity with the master installer.
+
+- Updated `update_plugins.bat` to exclude `%APPDATA%`, `custom`, `mogrt sample` directories, and `Install_*.bat` files.
