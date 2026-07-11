@@ -5,8 +5,6 @@
 
 'use strict';
 
-const SUPABASE_URL = "https://toidowlqmqbmtrfjvzgt.supabase.co";
-const SUPABASE_KEY = "sb_publishable_KSuDUKzHr8kzRV2YlnpP_g_osCedHm8";
 
 /* ── Chart.js global defaults ─────────────────── */
 Chart.defaults.color = '#64748b';
@@ -89,17 +87,18 @@ async function fetchData(empId) {
 async function fetchProfiles() {
     const select = document.getElementById('employeeSelect');
     try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/team_profiles?order=full_name.asc`, {
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-        });
-        const profiles = await res.json();
+        const res = await fetch('/api/employees');
+        const result = await res.json();
+        const profiles = result.data || [];
+        
         select.innerHTML = '';
         const all = document.createElement('option');
         all.value = ''; all.textContent = 'All Employees';
         select.appendChild(all);
-        (profiles || []).forEach(p => {
+        
+        profiles.forEach(emp => {
             const opt = document.createElement('option');
-            opt.value = p.full_name; opt.textContent = p.full_name;
+            opt.value = emp; opt.textContent = emp;
             select.appendChild(opt);
         });
     } catch (e) {
@@ -180,8 +179,12 @@ async function refreshDashboard() {
 function renderKPIs(data) {
     const totalKeys = data.reduce((s, r) => s + (r.keystrokes || 0), 0);
     const totalScroll = data.reduce((s, r) => s + (r.scroll_distance || 0), 0);
-    const ramValues = data.filter(r => r.ram_usage_gb > 0).map(r => r.ram_usage_gb);
-    const avgRam = ramValues.length ? (ramValues.reduce((a,b)=>a+b,0)/ramValues.length).toFixed(3) : '—';
+    
+    // RAM % calculation
+    const ramValues = data.filter(r => r.ram_usage_gb > 0 && r.ram_total_gb > 0);
+    const avgRamPct = ramValues.length 
+        ? Math.round(ramValues.reduce((a,b)=>(a + (b.ram_usage_gb/b.ram_total_gb*100)),0) / ramValues.length) 
+        : 0;
 
     const keyBursts = data.filter(r => r.event_type === 'keystrokes' && r.keystrokes > 0);
     const modBursts = data.filter(r => r.modifier_keys === 1);
@@ -190,13 +193,31 @@ function renderKPIs(data) {
     // Active minutes: unique minute slots with keystrokes or cursor movement
     const minuteSet = new Set(data.map(r => r.timestamp ? r.timestamp.substring(0, 16) : null));
     minuteSet.delete(null);
+    const activeMinutes = minuteSet.size;
+
+    // Tracked Hours
+    let trackedHours = 0;
+    if (data.length > 1) {
+        const sorted = [...data].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+        const diffMs = new Date(sorted[sorted.length-1].timestamp) - new Date(sorted[0].timestamp);
+        trackedHours = (diffMs / 3600000).toFixed(1);
+    }
+    
+    const activePct = trackedHours > 0 ? Math.min(100, Math.round((activeMinutes / (trackedHours * 60)) * 100)) : 0;
+
+    // Flow Score
+    const flowScore = Math.round((modRatio * 0.5) + (activePct * 0.5));
 
     setEl('kpi-events-val', data.length.toLocaleString());
-    setEl('kpi-keys-val', totalKeys.toLocaleString());
-    setEl('kpi-active-val', minuteSet.size.toLocaleString());
+    setEl('kpi-active-idle-val', activePct + '%');
+    setEl('kpi-active-val', activeMinutes.toLocaleString());
     setEl('kpi-modifier-val', modRatio + '%');
-    setEl('kpi-scroll-val', totalScroll.toLocaleString());
-    setEl('kpi-ram-val', avgRam !== '—' ? avgRam + ' GB' : '—');
+    setEl('kpi-flow-score-val', flowScore);
+
+    // Overview Tab Setters
+    setEl('overview-tracked-hours', trackedHours + 'h');
+    setEl('overview-active-idle', activePct + '%');
+    setEl('overview-modifier-ratio', modRatio + '%');
 }
 
 /* ══════════════════════════════════════════════════
@@ -522,6 +543,24 @@ function renderFriction(data) {
         ? '🟡 Moderate context switching. Some distraction pattern present.'
         : '🟢 Low context switching. Good focus maintenance.';
     setEl('contextSwitchInsight', csInsight);
+    setEl('frictionWarningText', csInsight);
+    
+    const warnBox = document.getElementById('frictionWarningBox');
+    if (warnBox) {
+        if (switchRate > 30) {
+            warnBox.className = 'card span-full card-warn';
+            warnBox.style.borderColor = 'rgba(239,68,68,0.5)';
+            warnBox.style.background = 'rgba(239,68,68,0.08)';
+        } else if (switchRate > 15) {
+            warnBox.className = 'card span-full card-warn';
+            warnBox.style.borderColor = '';
+            warnBox.style.background = '';
+        } else {
+            warnBox.className = 'card span-full card-highlight';
+            warnBox.style.borderColor = 'rgba(16,185,129,0.4)';
+            warnBox.style.background = 'rgba(16,185,129,0.05)';
+        }
+    }
 
     // ── Switch pairs ──
     const switchPairs = {};
@@ -592,101 +631,82 @@ function renderFriction(data) {
     }
 }
 
-/* ══════════════════════════════════════════════════
-   VIEW 5 — Team Profiles (Supabase)
-══════════════════════════════════════════════════ */
-async function loadTeamProfiles() {
-    const tbody = document.getElementById('team-profiles-body');
-    if (!tbody) return;
+/* ── Gemini Chat ── */
+let chatHistory = [];
+function toggleChat() {
+    document.getElementById('chat-widget').classList.toggle('closed');
+}
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    input.value = '';
+    const body = document.getElementById('chat-body');
+    
+    // Add user message
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message user-message';
+    msgDiv.textContent = text;
+    body.appendChild(msgDiv);
+    chatHistory.push({ role: 'user', content: text });
+    
+    // Add loading
+    const loadDiv = document.createElement('div');
+    loadDiv.className = 'chat-message ai-message';
+    loadDiv.innerHTML = '<span class="spinner"></span> Thinking...';
+    body.appendChild(loadDiv);
+    body.scrollTop = body.scrollHeight;
+
     try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/team_profiles?order=created_at.desc`, {
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        // Collect context (the KPIs and friction info)
+        const contextData = {
+            activeMinutes: document.getElementById('kpi-active-val').textContent,
+            modifierRatio: document.getElementById('kpi-modifier-val').textContent,
+            contextSwitchRate: document.getElementById('contextSwitchRate')?.textContent,
+            peakRam: document.getElementById('peakRam')?.textContent,
+            frictionWarning: document.getElementById('frictionWarningText')?.textContent
+        };
+
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: chatHistory, contextData })
         });
-        const profiles = await res.json();
-        tbody.innerHTML = '';
-        if (!profiles.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="muted center">No profiles found.</td></tr>';
-            return;
+        const data = await res.json();
+        
+        body.removeChild(loadDiv);
+        
+        if (data.reply) {
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'chat-message ai-message';
+            replyDiv.textContent = data.reply;
+            body.appendChild(replyDiv);
+            chatHistory.push({ role: 'model', content: data.reply });
+        } else {
+            throw new Error(data.error || 'Unknown error');
         }
-        profiles.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="font-weight:600;color:#f1f5f9">${p.full_name}</td>
-                <td><span class="badge badge-purple">${p.initials}</span></td>
-                <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:50%;background:${p.hex_color};display:inline-block"></span>${p.hex_color}</span></td>
-                <td style="text-align:right">
-                    <button class="action-btn btn-amber btn-edit-profile" data-id="${p.id}" data-name="${p.full_name}" data-initials="${p.initials}" data-color="${p.hex_color}">Edit</button>
-                    <button class="action-btn btn-red btn-delete-profile" data-id="${p.id}" data-name="${p.full_name}" style="margin-left:6px">Delete</button>
-                </td>`;
-            tbody.appendChild(tr);
-        });
-        document.querySelectorAll('.btn-edit-profile').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const newName = prompt('Full Name:', btn.dataset.name); if (!newName?.trim()) return;
-                const newInit = prompt('Initials (2 letters):', btn.dataset.initials); if (!newInit?.trim()) return;
-                const newColor= prompt('Hex Color:', btn.dataset.color); if (!newColor?.trim()) return;
-                await editTeamProfile(btn.dataset.id, newName.trim(), newInit.trim().toUpperCase(), newColor.trim());
-            });
-        });
-        document.querySelectorAll('.btn-delete-profile').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (confirm(`Delete "${btn.dataset.name}"?`)) await deleteTeamProfile(btn.dataset.id);
-            });
-        });
-    } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="4" style="color:#ef4444;text-align:center">Failed to load profiles.</td></tr>';
+    } catch (err) {
+        body.removeChild(loadDiv);
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-message ai-message';
+        errDiv.style.color = '#ef4444';
+        errDiv.textContent = 'Error: ' + err.message;
+        body.appendChild(errDiv);
     }
+    body.scrollTop = body.scrollHeight;
 }
 
-async function addTeamProfile(fullName) {
-    const parts = fullName.trim().split(/\s+/);
-    const initials = (parts.length >= 2) ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : fullName.substring(0,2).toUpperCase();
-    const colors = ['#f43f5e','#8b5cf6','#3b82f6','#10b981','#f59e0b','#06b6d4','#a855f7','#ec4899'];
-    const hex = colors[Math.floor(Math.random()*colors.length)];
-    const btn = document.getElementById('btn-add-profile');
-    btn.disabled = true; btn.textContent = 'Adding…';
-    try {
-        await fetch(`${SUPABASE_URL}/rest/v1/team_profiles`, {
-            method:'POST',
-            headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
-            body: JSON.stringify({ full_name:fullName, initials, hex_color:hex })
-        });
-        document.getElementById('new-profile-name').value = '';
-        await loadTeamProfiles();
-        await fetchProfiles();
-    } catch (e) { alert('Error: ' + e.message); }
-    finally { btn.disabled=false; btn.textContent='+ Add Employee'; }
+function handleChatKeypress(e) {
+    if (e.key === 'Enter') sendChatMessage();
 }
 
-async function deleteTeamProfile(id) {
-    try {
-        const res = await fetch('/api/delete-profile', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
-        if (!res.ok) throw new Error((await res.json()).error);
-        await loadTeamProfiles();
-        await fetchProfiles();
-    } catch (e) { alert('Error: ' + e.message); }
-}
-
-async function editTeamProfile(id, name, initials, color) {
-    try {
-        const res = await fetch('/api/update-profile', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id,full_name:name,initials,hex_color:color}) });
-        if (!res.ok) throw new Error((await res.json()).error);
-        await loadTeamProfiles();
-        await fetchProfiles();
-    } catch (e) { alert('Error: ' + e.message); }
-}
 
 /* ══════════════════════════════════════════════════
    Init
 ══════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
     fetchProfiles().then(() => refreshDashboard());
-    loadTeamProfiles();
-
-    document.getElementById('btn-add-profile')?.addEventListener('click', () => {
-        const name = document.getElementById('new-profile-name').value;
-        if (name.trim()) addTeamProfile(name);
-    });
 
     // Auto-refresh every 60s
     setInterval(refreshDashboard, 60000);
