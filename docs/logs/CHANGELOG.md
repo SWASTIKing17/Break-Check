@@ -7,6 +7,11 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.8.36] — 2026-07-11 | UI | Break Check: Empty Profile Ghost Data Fix (`app.js`)
+
+- **Reset UI state**: Added `resetDashboardUI()` to cleanly wipe out all residual text KPIs, project list tables, modifier gauges, context switch rates, switch pairs, and RAM alert borders when switching to a user with no logs.
+- **Fixed heatmap hour labels leakage**: Heatmap hour labels are now properly cleared before being re-rendered to prevent duplicate rows from stacking up.
+
 ## [v3.8.35] — 2026-07-11 | UI | Break Check Dashboard v2 — Full Redesign (`index.html`, `style.css`, `app.js`)
 
 **Complete ground-up redesign of the Break Check Admin Dashboard based on the Dashboard Matrix Scopes document.**

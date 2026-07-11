@@ -5,8 +5,12 @@ Record decisions, blockers, ideas, and progress here — not in code comments.
 
 ---
 
-## Current Version: v3.8.35
+## Current Version: v3.8.36
+[2026-07-11] Empty Profile Ghost UI Cleanup (`app.js`): Fixed a visual bug where switching to a profile with no data cleared the Chart.js instances but left the text KPIs, project list table, modifier gauge text, hourly heatmap cells, context switches per hour, and RAM alert borders displaying the previous user's data. Added a dedicated `resetDashboardUI()` helper that handles standardizing all elements back to an empty/default state. Also resolved a duplicate hours label rendering issue in the heatmap.
+
+## Version: v3.8.35
 [2026-07-11] Break Check Dashboard v2 & GitHub Remote Migration (`index.html`, `style.css`, `app.js`, git remote): Complete ground-up redesign of the Break Check Admin Dashboard based on the Dashboard Matrix Scopes document. Implemented a 5-view sidebar navigation layout (Activity Flow, Editor Proficiency, Hardware Health, Workflow Friction, Team Profiles) and a global KPI strip. Replaced local `nle` tracking with Netlify serverless functions and Chart.js integrations. Solved ghost chart rendering issues by introducing a direct reference-based `destroyAllCharts()` helper called before every profile switch. Switched the repository git remote origin to `https://github.com/SWASTIKing17/Break-Check.git` and successfully pushed the master branch to GitHub.
+
 
 ## Version: v3.8.34
 [2026-07-11] Usage Monitor Precision & Hardware Tracking (`usage_monitor.py`, `ingest.js`): Integrated RAM usage tracking (`psutil` read RSS in GB), vertical mouse scroll tick accumulation (`pynput` mouse listener), and modifier shortcut key burst tracking (`on_press` and `on_release` state tracker) into the Python background monitor. Updated Netlify `ingest.js` to forward these columns (`ram_usage_gb`, `scroll_distance`, `modifier_keys`) to Supabase. Included safe database column migration logic (`ALTER TABLE ADD COLUMN` via `try/except` in Python) to upgrade existing local SQLite databases without breaking them.

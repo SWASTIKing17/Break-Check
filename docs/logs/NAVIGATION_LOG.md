@@ -2,9 +2,11 @@
 
 **Purpose:** Map for agents, developers, and non-coder users.  
 Use this file to find: which file does what, which function controls which feature.  
-**Version:** v3.8.35 | **Last Updated:** 2026-07-11
+**Version:** v3.8.36 | **Last Updated:** 2026-07-11
 
 ---
+
+[2026-07-11] Modified Files — Empty Profile Ghost UI Cleanup (`Break Check/Dashboard/public/app.js`): Added `resetDashboardUI()` to cleanly clear all HTML text contents, tables, lists, and gauges when switching to a user with no logs. Fixed double rendering of heatmap hour labels by checking and deleting old `.heatmap-hours` elements on each render cycle.
 
 [2026-07-11] Modified & New Files — Break Check Dashboard v2 & Git Origin Migration (`Break Check/Dashboard/public/index.html`, `Break Check/Dashboard/public/style.css`, `Break Check/Dashboard/public/app.js`, `Break Check/Docs/Dashboard Matrix Scopes.md` [NEW]): Completely rebuilt the frontend dashboard under `Break Check/Dashboard/public/`. Split the UI into a 5-view sidebar layout with specialized analysis cards (KPM timelines, 24h heatmaps, RAM spike trackers, context switch rate scorecards, scroll metrics, team profiles). Replaced `eval()` chart clearing in `app.js` with direct reference chart teardown via `destroyAllCharts()` to prevent stacked canvas anomalies. Changed the project's repository git remote origin to SWASTIKing17/Break-Check and successfully pushed master.
 
