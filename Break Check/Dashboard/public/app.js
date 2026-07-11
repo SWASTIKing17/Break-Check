@@ -44,6 +44,32 @@ function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
 }
 
+/* ── Object Constancy Patchers ── */
+function patchCategoricalData(chart, newLabels, newData, newColors) {
+    const ds = chart.data.datasets[0];
+    const existingLabels = chart.data.labels;
+    
+    for (let i = 0; i < existingLabels.length; i++) {
+        const idx = newLabels.indexOf(existingLabels[i]);
+        if (idx !== -1) {
+            ds.data[i] = newData[idx];
+            if (newColors) ds.backgroundColor[i] = newColors[idx];
+            newLabels.splice(idx, 1);
+            newData.splice(idx, 1);
+            if (newColors) newColors.splice(idx, 1);
+        } else {
+            ds.data[i] = 0;
+        }
+    }
+    
+    newLabels.forEach((lbl, i) => {
+        chart.data.labels.push(lbl);
+        ds.data.push(newData[i]);
+        if (newColors) ds.backgroundColor.push(newColors[i]);
+    });
+    chart.update();
+}
+
 /* ── Helpers ──────────────────────────────────── */
 function simplifyApp(raw) {
     if (!raw) return 'Other';
@@ -314,10 +340,8 @@ function renderActivityFlow(data) {
     const sorted = Object.entries(appCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
     const ctxApp = document.getElementById('appChart').getContext('2d');
     if (appChart) {
-        appChart.data.labels = sorted.map(s=>s[0]);
-        appChart.data.datasets[0].data = sorted.map(s=>s[1]);
-        appChart.data.datasets[0].backgroundColor = sorted.map(s=>appColor(s[0]));
-        appChart.update();
+        patchCategoricalData(appChart, sorted.map(s=>s[0]), sorted.map(s=>s[1]), sorted.map(s=>appColor(s[0])));
+
     } else {
         appChart = new Chart(ctxApp, {
             type:'doughnut',
@@ -336,10 +360,8 @@ function renderActivityFlow(data) {
     const sortedScroll = Object.entries(scrollByApp).sort((a,b)=>b[1]-a[1]).slice(0,6);
     const ctxScroll = document.getElementById('scrollAppChart').getContext('2d');
     if (scrollAppChart) {
-        scrollAppChart.data.labels = sortedScroll.map(s=>s[0]);
-        scrollAppChart.data.datasets[0].data = sortedScroll.map(s=>s[1]);
-        scrollAppChart.data.datasets[0].backgroundColor = sortedScroll.map(s=>appColor(s[0]));
-        scrollAppChart.update();
+        patchCategoricalData(scrollAppChart, sortedScroll.map(s=>s[0]), sortedScroll.map(s=>s[1]), sortedScroll.map(s=>appColor(s[0])));
+
     } else {
         scrollAppChart = new Chart(ctxScroll, {
             type:'bar',
