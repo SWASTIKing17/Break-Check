@@ -39,6 +39,7 @@ exports.handler = async (event, context) => {
             ram_usage_gb: ev.ram_usage_gb ?? null,
             scroll_distance: ev.scroll_distance ?? null,
             modifier_keys: ev.modifier_keys ?? null,
+            ram_total_gb: ev.ram_total_gb ?? null,
         }));
 
         const url = `${process.env.SUPABASE_URL}/rest/v1/admin_events`;

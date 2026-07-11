@@ -1,0 +1,22 @@
+/* ── StatusRail + Inspector Drawer ───────────────────────────────────────── */
+
+.fx-status-rail {
+  cursor: pointer;
+  transition: filter var(--fx-duration) var(--fx-ease);
+}
+
+.fx-status-rail:hover {
+  filter: brightness(1.3);
+}
+
+.fx-inspector-drawer {
+  position: fixed;
+  top: 0;
+  left: var(--fx-rail-w);
+  height: 100vh;
+  background: var(--fx-bg-elev);
+  border-right: 1px solid var(--fx-hairline);
+  overflow: hidden;
+  z-index: 90;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.4);
+}

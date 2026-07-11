@@ -1,0 +1,67 @@
+{
+  "createSubsCompleteModal": {
+    "header": "Create Sub Complete:",
+    "title": "Create Subs Complete",
+    "body": "Your subtitle generation is finished! Please check the timeline. If you have any questions, refer to the guides below or contact our support team."
+  },
+  "selectSRTInfoModal": {
+    "header": "Select SRT:",
+    "title": "How to select an SRT?",
+    "body": "You can do this in 3 ways:\n1. Select the file using the SRT button.\n2. Drag and drop the file from Finder/Explorer.\n3. Type the file path into the text box.\n\nNote: SRT must follow our documentation for accurate timing."
+  },
+  "mogrtInfoModal": {
+    "header": "Select Mogrt:",
+    "title": "How to select a Mogrt?",
+    "body": "You can do this in 3 ways:\n1. Select the file using the Mogrt button.\n2. Drag and drop the file from Finder/Explorer.\n3. Type the file path into the text box.\n\nNote: Mogrts must be created following our documentation."
+  },
+  "charactersPerMogrtInfoModal": {
+    "header": "Characters Per Phrase:",
+    "title": "What is this setting?",
+    "body": "This changes the length of each individual phrase. The SRT is split based on this estimated count.\n\nRecommendations:\n- 1-25: 9x16 (Vertical)\n- 25-50: 1x1 (Square)\n- 50-100: 16x9 (Widescreen)"
+  },
+  "syncAllInfoModal": {
+    "header": "Sync All:",
+    "title": "What does Sync All do?",
+    "body": "Syncs text, style, and motion properties (PSR) to your selection. Place the playhead over your 'Master' clip first."
+  },
+  "syncTextInfoModal": {
+    "header": "Sync Text:",
+    "title": "Syncing Text Properties",
+    "body": "Only syncs properties under 'Text Input (P)'. This includes font, size, and source text if on the same track."
+  },
+  "syncStyleInfoModal": {
+    "header": "Sync Style:",
+    "title": "Syncing Stylistic Choices",
+    "body": "Syncs colors, animations, and shadows (everything without a (P) tag)."
+  },
+  "syncPSRInfoModal": {
+    "header": "Sync PSR:",
+    "title": "Syncing Position, Scale, Rotation",
+    "body": "Syncs the Premiere 'Effect Controls' motion settings across all selected clips."
+  },
+  "extensionUnverifiedModal": {
+    "header": "Please Log In:",
+    "title": "License Required",
+    "body": "We couldn't verify your extension. Please check your license or contact BloomX support to resolve this."
+  },
+  "noClipsSelectedModal": {
+    "header": "No clips selected:",
+    "title": "Action Required",
+    "body": "You haven't selected any clips. Please select the clips or phrases you want to process and try again."
+  },
+  "noActiveSequenceModal": {
+    "header": "No Active Sequence:",
+    "title": "Sequence Not Found",
+    "body": "You don't seem to have an active sequence selected. Please open a sequence in Premiere Pro and try again."
+  },
+  "frameRatesNotEqualModal": {
+    "header": "Frame Rates Don't Match:",
+    "title": "Mismatch Error",
+    "body": "Your sequence and Mogrt frame rates do not match. Please choose a Mogrt that matches your sequence settings (e.g., 23.976, 25, 29.97)."
+  },
+  "doubleLinedSRTModal": {
+    "header": "Invalid SRT File:",
+    "title": "Format Error",
+    "body": "freeXan Caption requires a single-lined SRT. Your file seems to have multiple lines per entry. Please re-export your SRT from Premiere's Text panel as a single-line format."
+  }
+}

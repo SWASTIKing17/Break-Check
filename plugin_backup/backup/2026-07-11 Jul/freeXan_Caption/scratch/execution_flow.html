@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SubMachine — Execution Flow Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: #111118;
+    border-right: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.2s;
+    z-index: 10;
+  }
+  #sidebar.collapsed { width: 48px; min-width: 48px; }
+
+  #sidebar-header {
+    padding: 12px 10px;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #sidebar-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #9999cc;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  #toggle-sidebar {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  #toggle-sidebar:hover { color: #ccc; }
+
+  #sidebar-search {
+    margin: 8px;
+    padding: 6px 10px;
+    background: #1a1a22;
+    border: 1px solid #2a2a35;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 11px;
+    font-family: inherit;
+    width: calc(100% - 16px);
+  }
+  #sidebar-search:focus { outline: none; border-color: #444; }
+  #sidebar.collapsed #sidebar-search,
+  #sidebar.collapsed #sidebar-title,
+  #sidebar.collapsed #bulk-btns { display: none; }
+
+  #bulk-btns {
+    display: flex;
+    gap: 6px;
+    padding: 0 8px 8px;
+  }
+  .bulk-btn {
+    flex: 1;
+    padding: 4px;
+    background: #1a1a22;
+    border: 1px solid #2a2a35;
+    border-radius: 3px;
+    color: #888;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .bulk-btn:hover { color: #ccc; border-color: #444; }
+
+  #branch-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 0;
+  }
+  .branch-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-radius: 4px;
+    margin: 1px 4px;
+  }
+  .branch-item:hover { background: #1a1a28; }
+  .branch-item.muted { opacity: 0.35; }
+  #sidebar.collapsed .branch-label,
+  #sidebar.collapsed .branch-toggle { display: none; }
+
+  .branch-dot {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .branch-label {
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    color: #ddd;
+    font-weight: 500;
+  }
+  .branch-toggle {
+    width: 28px; height: 15px;
+    background: #2a2a35;
+    border-radius: 8px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .branch-toggle.on { background: #3a3a55; }
+  .branch-toggle::after {
+    content: '';
+    position: absolute;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #555;
+    top: 2px; left: 2px;
+    transition: left 0.15s, background 0.15s;
+  }
+  .branch-toggle.on::after { left: 15px; background: #aaa; }
+
+  /* ── MAIN AREA ── */
+  #main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #toolbar {
+    background: #0e0e16;
+    border-bottom: 1px solid #1e1e2e;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  #toolbar h1 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #c8c8ff;
+    letter-spacing: 0.08em;
+  }
+  .tb-btn {
+    padding: 4px 10px;
+    background: #1a1a28;
+    border: 1px solid #2e2e44;
+    border-radius: 4px;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .tb-btn:hover { color: #ccc; border-color: #4a4a66; }
+  #zoom-label {
+    font-size: 10px;
+    color: #444;
+    margin-left: auto;
+    min-width: 50px;
+    text-align: right;
+  }
+  #hint {
+    font-size: 11px;
+    color: #555;
+  }
+
+  /* ── CANVAS ── */
+  #canvas-wrapper {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+  }
+  #canvas-wrapper.dragging { cursor: grabbing; }
+
+  #main-svg {
+    display: block;
+    width: 3200px;
+    height: 2800px;
+  }
+
+  /* ── TOOLTIP ── */
+  #tooltip {
+    display: none;
+    position: fixed;
+    background: #12121e;
+    border: 1px solid #5050aa;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 300px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.8), 0 0 0 1px #2a2a4a;
+  }
+  #tooltip strong { color: #c8c8ff; display: block; margin-bottom: 5px; font-size: 13px; }
+  #tooltip span { color: #9999bb; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <span id="sidebar-title">Execution Branches</span>
+    <button id="toggle-sidebar" title="Collapse">⇤</button>
+  </div>
+  <input id="sidebar-search" type="text" placeholder="Filter branches…">
+  <div id="bulk-btns">
+    <button class="bulk-btn" id="btn-show-all">Show All</button>
+    <button class="bulk-btn" id="btn-hide-all">Hide All</button>
+  </div>
+  <div id="branch-list"></div>
+</aside>
+
+<div id="main-area">
+  <div id="toolbar">
+    <h1>SubMachine — Execution Flow</h1>
+    <button class="tb-btn" id="btn-reset-view">Reset View</button>
+    <button class="tb-btn" id="btn-deselect">Deselect</button>
+    <span id="hint">Scroll to zoom · Drag to pan · Click edge to highlight branch</span>
+    <span id="zoom-label">100%</span>
+  </div>
+  <div id="canvas-wrapper">
+    <svg id="main-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs id="svg-defs"></defs>
+      <g id="scene">
+        <g id="edges-layer"></g>
+        <g id="containers-layer"></g>
+        <g id="nodes-layer"></g>
+        <g id="api-layer"></g>
+        <g id="hit-layer"></g>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<div id="tooltip"><strong id="tt-name"></strong><span id="tt-detail"></span></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════════
+
+const CONTAINER_W = 560;
+const NODE_H = 46;
+const NODE_PAD = 12;
+const HEADER_H = 48;
+const CONTAINER_GAP = 60;
+const COL_X = [60, 740, 1440, 2200];
+
+const CONTAINERS = [
+  { id: 'panel_html',  label: 'panel.html  [UI Events]',          column: 0, color: '#1b3a5c', accent: '#3a7bd5' },
+  { id: 'panel_js',   label: 'panel.js  [jQuery Handlers]',       column: 1, color: '#1a4030', accent: '#27ae60' },
+  { id: 'react_js',   label: 'command_center_react.js  [React]',  column: 1, color: '#2d1b4e', accent: '#8e44ad' },
+  { id: 'utils',      label: 'utils.jsx  [ExtendScript]',         column: 2, color: '#3d2b00', accent: '#e67e22' },
+  { id: 'mogrt',      label: 'mogrt.jsx  [Caption Creation]',     column: 2, color: '#3a1515', accent: '#e74c3c' },
+  { id: 'sync',       label: 'sync.jsx  [Property Sync]',         column: 2, color: '#0f3040', accent: '#16a085' },
+  { id: 'timeline',   label: 'timeline.jsx  [Timeline Ops]',      column: 2, color: '#1a1a40', accent: '#2980b9' },
+  { id: 'pp_api',     label: 'Premiere Pro API  [Terminal]',      column: 3, color: '#3a1040', accent: '#9b59b6' },
+];
+
+// node: { id, label, container, row, detail }
+const NODES_DEF = [
+  // panel.html UI nodes
+  { id:'ui_selectSRT',       label:'#selectSRT  [click]',         container:'panel_html', row:0,  detail:'User clicks "Select SRT File" button in Workflow tab.' },
+  { id:'ui_selectMogrt',     label:'#selectMogrt  [click]',       container:'panel_html', row:1,  detail:'User clicks "Select MOGRT Template" button in Workflow tab.' },
+  { id:'ui_createCaptions',  label:'#createCaptions  [click]',    container:'panel_html', row:2,  detail:'User clicks "Create Captions" button to build MOGRT clips on timeline.' },
+  { id:'ui_syncAll',         label:'#syncAll  [click]',           container:'panel_html', row:3,  detail:'User clicks "Sync All" in Tools tab to copy all MOGRT properties from master clip.' },
+  { id:'ui_syncText',        label:'#syncText  [click]',          container:'panel_html', row:4,  detail:'User clicks "Sync Text" to copy text + typeface only.' },
+  { id:'ui_splitPhrase',     label:'#splitPhrase  [click]',       container:'panel_html', row:5,  detail:'User clicks "Split Phrase" to divide a phrase at the playhead position.' },
+  { id:'ui_joinPhrases',     label:'#joinPhrases  [click]',       container:'panel_html', row:6,  detail:'User clicks "Join Phrases" to merge two adjacent phrases into one.' },
+  { id:'ui_addWord',         label:'#addWordBtn  [click]',        container:'panel_html', row:7,  detail:'User clicks "Add Word" or presses Enter in the word input field.' },
+  { id:'ui_removeWord',      label:'#removeWordBtn  [click]',     container:'panel_html', row:8,  detail:'User clicks "Remove Word" to delete the word under the playhead.' },
+  { id:'ui_resetAll',        label:'#resetAll  [click]',          container:'panel_html', row:9,  detail:'User clicks "Reset All" in Advanced Tools to wipe all MOGRT properties to defaults.' },
+  { id:'ui_syncPSR',         label:'#syncPSR  [click]',           container:'panel_html', row:10, detail:'User clicks "Sync PSR" to copy Position, Scale, and Rotation from master clip.' },
+  { id:'react_bubbleClick',  label:'WordBubble  [onClick]',       container:'panel_html', row:11, detail:'User clicks a word bubble in the React Edit tab.' },
+  { id:'react_split',        label:'WordBubble  [onSplit]',       container:'panel_html', row:12, detail:'User clicks the split icon on a word bubble.' },
+  { id:'react_merge',        label:'Footer Merge  [click]',       container:'panel_html', row:13, detail:'User clicks the ⚡ Merge button in the React Edit tab footer.' },
+  { id:'react_transfer',     label:'Sortable  [onEnd]',           container:'panel_html', row:14, detail:'User drag-drops a word bubble between phrases via Sortable.js.' },
+
+  // panel.js jQuery handlers
+  { id:'h_selectSRT',       label:'$("#selectSRT").click()',       container:'panel_js', row:0,  detail:'jQuery click handler. Calls evalScript("selectSRT()") via Adobe CEP bridge.' },
+  { id:'h_selectMogrt',     label:'$("#selectMogrt").click()',     container:'panel_js', row:1,  detail:'jQuery click handler. Calls evalScript("selectMogrt()") via CEP bridge.' },
+  { id:'h_createCaptions',  label:'$("#createCaptions").click()', container:'panel_js', row:2,  detail:'jQuery click handler. Serialises form data to JSON, calls evalScript("createCaptions(data)").' },
+  { id:'h_syncAll',         label:'$("#syncAll").click()',         container:'panel_js', row:3,  detail:'jQuery click handler → evalScript("syncAllGetData(params)").' },
+  { id:'h_syncText',        label:'$("#syncText").click()',        container:'panel_js', row:4,  detail:'jQuery click handler → evalScript("syncTextGetData(params)").' },
+  { id:'h_splitPhrase',     label:'$("#splitPhrase").click()',     container:'panel_js', row:5,  detail:'jQuery click handler → evalScript("splitPhraseGetMogrtData()").' },
+  { id:'h_joinPhrases',     label:'$("#joinPhrases").click()',     container:'panel_js', row:6,  detail:'jQuery click handler → evalScript("sm_tools_join_v28()").' },
+  { id:'h_addWord',         label:'$("#addWordBtn").click()',      container:'panel_js', row:7,  detail:'jQuery click handler → evalScript("sm_tools_add_word_v28(params)").' },
+  { id:'h_removeWord',      label:'$("#removeWordBtn").click()',   container:'panel_js', row:8,  detail:'jQuery click handler → evalScript("sm_tools_remove_word_v28()").' },
+  { id:'h_resetAll',        label:'$("#resetAll").click()',        container:'panel_js', row:9,  detail:'jQuery click handler → evalScript("resetAllGetData()").' },
+  { id:'h_syncPSR',         label:'$("#syncPSR").click()',         container:'panel_js', row:10, detail:'jQuery click handler → evalScript("syncPSRGetData()").' },
+
+  // React handlers
+  { id:'handleBubbleClick', label:'handleBubbleClick()',           container:'react_js', row:0, detail:'Sets activeClipId state. Calls callJSX("updateMogrtProperty", params) to activate clip in Premiere.' },
+  { id:'handleSplit',       label:'handleSplit()',                 container:'react_js', row:1, detail:'Calls callJSX("sm_tools_split_join_v28", {pIdx, cIdx}) to split/join a word at a laser gap.' },
+  { id:'handleMerge',       label:'handleMerge()',                 container:'react_js', row:2, detail:'Calls callJSX("sm_tools_join_v28", params) to merge selected words.' },
+  { id:'handleTransfer',    label:'handleTransfer()',              container:'react_js', row:3, detail:'Calls callJSX("executeWordTransfer", params) after Sortable.js drag-drop ends.' },
+  { id:'callJSX',           label:'callJSX(fn, params)',           container:'react_js', row:4, detail:'React helper. Calls evalScript via Adobe CEP bridge, parses JSON result, updates React state.' },
+
+  // utils.jsx
+  { id:'selectSRT',         label:'selectSRT()',                   container:'utils', row:0, detail:'Opens OS file dialog filtered to .srt files. Returns JSON {srtFilePath, srtFileName}.' },
+  { id:'selectMogrt',       label:'selectMogrt()',                 container:'utils', row:1, detail:'Opens OS file dialog filtered to .mogrt files. Returns JSON {mogrtPath, mogrtName}.' },
+  { id:'safeCall',          label:'safeCall(fn, args)',            container:'utils', row:2, detail:'Error wrapper used around every JSX function. Catches exceptions, returns {status:"Error", message}.' },
+  { id:'startUndo',         label:'startUndo(label)',              container:'utils', row:3, detail:'Begins a Premiere undo group so all operations are atomic.' },
+  { id:'endUndo',           label:'endUndo()',                     container:'utils', row:4, detail:'Closes the Premiere undo group.' },
+
+  // mogrt.jsx
+  { id:'createCaptions',    label:'createCaptions(captionData)',   container:'mogrt', row:0, detail:'Main entry point. Iterates SRT cues and creates one MOGRT clip per word with timing.' },
+  { id:'findProjectItem',   label:'findProjectItem(name)',         container:'mogrt', row:1, detail:'Recursively searches the Premiere project tree for a project item by name.' },
+  { id:'importMGT',         label:'clip.importMGT()',              container:'mogrt', row:2, detail:'Premiere API: creates a new MOGRT clip instance on the sequence from the template item.' },
+
+  // sync.jsx
+  { id:'syncAllGetData',    label:'syncAllGetData(params)',        container:'sync', row:0,  detail:'Phase 1 of Sync All: finds the master MOGRT clip under the playhead and extracts all 40+ properties.' },
+  { id:'syncAll',           label:'syncAll(data)',                 container:'sync', row:1,  detail:'Phase 2 of Sync All: applies master properties to all selected clips, guarding phrase-specific glyphs.' },
+  { id:'syncTextGetData',   label:'syncTextGetData(params)',       container:'sync', row:2,  detail:'Phase 1 of Sync Text: extracts text content and typeface properties from master clip.' },
+  { id:'syncText',          label:'syncText(data)',                container:'sync', row:3,  detail:'Phase 2 of Sync Text: applies text and typeface to selected clips.' },
+  { id:'sm_sync_batch',     label:'sm_sync_batch(data)',           container:'sync', row:4,  detail:'Batch helper called by syncText. Loops through clips and calls setValue() for each matched property.' },
+  { id:'updateMogrtProp',   label:'updateMogrtProperty(params)',   container:'sync', row:5,  detail:'Updates a single MOGRT property on a specific clip. Used by React on word click/edit.' },
+  { id:'executeWordXfer',   label:'executeWordTransfer(params)',   container:'sync', row:6,  detail:'Moves a word (clip) from one phrase track to another after React drag-drop.' },
+  { id:'syncPSRGetData',    label:'syncPSRGetData(params)',        container:'sync', row:7,  detail:'Phase 1 of Sync PSR: extracts Position, Scale, Rotation values from master clip.' },
+  { id:'syncPSR',           label:'syncPSR(data)',                 container:'sync', row:8,  detail:'Phase 2 of Sync PSR: applies PSR values to selected clips.' },
+  { id:'resetAllGetData',   label:'resetAllGetData()',             container:'sync', row:9,  detail:'Phase 1 of Reset All: reads current property count from master clip.' },
+  { id:'resetAll',          label:'resetAll(data)',                container:'sync', row:10, detail:'Phase 2 of Reset All: calls setValue() with default values for every MOGRT property on selected clips.' },
+
+  // timeline.jsx
+  { id:'splitPhraseGetData',label:'splitPhraseGetMogrtData()',     container:'timeline', row:0, detail:'Gathers clip data at playhead needed for the split operation.' },
+  { id:'sm_split_v28',      label:'sm_tools_split_v28(params)',    container:'timeline', row:1, detail:'Splits a phrase at a word boundary. Moves Part B clips to the next video track.' },
+  { id:'sm_join_v28',       label:'sm_tools_join_v28(params)',     container:'timeline', row:2, detail:'Joins two adjacent phrases by moving Part B clips back to the anchor track.' },
+  { id:'sm_splitjoin_v28',  label:'sm_tools_split_join_v28()',     container:'timeline', row:3, detail:'Word Surgery: routes to add-word or remove-word based on clip state under playhead.' },
+  { id:'sm_add_word',       label:'sm_tools_add_word_v28()',       container:'timeline', row:4, detail:'Inserts a new word clip after the playhead. Updates word progression sliders.' },
+  { id:'sm_remove_word',    label:'sm_tools_remove_word_v28()',    container:'timeline', row:5, detail:'Deletes the word clip under the playhead. Shifts remaining word slots.' },
+  { id:'getPhraseClips',    label:'getPhraseClips(track, idx)',    container:'timeline', row:6, detail:'Returns all MOGRT clips belonging to the same phrase on a given track.' },
+  { id:'moveClipToTrack',   label:'moveClipToTrack(clip, track)',  container:'timeline', row:7, detail:'Moves a clip to a different video track, preserving in/out timing.' },
+  { id:'findNeighborPhrase',label:'findNeighborPhrase()',          container:'timeline', row:8, detail:'Finds the adjacent phrase (above or below) that can be joined to the current one.' },
+
+  // Premiere Pro API terminals
+  { id:'api_fileDialog',    label:'File.openDialog()',             container:'pp_api', row:0,  detail:'ExtendScript File API. Opens native OS file picker. Returns a File object.' },
+  { id:'api_setValue',      label:'mgt.properties[n].setValue()', container:'pp_api', row:1,  detail:'Premiere API: sets a MOGRT numeric/slider property value on a clip.' },
+  { id:'api_setColorValue', label:'mgt.properties[n].setColorValue()', container:'pp_api', row:2, detail:'Premiere API: sets a MOGRT color property (RGBA).' },
+  { id:'api_importMGT',     label:'seq.videoTracks[n].overwriteClip()', container:'pp_api', row:3, detail:'Premiere API: places the MOGRT clip instance onto the timeline at the given time.' },
+  { id:'api_getClips',      label:'track.clips[]  [access]',      container:'pp_api', row:4,  detail:'Premiere API: iterates clips on a video track to find neighbors.' },
+  { id:'api_moveClip',      label:'clip.move() / track rearrange', container:'pp_api', row:5, detail:'Premiere API: moves a clip to a different track at the same timecode.' },
+];
+
+// Build lookup map
+const NODES = {};
+NODES_DEF.forEach(n => { NODES[n.id] = n; });
+
+// ── BRANCHES ──────────────────────────────────────────
+const BRANCHES = [
+  {
+    id: 'b1', label: '#selectSRT click', color: '#FF6B6B', active: true,
+    steps: ['ui_selectSRT', 'h_selectSRT', 'selectSRT', 'api_fileDialog']
+  },
+  {
+    id: 'b2', label: '#selectMogrt click', color: '#FF9F43', active: true,
+    steps: ['ui_selectMogrt', 'h_selectMogrt', 'selectMogrt', 'api_fileDialog']
+  },
+  {
+    id: 'b3', label: '#createCaptions click', color: '#FECA57', active: true,
+    steps: ['ui_createCaptions', 'h_createCaptions', 'createCaptions', 'findProjectItem', 'importMGT', 'startUndo', 'api_setValue', 'api_importMGT', 'endUndo']
+  },
+  {
+    id: 'b4', label: '#syncAll click', color: '#48DBFB', active: true,
+    steps: ['ui_syncAll', 'h_syncAll', 'syncAllGetData', 'syncAll', 'startUndo', 'api_setValue', 'api_setColorValue', 'endUndo']
+  },
+  {
+    id: 'b5', label: '#syncText click', color: '#1DD1A1', active: true,
+    steps: ['ui_syncText', 'h_syncText', 'syncTextGetData', 'syncText', 'sm_sync_batch', 'api_setValue', 'endUndo']
+  },
+  {
+    id: 'b6', label: '#splitPhrase click', color: '#54A0FF', active: true,
+    steps: ['ui_splitPhrase', 'h_splitPhrase', 'splitPhraseGetData', 'sm_split_v28', 'getPhraseClips', 'startUndo', 'moveClipToTrack', 'api_moveClip', 'endUndo']
+  },
+  {
+    id: 'b7', label: '#joinPhrases click', color: '#A29BFE', active: true,
+    steps: ['ui_joinPhrases', 'h_joinPhrases', 'sm_join_v28', 'findNeighborPhrase', 'getPhraseClips', 'startUndo', 'moveClipToTrack', 'api_moveClip', 'endUndo']
+  },
+  {
+    id: 'b8', label: '#addWordBtn click', color: '#C8D6E5', active: true,
+    steps: ['ui_addWord', 'h_addWord', 'sm_add_word', 'updateMogrtProp', 'startUndo', 'api_setValue', 'endUndo']
+  },
+  {
+    id: 'b9', label: '#removeWordBtn click', color: '#EE5A24', active: true,
+    steps: ['ui_removeWord', 'h_removeWord', 'sm_remove_word', 'updateMogrtProp', 'startUndo', 'api_setValue', 'endUndo']
+  },
+  {
+    id: 'b10', label: 'React: WordBubble click', color: '#00D2D3', active: true,
+    steps: ['react_bubbleClick', 'handleBubbleClick', 'callJSX', 'updateMogrtProp', 'api_setValue']
+  },
+  {
+    id: 'b11', label: 'React: Word split', color: '#9B59B6', active: true,
+    steps: ['react_split', 'handleSplit', 'callJSX', 'sm_splitjoin_v28', 'sm_split_v28', 'getPhraseClips', 'api_moveClip']
+  },
+  {
+    id: 'b12', label: 'React: Merge words', color: '#10AC84', active: true,
+    steps: ['react_merge', 'handleMerge', 'callJSX', 'sm_join_v28', 'findNeighborPhrase', 'getPhraseClips', 'api_moveClip']
+  },
+  {
+    id: 'b13', label: 'React: Word transfer (drag)', color: '#F368E0', active: true,
+    steps: ['react_transfer', 'handleTransfer', 'callJSX', 'executeWordXfer', 'startUndo', 'api_setValue', 'api_moveClip', 'endUndo']
+  },
+  {
+    id: 'b14', label: '#resetAll click', color: '#BDC3C7', active: true,
+    steps: ['ui_resetAll', 'h_resetAll', 'resetAllGetData', 'resetAll', 'startUndo', 'api_setValue', 'endUndo']
+  },
+  {
+    id: 'b15', label: '#syncPSR click', color: '#6C5CE7', active: true,
+    steps: ['ui_syncPSR', 'h_syncPSR', 'syncPSRGetData', 'syncPSR', 'startUndo', 'api_setValue', 'endUndo']
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+// LAYOUT
+// ═══════════════════════════════════════════════════════
+
+const positions = {};   // nodeId → { x, y, w, h, portLeft, portRight }
+const containerRects = {}; // containerId → { x, y, w, h }
+
+function computeLayout() {
+  // Group containers by column
+  const byCol = {};
+  CONTAINERS.forEach(c => {
+    if (!byCol[c.column]) byCol[c.column] = [];
+    byCol[c.column].push(c);
+  });
+
+  Object.entries(byCol).forEach(([col, containers]) => {
+    let cy = 60;
+    containers.forEach(c => {
+      const nodesInContainer = NODES_DEF.filter(n => n.container === c.id);
+      const h = HEADER_H + nodesInContainer.length * (NODE_H + 4) + NODE_PAD * 2;
+      const x = COL_X[+col];
+      containerRects[c.id] = { x, y: cy, w: CONTAINER_W, h };
+
+      nodesInContainer.forEach((n, i) => {
+        const ny = cy + HEADER_H + NODE_PAD + i * (NODE_H + 4);
+        const nx = x + 14;
+        const nw = CONTAINER_W - 28;
+        positions[n.id] = {
+          x: nx, y: ny, w: nw, h: NODE_H,
+          portLeft:  { x: x,                y: ny + NODE_H / 2 },
+          portRight: { x: x + CONTAINER_W,  y: ny + NODE_H / 2 },
+        };
+      });
+
+      cy += h + CONTAINER_GAP;
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SVG HELPERS
+// ═══════════════════════════════════════════════════════
+
+function svgEl(tag, attrs = {}, parent) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  if (parent) parent.appendChild(el);
+  return el;
+}
+function svgText(content, attrs = {}, parent) {
+  const el = svgEl('text', attrs, parent);
+  el.textContent = content;
+  return el;
+}
+
+// ═══════════════════════════════════════════════════════
+// DEFS (arrowheads + glow filter)
+// ═══════════════════════════════════════════════════════
+
+function renderDefs() {
+  const defs = document.getElementById('svg-defs');
+  defs.innerHTML = '';
+
+  // Glow filter
+  const filter = svgEl('filter', { id: 'glow', x: '-30%', y: '-30%', width: '160%', height: '160%' }, defs);
+  const fe = svgEl('feGaussianBlur', { stdDeviation: '4', result: 'blur' }, filter);
+  const feMerge = svgEl('feMerge', {}, filter);
+  svgEl('feMergeNode', { in: 'blur' }, feMerge);
+  svgEl('feMergeNode', { in: 'SourceGraphic' }, feMerge);
+
+  BRANCHES.forEach(b => {
+    const marker = svgEl('marker', {
+      id: `arrow-${b.id}`,
+      markerWidth: '14', markerHeight: '10',
+      refX: '12', refY: '5',
+      orient: 'auto', markerUnits: 'userSpaceOnUse'
+    }, defs);
+    svgEl('polygon', { points: '0 0, 14 5, 0 10', fill: b.color }, marker);
+
+    // highlighted version — larger
+    const markerH = svgEl('marker', {
+      id: `arrow-hl-${b.id}`,
+      markerWidth: '20', markerHeight: '14',
+      refX: '18', refY: '7',
+      orient: 'auto', markerUnits: 'userSpaceOnUse'
+    }, defs);
+    svgEl('polygon', { points: '0 0, 20 7, 0 14', fill: b.color }, markerH);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// CONTAINERS
+// ═══════════════════════════════════════════════════════
+
+function renderContainers() {
+  const layer = document.getElementById('containers-layer');
+  layer.innerHTML = '';
+
+  CONTAINERS.forEach(c => {
+    const r = containerRects[c.id];
+    if (!r) return;
+
+    // Background rect
+    svgEl('rect', {
+      x: r.x, y: r.y, width: r.w, height: r.h,
+      rx: 10, fill: '#0d0d1a', stroke: c.accent, 'stroke-width': 2
+    }, layer);
+
+    // Header rect
+    svgEl('rect', {
+      x: r.x, y: r.y, width: r.w, height: HEADER_H,
+      rx: 10, fill: c.color, stroke: 'none'
+    }, layer);
+    // header bottom corners not rounded
+    svgEl('rect', {
+      x: r.x, y: r.y + HEADER_H - 10, width: r.w, height: 10,
+      fill: c.color, stroke: 'none'
+    }, layer);
+    // Accent top bar
+    svgEl('rect', {
+      x: r.x, y: r.y, width: r.w, height: 4,
+      rx: 3, fill: c.accent, stroke: 'none'
+    }, layer);
+
+    // Header label
+    svgText(c.label, {
+      x: r.x + 16, y: r.y + HEADER_H / 2 + 7,
+      fill: '#ffffff', 'font-size': '15', 'font-family': 'Consolas, monospace',
+      'font-weight': '700', 'letter-spacing': '0.04em'
+    }, layer);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// NODES
+// ═══════════════════════════════════════════════════════
+
+function renderNodes() {
+  const layer = document.getElementById('nodes-layer');
+  layer.innerHTML = '';
+
+  // Build a map: nodeId → first branch color (for accent bar)
+  const nodeColor = {};
+  BRANCHES.forEach(b => {
+    b.steps.forEach(s => { if (!nodeColor[s]) nodeColor[s] = b.color; });
+  });
+
+  NODES_DEF.forEach(n => {
+    const p = positions[n.id];
+    if (!p) return;
+    const col = nodeColor[n.id] || '#3a3a55';
+
+    // Node background
+    svgEl('rect', {
+      id: `node-${n.id}`,
+      x: p.x, y: p.y, width: p.w, height: p.h,
+      rx: 5, fill: '#161625', stroke: '#35354a', 'stroke-width': 1.5
+    }, layer);
+
+    // Left accent bar (color of first branch that uses this node)
+    svgEl('rect', {
+      x: p.x, y: p.y + 4, width: 4, height: p.h - 8,
+      rx: 2, fill: col, stroke: 'none'
+    }, layer);
+
+    // Node label
+    svgText(n.label, {
+      x: p.x + 16, y: p.y + p.h / 2 + 5,
+      fill: '#e8e8ff', 'font-size': '13', 'font-family': 'Consolas, monospace',
+      'font-weight': '600'
+    }, layer);
+
+    // Port dot — right side (output)
+    svgEl('circle', {
+      cx: p.portRight.x, cy: p.portRight.y, r: 5,
+      fill: col, stroke: '#0d0d1a', 'stroke-width': 1.5
+    }, layer);
+    // Port dot — left side (input)
+    svgEl('circle', {
+      cx: p.portLeft.x, cy: p.portLeft.y, r: 5,
+      fill: col, stroke: '#0d0d1a', 'stroke-width': 1.5
+    }, layer);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// EDGES
+// ═══════════════════════════════════════════════════════
+
+let activeBranches = new Set(BRANCHES.map(b => b.id));
+let highlightedBranch = null;
+
+function makePath(x1, y1, x2, y2, bIdx) {
+  const fan = (bIdx - 7) * 4;
+  const midX = (x1 + x2) / 2 + fan;
+  // Same column: use vertical offset control
+  if (Math.abs(x2 - x1) < 100) {
+    const off = Math.abs(y2 - y1) * 0.5 + 80;
+    return `M ${x1} ${y1} C ${x1 + off} ${y1}, ${x2 + off} ${y2}, ${x2} ${y2}`;
+  }
+  return `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+}
+
+function renderEdges() {
+  const layer = document.getElementById('edges-layer');
+  layer.innerHTML = '';
+
+  BRANCHES.forEach((b, bIdx) => {
+    if (!activeBranches.has(b.id)) return;
+
+    for (let i = 0; i < b.steps.length - 1; i++) {
+      const fromId = b.steps[i];
+      const toId   = b.steps[i + 1];
+      const from   = positions[fromId];
+      const to     = positions[toId];
+      if (!from || !to) continue;
+
+      // Pick ports: if destination is to the right, use right→left; else right→right (same col)
+      const x1 = from.portRight.x, y1 = from.portRight.y;
+      const x2 = to.portLeft.x,   y2 = to.portLeft.y;
+
+      const isHL = highlightedBranch === b.id;
+      const path = svgEl('path', {
+        d: makePath(x1, y1, x2, y2, bIdx),
+        fill: 'none',
+        stroke: b.color,
+        'stroke-width': isHL ? 6 : 3,
+        'stroke-opacity': highlightedBranch ? (isHL ? 1 : 0.07) : 0.75,
+        'stroke-linecap': 'round',
+        'marker-end': isHL ? `url(#arrow-hl-${b.id})` : `url(#arrow-${b.id})`,
+        'data-branch': b.id,
+        style: 'cursor:pointer; transition: stroke-opacity 0.15s, stroke-width 0.1s;'
+      }, layer);
+
+      if (isHL) {
+        path.setAttribute('filter', 'url(#glow)');
+      }
+
+      path.addEventListener('click', e => {
+        e.stopPropagation();
+        highlightedBranch = (highlightedBranch === b.id) ? null : b.id;
+        renderEdges();
+        updateNodeHighlights();
+      });
+    }
+  });
+
+  // Click background = deselect
+  document.getElementById('scene').onclick = e => {
+    if (e.target.id === 'scene') {
+      highlightedBranch = null;
+      renderEdges();
+      updateNodeHighlights();
+    }
+  };
+}
+
+function updateNodeHighlights() {
+  const nodesInHighlight = new Set();
+  if (highlightedBranch) {
+    const b = BRANCHES.find(x => x.id === highlightedBranch);
+    if (b) b.steps.forEach(s => nodesInHighlight.add(s));
+  }
+
+  const hb = highlightedBranch ? BRANCHES.find(x => x.id === highlightedBranch) : null;
+
+  NODES_DEF.forEach(n => {
+    const rect = document.getElementById(`node-${n.id}`);
+    if (!rect) return;
+    if (!highlightedBranch) {
+      rect.setAttribute('opacity', 1);
+      rect.setAttribute('stroke', '#35354a');
+      rect.setAttribute('stroke-width', 1.5);
+      rect.setAttribute('fill', '#161625');
+      rect.removeAttribute('filter');
+    } else if (nodesInHighlight.has(n.id)) {
+      rect.setAttribute('opacity', 1);
+      rect.setAttribute('stroke', hb.color);
+      rect.setAttribute('stroke-width', 3);
+      rect.setAttribute('fill', '#1e1e35');
+      rect.setAttribute('filter', 'url(#glow)');
+    } else {
+      rect.setAttribute('opacity', 0.15);
+      rect.removeAttribute('filter');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// HIT AREAS & TOOLTIPS
+// ═══════════════════════════════════════════════════════
+
+function renderHitAreas() {
+  const layer = document.getElementById('hit-layer');
+  layer.innerHTML = '';
+  const tooltip = document.getElementById('tooltip');
+  const ttName = document.getElementById('tt-name');
+  const ttDetail = document.getElementById('tt-detail');
+
+  NODES_DEF.forEach(n => {
+    const p = positions[n.id];
+    if (!p) return;
+
+    const hit = svgEl('rect', {
+      x: p.x, y: p.y, width: p.w, height: p.h,
+      rx: 4, fill: 'transparent', style: 'cursor:default;'
+    }, layer);
+
+    hit.addEventListener('mouseenter', () => {
+      ttName.textContent = n.label;
+      ttDetail.textContent = n.detail;
+      tooltip.style.display = 'block';
+    });
+    hit.addEventListener('mousemove', e => {
+      tooltip.style.left = (e.clientX + 18) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
+    });
+    hit.addEventListener('mouseleave', () => {
+      tooltip.style.display = 'none';
+    });
+    hit.addEventListener('click', e => {
+      // Find which branches include this node
+      const myBranches = BRANCHES.filter(b => b.steps.includes(n.id) && activeBranches.has(b.id));
+      if (myBranches.length === 0) return;
+      e.stopPropagation();
+      const first = myBranches[0].id;
+      highlightedBranch = (highlightedBranch === first) ? null : first;
+      renderEdges();
+      updateNodeHighlights();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// PAN & ZOOM
+// ═══════════════════════════════════════════════════════
+
+let tx = 10, ty = 10, scale = 0.38;
+const scene = document.getElementById('scene');
+const wrapper = document.getElementById('canvas-wrapper');
+const zoomLabel = document.getElementById('zoom-label');
+
+function applyTransform() {
+  scene.setAttribute('transform', `translate(${tx},${ty}) scale(${scale})`);
+  zoomLabel.textContent = Math.round(scale * 100) + '%';
+}
+
+wrapper.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  const newScale = Math.max(0.08, Math.min(4, scale * factor));
+  const rect = wrapper.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  tx = mx - (mx - tx) * (newScale / scale);
+  ty = my - (my - ty) * (newScale / scale);
+  scale = newScale;
+  applyTransform();
+}, { passive: false });
+
+let dragging = false, lx = 0, ly = 0;
+wrapper.addEventListener('mousedown', e => {
+  if (e.target.tagName === 'path' || e.target.tagName === 'rect' || e.target.tagName === 'text') return;
+  dragging = true;
+  lx = e.clientX; ly = e.clientY;
+  wrapper.classList.add('dragging');
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  tx += e.clientX - lx;
+  ty += e.clientY - ly;
+  lx = e.clientX; ly = e.clientY;
+  applyTransform();
+});
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  wrapper.classList.remove('dragging');
+});
+
+document.getElementById('btn-reset-view').addEventListener('click', () => {
+  tx = 10; ty = 10; scale = 0.38;
+  applyTransform();
+});
+document.getElementById('btn-deselect').addEventListener('click', () => {
+  highlightedBranch = null;
+  renderEdges();
+  updateNodeHighlights();
+});
+
+// ═══════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════
+
+function buildSidebar() {
+  const list = document.getElementById('branch-list');
+  list.innerHTML = '';
+
+  BRANCHES.forEach(b => {
+    const item = document.createElement('div');
+    item.className = 'branch-item' + (activeBranches.has(b.id) ? '' : ' muted');
+    item.dataset.id = b.id;
+
+    const dot = document.createElement('div');
+    dot.className = 'branch-dot';
+    dot.style.background = b.color;
+
+    const label = document.createElement('span');
+    label.className = 'branch-label';
+    label.textContent = b.label;
+
+    const tog = document.createElement('div');
+    tog.className = 'branch-toggle' + (activeBranches.has(b.id) ? ' on' : '');
+
+    item.appendChild(dot);
+    item.appendChild(label);
+    item.appendChild(tog);
+
+    item.addEventListener('click', e => {
+      const id = item.dataset.id;
+      if (activeBranches.has(id)) activeBranches.delete(id);
+      else activeBranches.add(id);
+      tog.classList.toggle('on', activeBranches.has(id));
+      item.classList.toggle('muted', !activeBranches.has(id));
+      if (highlightedBranch === id && !activeBranches.has(id)) {
+        highlightedBranch = null;
+      }
+      renderEdges();
+      updateNodeHighlights();
+    });
+
+    // Double-click = highlight only this branch
+    item.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      const id = item.dataset.id;
+      if (!activeBranches.has(id)) {
+        activeBranches.add(id);
+        tog.classList.add('on');
+        item.classList.remove('muted');
+      }
+      highlightedBranch = (highlightedBranch === id) ? null : id;
+      renderEdges();
+      updateNodeHighlights();
+    });
+
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('sidebar-search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.branch-item').forEach(item => {
+    const label = item.querySelector('.branch-label').textContent.toLowerCase();
+    item.style.display = label.includes(q) ? '' : 'none';
+  });
+});
+
+document.getElementById('btn-show-all').addEventListener('click', () => {
+  BRANCHES.forEach(b => activeBranches.add(b.id));
+  buildSidebar();
+  renderEdges();
+  updateNodeHighlights();
+});
+
+document.getElementById('btn-hide-all').addEventListener('click', () => {
+  activeBranches.clear();
+  highlightedBranch = null;
+  buildSidebar();
+  renderEdges();
+  updateNodeHighlights();
+});
+
+const sidebarEl = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('toggle-sidebar');
+toggleBtn.addEventListener('click', () => {
+  sidebarEl.classList.toggle('collapsed');
+  toggleBtn.textContent = sidebarEl.classList.contains('collapsed') ? '⇥' : '⇤';
+});
+
+// ═══════════════════════════════════════════════════════
+// COLUMN LABELS
+// ═══════════════════════════════════════════════════════
+
+function renderColumnLabels() {
+  const layer = document.getElementById('containers-layer');
+  const colLabels = ['① UI Events', '② JS / React', '③ ExtendScript JSX', '④ Premiere API'];
+  const colColors = ['#4a8fd4', '#3abd6e', '#d4843a', '#a06ec8'];
+  COL_X.forEach((x, i) => {
+    svgText(colLabels[i], {
+      x: x + CONTAINER_W / 2, y: 32,
+      fill: colColors[i], 'font-size': '16', 'font-family': 'Consolas, monospace',
+      'font-weight': '800', 'text-anchor': 'middle', 'letter-spacing': '0.06em',
+      opacity: '0.85'
+    }, layer);
+    svgEl('line', {
+      x1: x, y1: 40, x2: x + CONTAINER_W, y2: 40,
+      stroke: colColors[i], 'stroke-width': 2, opacity: '0.3'
+    }, layer);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+computeLayout();
+renderDefs();
+renderContainers();
+renderColumnLabels();
+renderNodes();
+renderEdges();
+renderHitAreas();
+buildSidebar();
+applyTransform();
+
+</script>
+</body>
+</html>

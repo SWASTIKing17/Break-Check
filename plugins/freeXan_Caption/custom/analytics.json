@@ -1,0 +1,39 @@
+{
+  "Groups": [
+    {
+      "name": "My Sample Topic",
+      "description": "Describe here what data is send (this explanation is shown to the end user in the google anayltics details).",
+      "reason": "Describe here, why it is important for you to send this data (helps improving the product etc)(this explanation is shown to the end user in the google anayltics details).",
+      "events": [
+        {
+          "id": "sampleEventButton",
+          "isSent": "when user clicks the test button",
+          "name": "testButtonClicked"
+        },
+        {
+          "id": "sampleEventButtonWithParam",
+          "isSent": "when user clicks any button",
+          "name": "buttonClicked",
+          "params": {
+            "buttonname": "{BUTTONNAME}",
+            "whatever": "foo"
+          }
+        },
+        {
+          "id": "sampleEventWithParamInName",
+          "isSent": "when user did foo",
+          "name": "foo_{CATEGORY}",
+          "params": {
+            "info": "{INFO}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Another Topic",
+      "description": "Here we describe what data about this other topic is send (having different groups for different analytics topics makes it just a little bit more convenient for the end user to read the analytics details).",
+      "reason": "Describe here, why it is important for you to send this data.",
+      "events": []
+    }
+  ]
+}

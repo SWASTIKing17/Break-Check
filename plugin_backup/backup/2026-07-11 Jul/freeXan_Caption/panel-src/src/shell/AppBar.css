@@ -1,0 +1,67 @@
+/* ── AppBar ──────────────────────────────────────────────────────────────── */
+
+.fx-appbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fx-appbar__brand-name {
+  font-family: var(--fx-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fx-text);
+  letter-spacing: -0.01em;
+}
+
+.fx-appbar__brand-accent {
+  color: var(--fx-accent);
+}
+
+.fx-appbar__brand-sep {
+  color: var(--fx-text-dim);
+  font-weight: 300;
+}
+
+.fx-appbar__brand-product {
+  font-family: var(--fx-font-sans);
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--fx-text-mute);
+}
+
+.fx-appbar__version {
+  font-family: var(--fx-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fx-text-dim);
+  background: var(--fx-bg-hot);
+  padding: 2px 8px;
+  border-radius: var(--fx-radius-pill);
+  border: 1px solid var(--fx-hairline);
+}
+
+.fx-appbar__connection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fx-appbar__connection-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: fx-pulse 1.4s ease-in-out infinite;
+}
+
+.fx-appbar__connection-label {
+  font-family: var(--fx-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fx-text-mute);
+}

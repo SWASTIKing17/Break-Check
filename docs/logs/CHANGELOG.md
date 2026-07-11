@@ -7,6 +7,13 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.8.37] — 2026-07-11 | Feature | Break Check Dashboard v3 — 1-Table Migration & Gemini AI Chat
+
+- **1-Table Database Simplification:** Migrated entire data structure to rely exclusively on `admin_events`, completely removing the Supabase `team_profiles` table. The web dashboard now dynamically resolves employee names from `SELECT DISTINCT employee_id FROM admin_events`. Local Electron apps now hold the only single source of truth for user creation (names, initials, colors).
+- **Executive Overview Landing Tab:** Replaced the Team Profiles tab with a high-level summary view that aggregates Active vs Idle Time %, Flow State Score, and Team Average Modifier Ratio. Added an automated **Friction Warning** component that changes dynamically based on the context switch rate.
+- **Global KPI Strip Redesign:** Updated global stats to focus on human productivity (Flow State, Active Minutes) rather than raw server logs. 
+- **AI Copilot (Gemini Flash Chat):** Added a floating, collapsible AI chat widget powered by Google's `gemini-2.5-flash` via a new serverless function (`chat.js`). The AI automatically receives the current editor's live KPI context, letting admins ask questions like "Summarize Swastik's day" without manual prompt-feeding.
+
 ## [v3.8.36] — 2026-07-11 | UI | Break Check: Empty Profile Ghost Data Fix (`app.js`)
 
 - **Reset UI state**: Added `resetDashboardUI()` to cleanly wipe out all residual text KPIs, project list tables, modifier gauges, context switch rates, switch pairs, and RAM alert borders when switching to a user with no logs.

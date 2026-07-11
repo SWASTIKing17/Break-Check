@@ -1,0 +1,135 @@
+/* ════════════════════════════════════════════════════════════════════════════
+ *  freeXan Caption — App Shell Layout
+ *  Grid layout for the main application shell:
+ *  StatusRail (4px) | Main content area (AppBar + TabStrip + tab content)
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: var(--fx-rail-w) 1fr;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+}
+
+/* ── Status Rail ────────────────────────────────────────────────────────── */
+
+.fx-status-rail {
+  grid-column: 1;
+  grid-row: 1;
+  width: var(--fx-rail-w);
+  height: 100%;
+  z-index: 100;
+}
+
+/* ── Main Column ────────────────────────────────────────────────────────── */
+
+.fx-main {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── App Bar ────────────────────────────────────────────────────────────── */
+
+.fx-appbar {
+  flex: 0 0 var(--fx-appbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--fx-gutter);
+  border-bottom: 1px solid var(--fx-hairline);
+  background: var(--fx-bg);
+  z-index: 50;
+}
+
+/* ── Tab Strip ──────────────────────────────────────────────────────────── */
+
+.fx-tabstrip {
+  flex: 0 0 var(--fx-tabstrip-h);
+  display: flex;
+  align-items: center;
+  gap: var(--fx-space-xs);
+  padding: 0 var(--fx-gutter);
+  border-bottom: 1px solid var(--fx-hairline);
+  background: var(--fx-bg);
+}
+
+/* ── Tab Content ────────────────────────────────────────────────────────── */
+
+.fx-tab-content {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--fx-gutter);
+}
+
+/* ── M1 Placeholder ────────────────────────────────────────────────────── */
+
+.fx-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--fx-space-lg);
+  text-align: center;
+}
+
+.fx-placeholder__brand {
+  font-family: var(--fx-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fx-text-mute);
+}
+
+.fx-placeholder__title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fx-text);
+  letter-spacing: -0.02em;
+}
+
+.fx-placeholder__accent {
+  color: var(--fx-accent);
+}
+
+.fx-placeholder__version {
+  font-family: var(--fx-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fx-text-dim);
+  background: var(--fx-bg-hot);
+  padding: 3px 10px;
+  border-radius: var(--fx-radius-pill);
+  border: 1px solid var(--fx-hairline);
+}
+
+.fx-placeholder__status {
+  font-size: 12px;
+  color: var(--fx-text-dim);
+  margin-top: var(--fx-space-sm);
+}
+
+.fx-placeholder__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fx-accent);
+  margin-right: var(--fx-space-xs);
+  animation: fx-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes fx-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}

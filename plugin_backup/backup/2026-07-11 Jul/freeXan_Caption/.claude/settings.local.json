@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"c:\\\\Swastik Development\\\\SubMachine\\\\panel\\\\jsx\\\\core\\\\sync.jsx\" \"C:\\\\Users\\\\msi\\\\AppData\\\\Roaming\\\\Adobe\\\\CEP\\\\extensions\\\\SubMachine v2\\\\panel\\\\jsx\\\\core\\\\sync.jsx\")",
+      "Bash(cp \"c:\\\\Swastik Development\\\\SubMachine\\\\panel\\\\js\\\\tools_refactor.js\" \"C:\\\\Users\\\\msi\\\\AppData\\\\Roaming\\\\Adobe\\\\CEP\\\\extensions\\\\SubMachine v2\\\\panel\\\\js\\\\tools_refactor.js\")",
+      "Read(//c/Users/msi/AppData/Roaming/Adobe/CEP/extensions/SubMachine v2/**)",
+      "Bash(touch \"C:/Users/msi/AppData/Roaming/Adobe/CEP/extensions/SubMachine v2/panel/logs/test.txt\")",
+      "Bash(rm \"C:/Users/msi/AppData/Roaming/Adobe/CEP/extensions/SubMachine v2/panel/logs/test.txt\")",
+      "Bash(node -e ' *)",
+      "Bash(cp \"c:/Swastik Development/SubMachine/panel/jsx/core/sync.jsx\" \"C:/Users/msi/AppData/Roaming/Adobe/CEP/extensions/SubMachine v2/panel/jsx/core/sync.jsx\")",
+      "Bash(cp \"c:/Swastik Development/SubMachine/panel/jsx/core/timeline.jsx\" \"C:/Users/msi/AppData/Roaming/Adobe/CEP/extensions/SubMachine v2/panel/jsx/core/timeline.jsx\")",
+      "Bash(cp \"c:/Swastik Development/SubMachine/panel/jsx/core/utils.jsx\" \"C:/Users/msi/AppData/Roaming/Adobe/CEP/extensions/SubMachine v2/panel/jsx/core/utils.jsx\")",
+      "Bash(sed -n '2420,2450p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '11500,11520p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '14030,14050p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '20318,20340p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '22590,22620p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '23470,23510p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '25360,25380p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(sed -n '25560,25590p' \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(node \"C:/tmp/annotate_panel.js\")",
+      "Bash(node -e \"require\\('acorn'\\)\")",
+      "Bash(node -e \"require\\('vm'\\)\")",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('acorn'\\); console.log\\('ok'\\)\")",
+      "Bash(node \"C:/tmp/deobfuscate.js\")",
+      "Bash(grep -n \"function \\\\$\\(\" \"c:/Swastik Development/SubMachine/panel/js/panel_formatted.js\")",
+      "Bash(node \"C:/tmp/deobfuscate_v2.js\")",
+      "Bash(node --check \"panel/js/panel_clean.js\")",
+      "Bash(grep -n \"b\\(\\); // tool starts\\\\|we should start\\\\|function m\\(\\\\|function y\\(\\\\|function \\\\$\\(\\\\|ga\\\\.userid\\\\|measurement_id\\\\|api_secret\\\\|activate\\\\|licen\" \"c:/Swastik Development/SubMachine/panel/js/panel_clean.js\")",
+      "Bash(node \"C:/tmp/deobfuscate_v3.js\")"
+    ]
+  }
+}

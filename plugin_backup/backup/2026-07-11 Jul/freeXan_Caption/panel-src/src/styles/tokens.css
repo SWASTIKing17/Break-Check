@@ -1,0 +1,74 @@
+/* ════════════════════════════════════════════════════════════════════════════
+ *  freeXan Caption — Design Tokens
+ *  Single source of truth for the brand's visual language.
+ *  Migrated from .wf-shell inline styles → global :root scope.
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surface ramp ─────────────────────────────────────────────────────── */
+  --fx-bg:           #121214;
+  --fx-bg-elev:      #18181b;
+  --fx-bg-card:      #161618;
+  --fx-bg-deep:      #0c0c0e;
+  --fx-bg-hot:       #1f1f23;
+
+  /* ── Accent — purple ──────────────────────────────────────────────────── */
+  --fx-accent:       #997DFF;
+  --fx-accent-soft:  rgba(153, 125, 255, 0.07);
+  --fx-accent-dim:   rgba(153, 125, 255, 0.18);
+  --fx-accent-mid:   rgba(153, 125, 255, 0.34);
+  --fx-accent-glow:  rgba(153, 125, 255, 0.45);
+
+  /* ── Semantic colors ──────────────────────────────────────────────────── */
+  --fx-success:      #10b981;
+  --fx-success-dim:  rgba(16, 185, 129, 0.18);
+  --fx-success-soft: rgba(16, 185, 129, 0.08);
+
+  --fx-error:        #ef4444;
+  --fx-error-dim:    rgba(239, 68, 68, 0.18);
+
+  --fx-warn:         #f59e0b;
+  --fx-warn-dim:     rgba(245, 158, 11, 0.18);
+
+  /* ── Text ─────────────────────────────────────────────────────────────── */
+  --fx-text:         #f3f3f5;
+  --fx-text-mute:    #9a9aa3;
+  --fx-text-dim:     #5e5e66;
+  --fx-text-deep:    #38383d;
+
+  /* ── Borders / hairlines ──────────────────────────────────────────────── */
+  --fx-hairline:     #232328;
+  --fx-hairline-hot: #2e2e36;
+  --fx-hairline-lit: rgba(153, 125, 255, 0.28);
+  --fx-border:       rgba(255, 255, 255, 0.06);
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --fx-font-sans:    'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --fx-font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* ── Spacing (8pt grid) ───────────────────────────────────────────────── */
+  --fx-space-xs:     4px;
+  --fx-space-sm:     8px;
+  --fx-space-md:     12px;
+  --fx-space-lg:     16px;
+  --fx-space-xl:     20px;
+  --fx-space-2xl:    24px;
+  --fx-space-3xl:    32px;
+
+  /* ── Radii ────────────────────────────────────────────────────────────── */
+  --fx-radius-sm:    4px;
+  --fx-radius-md:    6px;
+  --fx-radius-lg:    8px;
+  --fx-radius-pill:  100px;
+
+  /* ── Transitions ──────────────────────────────────────────────────────── */
+  --fx-ease:         cubic-bezier(0.16, 1, 0.3, 1);
+  --fx-duration:     180ms;
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  --fx-appbar-h:     40px;
+  --fx-tabstrip-h:   44px;
+  --fx-rail-w:       4px;
+  --fx-rail-w-open:  240px;
+  --fx-gutter:       20px;
+}

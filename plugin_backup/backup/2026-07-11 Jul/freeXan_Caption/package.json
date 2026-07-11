@@ -1,0 +1,17 @@
+{
+  "name": "freexan-caption",
+  "version": "1.0.0",
+  "description": "freeXan Caption by BloomX — caption automation for Adobe Premiere Pro",
+  "private": true,
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "jszip": "^3.10.1",
+    "mkdirp": "^0.5.1",
+    "path": "^0.12.7",
+    "subtitle": "^4.2.1",
+    "temp": "^0.8.3"
+  },
+  "devDependencies": {
+    "acorn": "^8.16.0"
+  }
+}

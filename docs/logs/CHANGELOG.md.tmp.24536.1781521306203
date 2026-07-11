@@ -1,0 +1,1140 @@
+# CHANGELOG — freeXan by BloomX
+
+All notable changes to this project are documented here.  
+Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
+
+**Types:** `Feature` · `Fix` · `Logic` · `UI` · `DB` · `Build` · `Refactor` · `Security` · `Perf` · `Rebrand`
+
+---
+
+## [v3.1.5] — 2026-06-15 16:30
+
+### Rebrand · CEP
+- **`CEPs/SubMachine/` rebranded end-to-end as freeXan Caption by BloomX** — The SubMachine CEP plugin (forked from aescripts) has been retitled, re-ID'd, and re-themed to live natively inside the freeXan suite. The plugin now identifies as **freeXan Caption**, extension id **`com.bloomx.freexan.caption`** (panel: `.panel`, about: `.about`). Bundle name and Premiere `Window → Extensions` menu both read "freeXan Caption". The internal mode string `"submachine"` (used in mogrtMode comparisons across JS/JSX) renamed to `"freexan"`. XMP namespace URI moved from `http://ns.adobe.com/submachine/1.0/` to `http://ns.bloomxsolutions.com/freexan-caption/1.0/`. CSXS event names migrated: `submachine.paramsUpdated` → `freexan.caption.paramsUpdated`, `com.freexan.submachine.executeAction` → `com.freexan.caption.executeAction`, `com.freexan.submachine.variationSaved` → `com.freexan.caption.variationSaved`. window-event prefix `submachine:` → `freexan-caption:`. localStorage keys renamed (`submachine_phrase_locks_v1`, `submachine_color_history`, `submachine_pinned_props_v1` → `freexan_caption_*`). Persistent-extension key `com.swastik.submachine` → `com.bloomx.freexan.caption.persistent`. JSX debug log filename `submachine_jsx.log` → `freexan_caption_jsx.log`.
+- **`CSXS/manifest.xml` reset to v1.0.0** — Fresh ExtensionBundle version under the new identity. ExtensionBundleId, both Extension Ids, and the panel `<Menu>` label all updated.
+- **Installer renamed: `Install_SubMachine.bat` → `Install_freeXan_Caption.bat`** — `BUNDLE_ID` env-var updated to `com.bloomx.freexan.caption`. macOS counterpart `install_mac.command` also updated to install at `~/Library/Application Support/Adobe/CEP/extensions/com.bloomx.freexan.caption`. Success banners and post-install instructions ("Window → Extensions → freeXan Caption") rebranded.
+- **`META-INF/signatures.xml` removed** — The original aescripts CEP signature is invalidated by every change above. Folder deleted; the panel now installs as an unsigned extension (already required `PlayerDebugMode 1`, which both installers continue to set). **Re-sign with a BloomX certificate before any production distribution.**
+- **UI / theming aligned with freeXan brand** — `custom/header.html` rewritten from an embedded aescripts PNG to a typographic SVG-less header (IBM Plex Sans + JetBrains Mono, `#121214` background, `#997DFF` accent border, subtle grid overlay) reading "freeXan / Caption / by BloomX". `custom/help.html` retypeset against the freeXan palette (dark surface, purple accent, IBM Plex Sans body, mono section labels), brand banner replaces the AEScripts banner image, support button now mails `contentai@bloomxsolutions.com`. `custom/about.html` rewritten ("freeXan Caption is part of the freeXan workflow suite by BloomX — invisible infrastructure for Adobe Premiere Pro"). `dialog/dialog.css` accent colour swapped from `#2D8CEB` (aescripts blue) to `#997DFF` (freeXan purple) across focus rings, buttons, loaders, highlight, and remind-option hover. `dialog/dialog.html` support button URL changed to `mailto:contentai@bloomxsolutions.com`.
+- **Visible "by aescripts + aeplugins" → "by BloomX"** — Analytics dialog copy, license-block text, "Buy License"/"Support" buttons, and the manager-app upsell link (`aescripts.com/learn/aescripts-aeplugins-manager-app`) all repointed to BloomX equivalents (`bloomxsolutions.com`, `mailto:contentai@bloomxsolutions.com`).
+- **Hashtag `#createdWithSubMachine` → `#createdWithFreeXanCaption`** — Updated everywhere in panel.html and about/help copy.
+- **`package.json` reset** — name `freexan-caption`, version `1.0.0`, description set; dependencies untouched.
+- **`.debug` updated** — Local CEP debug map now points the new `com.bloomx.freexan.caption.panel` id to the existing PPRO:8088 / AEFT:8089 ports.
+
+### Skipped (intentionally per scope)
+- **`CEPs/SubMachine/docs/`** (guides, logs, conversation, roadmap) — kept as historical record under the old name; not shipped by the installer, so user-facing impact is zero.
+- **`CEPs/SubMachine/mogrt sample/`** — `.mogrt` folder/file names and their internal `definition.json` content preserved; renaming them would change template identity inside Premiere and break user projects that already reference them.
+- **`CEPs/SubMachine/old_files/`, `scratch/`, `debug/`, `BUG/`, `SKILL/`, `Prompt/`, `Extras/`** — dev scratch and reference material, not shipped.
+- **Image binaries in `CEPs/SubMachine/panel/images/`** — all `SubMachine *.png` thumbnails, `Aescripts Help Header.png`, `BMP_Logo_Still.png`, MOGRT preview GIFs, etc. left in place so the panel keeps rendering today. **A full replacement list is at `CEPs/SubMachine/IMAGE_REPLACEMENT_LIST.md`** — drop new artwork into `panel/images/` with the same filenames (or rename + update HTML refs in `panel.html`/`help.html`).
+- **`META-INF/signatures.xml`** removed (see above) — must be re-generated with a BloomX cert before distribution.
+
+### Follow-up required (NOT done in this session)
+- **`main.js` install-path map and `build/installer.nsh` uninstall list still reference `com.aescripts.submachine` and `SubMachine`** — when this rebranded plugin is bundled into the freeXan Electron build (i.e. copied into `plugins/SubMachine/` or renamed to `plugins/freeXan_Caption/`), those references will need to be updated to `com.bloomx.freexan.caption`. v3.1.4's bundle-id table will need updating.
+- **`plugins/SubMachine/` (bundled copy inside the Electron app) is now out of sync with `CEPs/SubMachine/`** — sync after this rebrand is verified working in dev.
+- **Re-signing** the CEP bundle with a BloomX certificate before publishing.
+
+---
+
+## [v3.1.4] — 2026-06-15 14:00
+
+### Fix · Build · CEP
+- **Plugin install folder now uses ExtensionBundleId — eliminates duplicate side-by-side installs** — Prior to this fix the Electron app installed each CEP plugin to `%APPDATA%\Adobe\CEP\extensions\<sourceFolderName>\` (e.g. `SubMachine`, `MisterBloomX`), but the standalone `.bat` installers (`CEPs/SubMachine/Install_SubMachine.bat`, etc.) installed to `<ExtensionBundleId>` (e.g. `com.aescripts.submachine`, `com.bloomx.misterbloomx`). Result: a user who ran the `.bat` *and* `npm start` (or the installer .exe) ended up with two folders containing the same plugin, and Premiere would load both panels. Standardised every install path on the bundle id from `CSXS/manifest.xml`.
+- **`main.js` — new `getBundleIdFromManifest(manifestPath)`** — Parses the `ExtensionBundleId` attribute out of each plugin's `CSXS/manifest.xml`. Used by `installCEPExtension()` to derive the destination folder name.
+- **`main.js` — `installCEPExtension()` rewritten** — Now installs to `%APPDATA%\Adobe\CEP\extensions\<bundleId>\` (matching the .bat installers). Before each install it also wipes any leftover `<sourceFolderName>` folder from a pre-v3.1.4 freeXan run, so users who upgrade in place don't keep ghost copies. Same `enabledMap` / CLI-skip logic as before — only the destination folder name changed.
+- **`build/installer.nsh` — `customUnInstall` updated** — Removes both the new bundle-id folders (`com.bloomx.freexan.link`, `com.bloomx.freexan.audio`, `com.bloomx.misterbloomx`, `com.aescripts.submachine`) and the legacy folder-name copies (`Link_freeXan`, `Audio_freeXan`, `MisterBloomX`, `SubMachine`) so an uninstall from any freeXan version cleans up fully.
+
+**Bundle id ⇄ source folder map (single source of truth from now on):**
+| `plugins/<folder>` | `ExtensionBundleId` |
+|---|---|
+| `Link_freeXan` | `com.bloomx.freexan.link` |
+| `Audio_freeXan` | `com.bloomx.freexan.audio` |
+| `MisterBloomX` | `com.bloomx.misterbloomx` |
+| `SubMachine` | `com.aescripts.submachine` |
+
+---
+
+## [v3.1.3] — 2026-06-15 12:30
+
+### Fix · Refactor · CEP
+- **SubMachine bundle sync — restore compatibility with latest MisterBloomX** — The latest MisterBloomX panel (synced in v3.1.2) switched its Apply/Replace flow from the old WebSocket relay (`select_mogrt` → freeXan → `mogrt_ready` → SubMachine) to direct CSEvent dispatch (`com.freexan.submachine.executeAction`). The bundled `plugins/SubMachine/` was still on the old code and silently ignored the new event. Synced three files from `CEPs/SubMachine/` (the dev master) into `plugins/SubMachine/`:
+  - **`panel/js/workflow.js`** — adds the `com.freexan.submachine.executeAction` CSEvent listener (28 lines). Handler reads `{ action, mogrtPath, parameters }`, populates `#mogrtFile` input, fires `change`, and for `replace_selected` / `sync_style` dispatches a `window` CustomEvent (`submachine:replace_selected` etc.) to the React side. Legacy `mogrt_ready` WebSocket handler kept for back-compat with older MisterBloomX builds.
+  - **`panel/js/command_center_react.js`** — adds `window.addEventListener('submachine:replace_selected', onReplaceEvent)` in the React effect, plus the reverse-direction CSEvent dispatch (`com.freexan.submachine.variationSaved`) so MisterBloomX can refresh its variations pane after a style is saved in SubMachine.
+  - **`panel/jsx/core/mogrt.jsx`** — updated ExtendScript core for the new MOGRT-replace / sync-style actions.
+- **No `freeXan`/`main.js` change required** — the WebSocket contract (`get_project_state` / `project_state`, `get_mogrt_library` / `mogrt_library_data` / `mogrt_library_changed`) is unchanged; only the MisterBloomX↔SubMachine inter-plugin path moved off the WS bus and onto direct CSEvent dispatch.
+- **No `MisterBloomX` plugin change required** — already synced to its latest form in v3.1.2.
+
+**Compatibility matrix after this sync:**
+| freeXan version | MisterBloomX (bundled) | SubMachine (bundled) | Apply flow |
+|---|---|---|---|
+| v3.1.3 | latest (CSEvent dispatch) | latest (CSEvent listener + legacy `mogrt_ready` fallback) | ✓ Direct CSEvent, no WS hop |
+| v3.1.3 | older user-installed MisterBloomX | latest SubMachine | ✓ Falls back to `mogrt_ready` WS path |
+
+---
+
+## [v3.1.2] — 2026-06-15 12:00
+
+### Feature · UI · CEP
+- **Settings tab — "Watched MOGRT Library Folders" section** — New folder-watcher UI for MisterBloomX, mirroring the existing Audio watcher. Located in `renderer/index.html → #tab-settings`, immediately below the Audio Library section. Includes an "Add Folder" button and a scrollable list of currently-watched folders with `×` remove buttons. (`renderer/index.html`, `renderer/settings.js`)
+- **`renderer/settings.js → refreshMogrtFoldersList()`** (new): Calls `window.api.db.getMogrtFolders()` and renders rows identical in style to the audio list. Delete row prompts confirmation; on confirm, calls `deleteMogrtFolder(id)` and refreshes. `bindSettingsEvents()` now also wires `#btn-browse-mogrt-dir` and triggers an initial `refreshMogrtFoldersList()` on tab load.
+- **`preload.js` — MOGRT bridge** — Added `db.getMogrtFolders`, `db.addMogrtFolder`, `db.deleteMogrtFolder`, `db.selectMogrtFolder` that proxy to the existing `mogrt-*` IPC channels in `main.js`. No new IPC handlers needed in `main.js` — the channels already existed (since v3.0.6 MOGRT system); they just weren't exposed to the renderer yet.
+
+### Refactor · CEP
+- **MisterBloomX panel sync** — Latest `CEPs/MISTER_BloomX/dist/index.html` (15.4 KB, dated Jun 13 19:44) synced into `plugins/MisterBloomX/dist/index.html` (was 19.3 KB, Jun 13 17:40). The CEPs version is the authoritative one and supersedes the older bundled copy.
+
+---
+
+## [v3.1.1] — 2026-06-13 19:00
+
+### Feature · Build · CEP
+- **CLI plugin-skip override on `npm start`** — `main.js → getEnabledPluginsMap()` now reads bare arguments from `process.argv` and disables matching plugin folders for that launch only. Lookup is case-insensitive against actual `plugins/*/` folder names, so `npm start SubMachine`, `npm start submachine`, `npm start -- SubMachine MisterBloomX`, and the packaged equivalent `freeXan.exe SubMachine` all work. `--`-prefixed flags (e.g. `--hidden`) are skipped. CLI overrides apply *last*, so they win over the installer-written `plugins-enabled.json`. Use this to bypass an under-development or unstable plugin without re-running the installer. (`main.js`)
+- **Auto-update of all plugins on every launch** — already inherent behaviour of `installCEPExtension()`: it wipes `%APPDATA%/Adobe/CEP/extensions/<name>/` and recopies from `plugins/<name>/` on every app start. No code change — documented here for clarity. This means any edit to a file under `plugins/` propagates into Premiere on the next `npm start` (Premiere must be restarted to pick up the new CEP files).
+- **`main.js → getCliSkipSet()`** (new helper): enumerates `plugins/` to build the canonical-name lookup, then filters `process.argv.slice(2)` for non-flag args, returning the set of folder names to skip.
+
+---
+
+## [v3.1.0] — 2026-06-13 14:30
+
+### Build · Refactor · CEP
+- **Plugin bundle restructure + component-select installer** — All four CEP plugins (Link freeXan, Audio freeXan, MisterBloomX, SubMachine) are now packaged into a unified `plugins/` source folder. Each is a self-contained Adobe CEP bundle with its own `CSXS/manifest.xml`. The installer asks the user which plugins to install (all checked by default).
+  - **`plugins/Link_freeXan/`** (new): Split out from `cep-extension/`. Bundle `com.bloomx.freexan.link`, panel `com.bloomx.freexan.link.panel`. Files: `panel.html`, `ext.js`, `hostscript.jsx`, `CSInterface.js`, `sequence-preset.sqpreset`, `sqpersets/`, `CSXS/manifest.xml` (Link-only).
+  - **`plugins/Audio_freeXan/`** (new): Split out from `cep-extension/`. Bundle `com.bloomx.freexan.audio` (new), panel `com.bloomx.freexan.audio.panel` (preserved). Files: `audio.html`, `audio.js`, `audio-player.css`, `Tone.js`, `wavesurfer.min.js`, `regions.min.js`, `handle-left.svg`, `handle-right.svg`, `hostscript.jsx`, `CSInterface.js`, `CSXS/manifest.xml` (Audio-only).
+  - **`plugins/MisterBloomX/`** (new): Moved from `CEPs/MISTER_BloomX/`. Contains `CSXS/`, `bridge/`, `dist/` (custom MOGRT browser HTML panel). Dev-only `.env` and Features.md retained.
+  - **`plugins/SubMachine/`** (new): Moved from `CEPs/SubMachine/` — runtime files only (`CSXS/`, `META-INF/`, `custom/`, `dialog/`, `panel/`, `src/`, `mimetype`). Excluded: `docs/`, `old_files/`, `scratch/`, `BUG/`, `.git/`, `node_modules/`. Folder size dropped from 269MB → 20MB.
+  - **`plugins/README.md`** (new): Plugin folder map + install rules + how to add a new plugin.
+  - **`main.js → installCEPExtension()`**: Rewritten. Now enumerates `plugins/` (via `getPluginsSourceRoot()`, which prefers `process.resourcesPath/plugins/` in packaged builds and falls back to `__dirname/plugins/` in dev). Reads `plugins-enabled.json` (via `getEnabledPluginsMap()`) — written by the installer next to `freeXan.exe`. For each plugin folder with a `CSXS/manifest.xml`: if enabled, wipes the target dir and copies the bundle to `%APPDATA%/Adobe/CEP/extensions/<name>/`; if disabled, removes the bundle from Adobe's extensions dir. Legacy folder list extended with `freexan-link` so existing v3.0.x installs are cleaned up on first run of v3.1.0.
+  - **`electron-builder.yml`**: `oneClick: true` → `oneClick: false` (wizard install). Added `allowToChangeInstallationDirectory: true`. Added `extraResources: plugins/ → plugins/` so NSIS can find plugin files at install time. Removed `cep-extension/**/*` from both `files` and `asarUnpack` (now superseded by `plugins/`). Added `!CEPs/**` and `!cep-extension/**` to file excludes; also excluded `.claude/`, `.agent/`, `graphify-out/`, `docs/`.
+  - **`build/installer.nsh`**: Rewritten. Adds a custom NSIS Plugins page (via `customPageAfterChangeDir`) with four checkboxes (all checked by default) — Link freeXan, Audio freeXan, MisterBloomX, SubMachine. `PluginsPageLeave` captures state into variables. `customInstall` writes `plugins-enabled.json` to `$INSTDIR` as a small JSON map (`{"Link_freeXan": true, ...}`). Uninstaller removes all four plugin folders from `%APPDATA%/Adobe/CEP/extensions/` plus the legacy `freexan-link/`, and deletes `plugins-enabled.json`.
+
+---
+
+## [v3.0.6] — 2026-06-10
+
+### Feature · Logic · CEP
+- **MOGRT library system — freeXan ↔ MISTER BloomX ↔ SubMachine** — Mirrors the audio library architecture for `.mogrt` files.
+  - **`mogrtDb.js`** (new): SQLite database for MOGRT files and watched folders (`mogrt-library.db` in userData). Same pattern as `audioDb.js` — `foldersApi` and `mogrtApi` with upsert, delete, toggleFavorite, updateTags, incrementUseCount.
+  - **`mogrtWatcher.js`** (new): `fs.watch` recursive folder watcher for `.mogrt` files. Mirrors `audioWatcher.js` — `initWatchers`, `watchDirectory`, `stopWatching`, `stopAll`.
+  - **`main.js`**: Added `require` for both modules; `broadcastToAll()` and `broadcastMogrtChange()` helpers; WebSocket handlers `get_mogrt_library`, `toggle_mogrt_favorite`, `update_mogrt_tags`, `record_mogrt_use`, `add_mogrt_folder`, `remove_mogrt_folder`, `select_mogrt` (copies MOGRT to `SM_Assets/` in project folder, broadcasts `mogrt_ready` to all panels); IPC handlers `mogrt-get-watched-folders`, `mogrt-add-folder`, `mogrt-delete-folder`, `mogrt-select-folder`; mogrtWatcher init on `app.ready`; stopAll on `before-quit`.
+  - **`CEPs/MISTER_BloomX/dist/index.html`** (replaced): Custom MOGRT browser UI — card grid, search, category filter, favorites, tag editor (double-click card), watched folder management in Settings overlay. Connects to freeXan WS, sends `get_mogrt_library` / `select_mogrt`. Clicking Apply on a card triggers `select_mogrt` → freeXan copies the file and broadcasts `mogrt_ready`.
+  - **`CEPs/SubMachine/panel/js/workflow.js`**: Added `mogrt_ready` WS handler — populates SubMachine's `#mogrtFile` input with the copied local path and fires a change event, triggering SubMachine's existing apply flow.
+
+---
+
+## [v3.0.5] — 2026-06-10
+
+### Feature · Logic
+- **`get_project_state` WebSocket handler** — Added handler in `main.js` `ws.on('message', ...)` block. Responds to `{ type: 'get_project_state' }` with `{ type: 'project_state', projectPath, connected }`. `projectPath` resolves as `activeProjectPath || nativeProjectPath || null`; `connected` is `true` when a path is known. Used by the SubMachine CEP panel to discover the active Premiere project path on connect without user browse. (`main.js`)
+
+---
+
+## [v3.0.4] — 2026-06-09
+
+### Fix · UI · Audio
+- **Card waveforms flickering during scale slider drag** — `applyCardScale` was calling `renderGrid()` (via debounce) which wiped `grid.innerHTML` and rebuilt all DOM nodes, causing a blank flash every 180ms while dragging. Fixed: extracted mini-waveform logic into shared `getMiniPeaks()` and `drawMiniWaveformCanvas()` helpers. Scale change now calls `redrawAllCardCanvases()` instead — finds every visible `.card-waveform canvas` in place, resizes and redraws it with no DOM destruction. Cards off-screen (whose canvas was removed by the IntersectionObserver) are ignored; they are drawn at the correct size when they scroll back into view via `currentCardWaveH()`. (`cep-extension/audio.js`)
+
+---
+
+## [v3.0.3] — 2026-06-09
+
+### Feature · UI · Audio
+- **Card scale slider in header** — A compact range slider (⊞ icon + 54px track) added to the right side of the audio panel header, separated from the Hover/Sync toggles by a divider. Drag to change how many cards fit per row: left = more smaller cards, right = fewer larger cards. Range 60–180px card min-width, default 96px. Waveform tile height scales proportionally (20–56px). Selection persists via `localStorage` (`audio_card_scale`). Grid rebuilds with correct canvas sizes 180ms after drag ends. (`cep-extension/audio.html`, `cep-extension/audio.js`, `cep-extension/audio-player.css`)
+
+---
+
+## [v3.0.2] — 2026-06-09
+
+### Fix · Build · Audio
+- **Card waveforms showing fake bars on installed systems** — `audioWatcher.js` had the same ASAR path bug as `main.js` (fixed in v3.0.1). `generatePeaks()` was spawning FFmpeg from inside `app.asar` (unexecutable) → getting 0 bytes → returning `''` → storing empty peaks in DB. The card renderer's fallback at line 698 then generated deterministic-but-fake sinusoidal bars from a hash of the filename. Fixed: module-level `ffmpegExe` constant with `.replace('app.asar/', 'app.asar.unpacked/')`, replacing the local `const ffmpegPath = ffmpegInstaller.path` inside `generatePeaks`. On next app startup the watcher re-scans all watched folders and upserts correct peaks for every file. (`audioWatcher.js`)
+
+---
+
+## [v3.0.1] — 2026-06-09
+
+### Fix · Build · Audio
+- **Waveform blank on installed systems — FFmpeg ASAR path** — `require('@ffmpeg-installer/ffmpeg').path` returns a path pointing inside the `app.asar` virtual archive (e.g. `resources/app.asar/node_modules/@ffmpeg-installer/...`). Binaries inside ASAR cannot be executed; `asarUnpack` extracts the file to `app.asar.unpacked` but the module's `.path` property is not updated. Fixed: derive `ffmpegPath` at startup by replacing `app.asar/` with `app.asar.unpacked/` in the installer path. All three `exec`/`spawn` call sites updated to use `ffmpegPath`. (`main.js`)
+
+---
+
+## [v3.0.0] — 2026-06-09
+
+### Build
+- **Production installer built** — `dist\freeXan Setup 3.0.0.exe` (Windows x64, NSIS, signed). Electron 30.5.1 · better-sqlite3 rebuilt for x64. Version bumped from 2.6.0 → 3.0.0 in `package.json`.
+
+---
+
+## [v2.9.15] — 2026-06-09
+
+### Fix · Audio · CEP · Logic
+- **Timeline clip name still showed dummy after project item rename** — Premiere Pro does not propagate a project item rename to already-placed timeline clips. After `target.name = newName` in `doReplaceInPremiere`, an ExtendScript loop now iterates all sequences, both audio and video tracks, and sets `clip.name = newName` for any clip whose current name still matches `dName`. (`cep-extension/audio.js`)
+- **Stale empty-file cache served after broken render** — `process_audio` cache check only tested `fs.existsSync(outPath)`. Prior broken renders (caused by the `-to 0` FFmpeg bug) produced 44-byte files containing only the WAV header. These were being served as valid audio, causing the `changeMediaPath` call to fail silently. Fixed by also requiring `fs.statSync(outPath).size > 44`. (`main.js`)
+- **Option C slot map missing bin names** — The first-drop Option C slot map only wrote `folder` entries; `bin` was always `null`, so `process_audio` routed all imports to the root Premiere bin. Fixed: derive bin names from `fileTpl.bins_json` using `inferSlotType` and explicit `slotType`/`slotTypes` fields, matching normal project-creation bin derivation. (`main.js`)
+- **`process_audio` couldn't locate Option C slot map** — Handler only looked in `path.dirname(resolvedProjectPath)` (the `.prproj` folder), not in the dated folder under `appConfig.targetDir`. Added an Option C detection block: if normal slot map lookup yields nothing and `targetDir` is set, reconstruct today's dated folder path and load the slot map from there. (`main.js`)
+
+---
+
+## [v2.9.14] — 2026-06-09
+
+### Fix · Audio · CEP
+- **Dummy duration always 1 sec when no trim set** — `requestDummyFile()` used `trimEnd` directly; since `trimEnd` initialises to `0`, `isNaN(0)=false` so `end=0`, giving `dur=0` which fell back to `1`. Fixed: guard `trimEnd > 0`; fall back to `wavesurfer.getDuration() || selectedAudioRawDuration || selectedAudio.duration`. (`cep-extension/audio.js`)
+- **False trim / FFmpeg `-to 0` producing empty output** — `isTrimmed` in `dragstart` evaluated `(dur - trimEnd) > 0.05` which is `true` for any file when `trimEnd=0`. This sent `trimEnd: 0` to `process_audio`, causing FFmpeg to run `-to 0` and produce a zero-length WAV. The replacement then failed and the dummy name persisted in the timeline. Fixed: guard with `trimEnd > 0` before the `(dur - trimEnd)` check; send `null` for trim args when not actually trimmed. (`cep-extension/audio.js`)
+- **Duplicate `pitch/speed/dur/isTrimmed` declarations in `dragstart`** — inner block re-declared the same `var`s unnecessarily; removed the duplicates. (`cep-extension/audio.js`)
+
+---
+
+## [v2.9.13] — 2026-06-08
+
+### Fix · Feature · Audio
+- **Playhead now visible during playback** — `playheadUI` was declared but never assigned to `#waveform-playhead`, so `animatePlayhead` exited immediately on every call. Fixed by assigning `playheadUI = document.getElementById('waveform-playhead')` in `initUI()`. (`cep-extension/audio.js`)
+- **Animation loop now starts on play** — `animatePlayhead` was never kicked off when `playAudio()` was called. Fixed by adding `requestAnimationFrame(animatePlayhead)` inside `doPlay` (cancels any prior frame first). (`cep-extension/audio.js`)
+- **Minimap playhead** — Added `#minimap-playhead` div inside `#waveform-minimap`. `animatePlayhead` now also positions this element using `smoothTime / selectedAudioRawDuration` so playback position is visible on the context track. (`cep-extension/audio.html`, `cep-extension/audio.js`, `cep-extension/audio-player.css`)
+- **Draggable playhead scrub** — `.waveform-playhead` changed from `pointer-events: none` to `pointer-events: auto` with `cursor: ew-resize`. Mousedown on the playhead initiates a drag that calls `wavesurfer.setTime()` as the cursor moves within the waveform container, seeking audio to that position. (`cep-extension/audio.js`, `cep-extension/audio-player.css`)
+
+---
+
+## [v2.9.12] — 2026-06-08
+
+### Feature · Logic
+- **Option C — Auto dated folder on first drop** — When the active `.prproj` in Premiere Pro matches a file-type template's assigned path (`open_mode = 'open_existing'`), dropping media on the overlay now auto-creates a complete dated folder tree on the first drop of the day. Root is the **Default Target Directory** from Settings (`appConfig.targetDir`). Full path: `{targetDir}\June2026\02 June\ClientName - FunnelName - TaskName - DD MM`. If `targetDir` is not set, drops throw a clear error. The full template node tree is built via `buildFolderTree()`, a `_freexan_slot_map.json` is written so subsequent drops that day route correctly, and a `.lnk` Windows shortcut pointing to the `.prproj` is placed in the `01_Project_File` subfolder. Subsequent drops same day reuse the existing structure. (`main.js`)
+
+---
+
+## [v2.9.11] — 2026-06-08
+
+### Feature · Audio
+- **Mood tags — drawer chips** — 6 mood buttons (Tense · Dark · Cinematic · Calm · Uplifting · Chaotic) appear in `#drawer-mood-row` every time a track is opened. Click to toggle; saves instantly via `update_tags` WebSocket message. Active chips highlight in the mood's color. (`cep-extension/audio.html`, `cep-extension/audio.js`, `cep-extension/audio-player.css`)
+- **Mood dots on cards** — Active mood tags render as 6×6px colored dots under the track name on each grid card so tags are visible without opening the drawer. (`cep-extension/audio.js`, `cep-extension/audio-player.css`)
+- **Subfolder chip on cards** — Each card shows the parent folder name (e.g. "Tense", "Impacts") in a muted label under the track name — instant visual context when browsing All Files. (`cep-extension/audio.js`, `cep-extension/audio-player.css`)
+- **Batch tag by folder** — Each folder row in the sidebar now has a 🏷 button (visible on hover). Clicking opens a modal to pick moods and applies them to every track in that folder via the new `batch_add_tags` WebSocket message. Existing tags are preserved (merge, not replace). (`cep-extension/audio.js`, `cep-extension/audio.html`, `cep-extension/audio-player.css`)
+- **`addTagsBatch` DB method** — New `audioApi.addTagsBatch(ids, tagKeys)` in `audioDb.js` merges incoming tag keys into each file's existing tags. (`audioDb.js`)
+- **`batch_add_tags` WS handler** — New message type in `main.js` calls `addTagsBatch` and broadcasts updated library. (`main.js`)
+
+---
+
+## [v2.9.10] — 2026-06-08
+
+### UI · Refactor
+- **Panel header action button spacing** — Added `margin-left: 12px; flex-shrink: 0` to `.fts-panel-actions` so the Edit / Cancel / Save buttons have clear separation from the template name input. (`renderer/styles.css`)
+- **Removed legacy "Project File Templates" section** — The standalone `.prproj` add-form in the Database tab ("Project File Templates" label + list + add form) has been removed. File-type templates are now created exclusively through the Templates section (Browse Template modal). Removed: HTML block in `index.html`, 7 `getElementById` declarations in `app.js`, event listeners + `renderTemplatesList()` + `refreshTemplatesList()` + `refreshTemplatesFunnelDropdown()` in `database-tab.js`. (`renderer/index.html`, `renderer/app.js`, `renderer/database-tab.js`)
+
+---
+
+## [v2.9.9] — 2026-06-08
+
+### UI · Fix · Logic
+- **File template card shows .prproj filename** — `renderFtsList()` now appends a muted filename chip (`.fts-list-item-path`) on the right of each file-type template card, showing the `.prproj` basename. (`renderer/folder-templates.js`, `renderer/styles.css`)
+- **Browse button inline with path input** — `.fts-prproj-row` is now `display: flex; gap: 8px` so the Browse button sits inline to the right of the path input. (`renderer/styles.css`)
+- **Open mode replaced with pill toggle** — Radio inputs removed. A segmented pill toggle (`#fts-openmode-toggle`) with "Copy to new" / "Open existing" buttons replaces them. Active state is `rgba(153,125,255,0.18)` teal-purple highlight. Disabled in view mode, enabled in edit mode. (`renderer/index.html`, `renderer/styles.css`, `renderer/folder-templates.js`)
+- **Assets update instantly on client/funnel change** — `buildAssetPicker` now reads live select values (`ftsClientSel.value`, `ftsFunnelSel.value`) instead of the saved `asgn_client_id`/`asgn_funnel_id`. Changing client or funnel in the assignment dropdowns now triggers `renderPremiereTree()` immediately. (`renderer/folder-templates.js`)
+
+---
+
+## [v2.9.8] — 2026-06-06
+
+### Perf · Refactor
+- **Pixel-perfect dynamic peak slicing** — Replaced fixed 8,000-point WaveSurfer downsample with `downsampleSlice(rawPeaks, startIdx, endIdx, containerWidth)`. Detail canvas always receives exactly `waveform-container.clientWidth` data points — 1 point per pixel column. (`cep-extension/audio.js`)
+- **Canvas-only waveform rendering** — WaveSurfer is now audio-only (transparent `waveColor`/`progressColor`). Both the detail waveform and minimap are drawn directly via `canvas.getContext('2d')` in `drawDetailWaveform()` and `drawMinimapWaveform()`. Eliminates WaveSurfer's multi-canvas tile overhead entirely. (`cep-extension/audio.js`, `cep-extension/audio.html`, `cep-extension/audio-player.css`)
+- **Dynamic zoom via slice, not wavesurfer.zoom()** — Brush handle drag now re-slices `rawPeaks[trimStart%..trimEnd%]` and redraws the canvas live on every `mousemove`. No `wavesurfer.zoom()` + `setScrollTime()` calls — those are removed. (`cep-extension/audio.js`)
+- **Playhead mapped to trim window** — `animatePlayhead` now maps `currentTime` to position within `[trimStart, trimEnd]`, not the full file duration. Playhead is hidden when outside the visible window. (`cep-extension/audio.js`)
+- **Removed WaveSurfer minimap instance** — `wavesurferMinimap` is never created. Minimap is now a `<canvas id="minimap-canvas">` drawn by `drawMinimapWaveform()` at full-container pixel resolution. (`cep-extension/audio.html`, `cep-extension/audio.js`)
+
+---
+
+## [v2.9.7] — 2026-06-06
+
+### Feature · Fix
+- **High-Fidelity Waveforms (22,050Hz)** — Increased ffmpeg peak extraction sample rate to 22,050Hz on the backend (`main.js`). Implemented dynamic sample accumulation with a 10-million peak limit cap, providing 1:1 raw sample precision for files under 7.5 minutes (capped at ~40MB, under the 100MB limit).
+- **Stable Frontend Downsampling** — Waveforms in the detail player now downsample the raw peaks to a fixed high-resolution of 8,000 points once on selection. Keeping the array size constant prevents WaveSurfer from dynamically rebuilding its internal audio buffer during zoom, resolving the multi-canvas squashing/rendering layout glitch on the right side.
+- **Sharp Vertical Spikes** — Configured `barWidth: 1`, `barGap: 1`, and `barRadius: 0` to render waveforms as sharp, clean vertical spikes (resembling Adobe Audition / Premiere) instead of curvy connecting lines.
+- **Cache Invalidation** — Prefixed temp peak files with `freexan_peaks_v3_` in `main.js` to invalidate older low-res peak caches and force high-res peak files to generate.
+- **Auto-Cleanup** — Programmed the backend to automatically delete the active temporary peak file from the OS temp folder when a new card is selected or when the panel connection closes/disconnects.
+- **Disabled Scroll-to-Zoom** — Removed the `wheel` event listener from the top waveform container to prevent accidental scroll-to-zoom gestures.
+
+---
+
+## [v2.9.6] — 2026-06-05
+
+### Fix
+- **Drag fully restored — Project Panel drop working again** — `window.cep.dnd.initiateDrag` doesn't exist in this Premiere/CEP environment; replacing `dragstart` with it broke both drop targets. Reverted to HTML5 `dragstart` + `com.adobe.cep.dnd.dictionary.string` on cards and Add button, which is the correct mechanism for Project Panel drop. (`cep-extension/audio.js`)
+- **Timeline drop via in-panel drop zone** — Since Premiere's Timeline silently rejects all CEP HTML5 drag payloads, Timeline placement is now done differently: during any card or Add-button drag, a `↓ Drop here → Insert at Playhead` bar appears at the bottom of the panel. Dropping the card **back onto this zone** triggers `doImportToPremiere` → ExtendScript `insertClip` at the active playhead. Two gestures, two targets: drag right to Premiere Project Panel, drag down to place at playhead. (`cep-extension/audio.js`, `cep-extension/audio-player.css`)
+
+---
+
+## [v2.9.5] — 2026-06-05
+
+### Feature · Fix
+- **Native OS file drag via `window.cep.dnd.initiateDrag`** — Replaced all HTML5 `dragstart`/`dragend` handlers (which only reach Premiere's Project Panel) with CEP's native HDROP drag API. Cards and Add button now initiate a real Windows file drag that Premiere's **Timeline panel** accepts. (`cep-extension/audio.js`)
+- **`initNativeDrag(el, getPath, onBeforeDrag)` helper** — mousedown + 5 px threshold logic cleanly separates click (< 5 px → `onclick` fires normally) from drag (> 5 px → native drag starts). (`cep-extension/audio.js`)
+- **Ghost pill follows cursor during drag** — `showDragGhost()` creates a `.drag-ghost` pill (track name, dark panel style) that tracks the cursor via `mousemove`. (`cep-extension/audio.js`, `cep-extension/audio-player.css`)
+- **Ghost leak fixed — `window.blur` + `document.mouseleave` cleanup** — When the user drops onto Premiere, `mouseup` does not fire inside the CEP panel (cursor is outside the window). Fixed by binding cleanup to both `window.blur` (panel loses focus on drop) and `document.mouseleave` (cursor exits CEP bounds). Both are removed in `stop()` so no listener leak. (`cep-extension/audio.js`)
+- **Add button `onBeforeDrag`** — FFmpeg `process_audio` fires the moment the drag threshold is crossed, not after drop. Processed audio is ready (or nearly ready) by the time the user drops. (`cep-extension/audio.js`)
+
+---
+
+## [v2.9.4] — 2026-06-04
+
+### Fix
+- **Timeline placement via ExtendScript** — CEP panel HTML5 drag (`com.adobe.cep.dnd.dictionary.string`) only targets Premiere's Project Panel; Premiere's Timeline silently rejects external CEP drops. `doImportToPremiere` now imports the processed file AND immediately inserts it at the active playhead position using `seq.audioTracks[t].insertClip(item, ph.seconds)`, iterating audio tracks until one accepts the clip, with a `seq.insertClip` fallback. (`cep-extension/audio.js`)
+- **`doReplaceInPremiere` silent failure fixed** — When the Add-button drag was ignored by Premiere (dummy never placed), the `replace_audio` → `changeMediaPath` call returned `"not found"` and the FFmpeg-processed file was silently discarded. Now falls back to `doImportToPremiere(realPath, binName)`, which does the full import+insert-at-playhead. (`cep-extension/audio.js`)
+
+---
+
+## [v2.9.3] — 2026-06-04
+
+### Fix
+- **CEP drag: duplicate `dragstart` eliminated** — Cards had two `dragstart` listeners registered. The second one set only `text/plain` and `application/x-freexan-audio`, neither of which Premiere recognizes, silently overriding the correct `com.adobe.cep.dnd.dictionary.string` payload. Removed the first (stale) listener; the canonical single listener now sets both `com.adobe.cep.dnd.dictionary.string` (forward-slash path, Premiere-compatible) and `text/plain` as fallback. (`cep-extension/audio.js`)
+- **Critical: `drawLargeWaveform()` crash blocked `requestDummyFile()`** — `openDrawer()` called `drawLargeWaveform()` which was never defined. The `ReferenceError` crashed the `setTimeout` callback mid-execution, preventing `requestDummyFile()` from running. With no dummy file prepared, `window.currentDummyPath` stayed null and the Add-button drag fell back to the raw original file with no bin routing and no FFmpeg processing. Removed the undefined call; `requestDummyFile` now runs reliably after drawer open. (`cep-extension/audio.js`)
+- **Card drag use count not recorded** — No `dragend` handler existed on cards. Added one: when `dropEffect !== 'none'` (successful drop), sends `record_use` over WebSocket and optimistically increments `use_count` in the in-memory library. (`cep-extension/audio.js`)
+- **Card drag ghost image added** — `setDragImage` now shows a pill with the track name instead of the default browser drag snapshot, consistent with the "invisible infrastructure" UX. (`cep-extension/audio.js`)
+
+---
+
+## [v2.9.2] — 2026-06-04
+
+### Fix · Feature
+- **Windows Premiere Pro Drag & Drop (Proxy Workflow)**: Designed an instant background processing proxy system to allow dragging asynchronously-processed audio blocks (Pitch/Speed/Trim) directly out of CEP into Premiere.
+- **Eager Dummy File Generation**: Node.js backend synchronously generates a valid 16-bit 44.1kHz `.wav` file of exact `(trimEnd - trimStart) / speed` duration inside the Temp folder whenever a clip's length changes.
+- **Strict CEP Windows Drag Pathing**: Stripped confounding HTML5 fallback `text/uri-list` URIs on Windows, forcing the Chromium host to exclusively push the strictly formatted `com.adobe.cep.dnd.dictionary.string` (with forward slashes) to bypass the silent payload parsing failures in Premiere Pro Windows.
+- **Native Routing Integration**: Plugged the `process_audio` destination target directly into `getDestSubfolder` logic via `_freexan_slot_map.json`, ensuring the FFmpeg background export organically places output into the designated project audio slot alongside dropped files.
+- **Seamless Media Swapping**: ExtendScript listens for the `replace_audio` WebSocket completion event to automatically discover the dropped dummy proxy on the timeline and seamlessly `changeMediaPath()` to the final FFmpeg render, auto-reloading waveforms without user interruption.
+
+---
+
+## [v2.9.1] — 2026-06-04
+
+### Perf · Feature
+- **High-Performance Waveform Indexing**: Added a migration step in `audioDb.js` to store 150-element normalized peak floats under a new `peaks` column.
+- **FFmpeg Peak Extraction**: Integrated async `ffmpeg` streaming to analyze files on start scan or file add event, producing 8-bit mono raw PCM at 150Hz.
+- **Root Watched Folder .pek Cache**: Generates and writes `.pek` JSON arrays in a hidden `.peaks/` folder under each watched folder, loading it directly if present to prevent redundant FFmpeg runs.
+- **Virtualized Canvas Rendering**: Replaced heavyweight per-card `WaveSurfer.js` instances with a lazy-loading `IntersectionObserver` that only paints static canvas lines when cards are in view, recycling elements to zero out memory footprint.
+- **Self-Contained Extension Packaging**: Copied script libraries directly into the extension and updated `audio.html` script tags to resolve `ReferenceError: WaveSurfer is not defined` inside CEP.
+- **Tone.js Connection Fix**: Connected browser `MediaElementAudioSourceNode` to `tonePitchShift` node safely by wrapping it in `Tone.MediaElementSource`.
+- **Premium Drawer Rendering & Custom Handles**: Bypassed default Wavesurfer container visual rendering inside the player drawer; drew high-fidelity peaks directly on canvas and built custom, responsive 16px wide trim handles with active hover styling and a glowing playhead.
+- **Native Playhead Sync**: Bound playhead tracking directly to HTML5 audio element's native `timeupdate` event for accurate real-time synchronization.
+- **Decoupled Audio Playback**: Isolated Tone.js and Wavesurfer context strictly to the active preview track inside the detail player drawer.
+
+---
+
+## [v2.9.0] — 2026-06-04
+
+### UI · Feature
+- **Audio freeXan full UI/UX redesign** — Rebuilt all three CEP panel files from scratch per `docs/AUDIO_UX_SPEC.md`. New dark theme (`#141414` / `#1f1f1f`) with dual-accent palette (BGM: violet→coral gradient `#8E2DE2`→`#F7567C`; SFX: green→cyan `#00C896`→`#00E5FF`). Card grid with per-card mini waveforms colored by classification (`cep-extension/audio.html`, `cep-extension/audio-player.css`, `cep-extension/audio.js`)
+- **BGM / SFX auto-classification** — `classifyAudio()` checks path keywords (bgm, music, ost, sfx, foley, etc.) first; falls back to duration threshold (>30 s = BGM). BGM cards render violet-coral waveforms; SFX cards render green-cyan waveforms; `type-badge` chip on every card.
+- **Sidebar folder tree** — Left panel navigates between All / Favorites / BGM / SFX / individual subfolders (auto-built from file paths). "Client Essentials" section appears when project context is received from main process.
+- **Detail drawer** — Bottom-docked 166 px player panel slides up with `cubic-bezier(0.25, 0.8, 0.25, 1)` on card click. Shows track name, type badge, large waveform, timecode labels, draggable trim handles (replaces range sliders), pitch/speed range sliders with ↺ reset, Add button. Spacebar play/pause; Escape closes. Content grid adds bottom padding when drawer is open to prevent cards hiding under it.
+- **Draggable trim handles** — Replaced start/end number inputs with mouse-drag handles overlaid directly on the large waveform canvas. Handles are resizable via `mousemove` + `mouseup` on `document` to avoid sticking on fast moves.
+- **BGM / SFX confirm prompt** — Clicking Add shows an inline `type-confirm` overlay (slides up) with two styled buttons pre-focused to the predicted type. "Don't ask again this session" checkbox sets `skipTypeConfirm` flag.
+- **Timeline sync toggle** — Header toggle switch fires `startSyncPlay()` / `stopSyncPlay()` via `csInterface.evalScript` to capture `activeSequence.getPlayerPosition().ticks` before play and restore on pause/end.
+- **"Used N×" history badge** — Cards display import count when `use_count > 0`. Import sends `record_use` WS message; main.js calls `audioDb.audioApi.incrementUseCount(id)`.
+
+### DB
+- **`use_count` column** — Added to `audio_files` table via try-catch ALTER migration in `initSchema()` (`audioDb.js`)
+- **`audioApi.incrementUseCount(id)`** — New method, called by `record_use` WS handler in `main.js`
+
+---
+
+## [v2.8.0] — 2026-06-04
+
+### Refactor
+- **Split `renderer/app.js` into 6 domain files** — 2,978-line monolith broken into `utils.js` (pure utilities + helpers), `builder.js` (Builder tab, manage panel, folder tree preview), `settings.js` (Settings tab, config load), `database-tab.js` (full Database tab — clients/funnels/tasks/templates/assets CRUD), `folder-templates.js` (old FT editor + full FTS editor + Premiere bins/sequences tree), and a lean `app.js` (global state, DOM refs, DOMContentLoaded boot only). All 6 files share global scope via ordered `<script>` tags in `renderer/index.html` — no bundler required. Logic unchanged; no features added or removed.
+- **Moved `dbFunnels` and `dbTasks` to global state** — previously inline in builder section; now declared alongside other global state in `app.js` so folder-templates.js can read them without coupling.
+- **Moved `saveStatus` DOM ref to app.js shared section** — was implicit in the monolith; now explicitly declared alongside other shared DOM refs.
+
+## [v2.7.0] — 2026-06-03
+
+### Feature
+- **Audio Library & Standalone Audio panel** — Created a standalone panel extension **Audio freeXan** inside Premiere Pro to browse, preview, loop, trim, and pitch/speed shift audios from watched folders.
+- **Local directory watching** — Added folder watch system in Electron setting to monitor directories (SFX / Music) and automatically index added/deleted audio files into a dedicated SQLite database (`audio-library.db`).
+- **FFmpeg Audio manipulation** — Integrated pitch-shifting, speed-changing, and time-trimming filters directly on WebSocket processing requests via `@ffmpeg-installer/ffmpeg`.
+- **Link freeXan** — Re-labeled the original connection status tracker panel to **Link freeXan** and declared it separately alongside Audio freeXan.
+
+## [v2.6.0] — 2026-06-02
+
+### UI
+- **Circular titlebar buttons** — Minimize fades green on hover, Close fades red on hover (F-UI-002, F-UI-003) (`renderer/styles.css`)
+- **Modal footer polish** — increased spacing, refined `<kbd>` chips for the New Sequence modal (F-UI-040) (`renderer/styles.css`)
+- **Version chip** — app version is read from `package.json` at startup and displayed after "by BloomX" in the titlebar (F-UI-001) (`main.js`, `preload.js`, `renderer/app.js`, `renderer/index.html`)
+- **Icon-only sidebar** — Builder/Settings/Database labels removed; tooltips preserved via `title` attribute; sidebar shrunk to 56 px (F-UI-004) (`renderer/index.html`, `renderer/styles.css`)
+- **Sequence Format settings removed** — global resolution/fps choice deleted; main process now defaults to `1920x1080_25fps` for any sequence that doesn't carry its own width/height/fps (F-UI-018) (`renderer/index.html`, `renderer/app.js`, `main.js`)
+- **Category dropdown removed from Add Asset** — extension-based routing already covers this; category column kept in DB (silent default `'other'`) for backwards compatibility (F-UI-027)
+
+### Feature
+- **Clickable token chips** — `{Date}` `{Month}` `{Year}` `{HH}` `{MM}` `{SS}` in the Project Name help text are now buttons that insert at the cursor position (F-UI-011a) (`renderer/index.html`, `renderer/app.js`)
+- **Project Name memory per pair** — the last-used Project Name is saved per Client + Funnel combination in `localStorage` and re-loaded when the same pair is selected again (F-UI-011b) (`renderer/app.js`)
+- **Drag-drop a file/folder onto path inputs** — Asset path and Project File Template path inputs accept dropped paths via Electron's `webUtils.getPathForFile` (F-DB-011) (`preload.js`, `renderer/app.js`, `renderer/styles.css`)
+- **Asset inline edit** — double-click an asset row in the Library to rename / repoint its file path. New `assetsApi.update` + `db-update-asset` IPC handler (F-UI-026) (`db.js`, `main.js`, `preload.js`, `renderer/app.js`)
+- **Picker portal positioning** — the `+ Asset` and `+ Import` popovers inside the Premiere Pro template tree are now rendered to `document.body` with `position: fixed`, anchored under the triggering button. Closes on window scroll/resize. No more clipping inside the tree's overflow container (F-FTS-030) (`renderer/app.js`)
+- **Funnel deduplication in Library** — funnels that share a name across multiple clients render as one card with a tag per client. Each tag has its own `×` to remove that specific scope; whole-card delete removes every scope (F-UI-023) (`renderer/app.js`, `renderer/styles.css`)
+- **7-level template resolution cascade** — `folderTemplatesApi.resolve()` now tries (C,F,T) → (C,F,*) → (C,*,T) → (*,F,T) → (C,*,*) → (*,F,*) → (*,*,T) → default. Assigning a template to a single dimension (e.g. Task = "Reel Video") now applies to every matching project that lacks a more specific assignment (F-UI-028) (`db.js`)
+- **Auto-assign slots by name** — when a template's folders or bins aren't explicitly tagged Video/Audio/Image, `inferSlotType(name)` is run against folder/bin names and the result populates the slot map. Explicit assignments always win (F-FTS-023, F-FTS-028) (`main.js`)
+- **Batched drop + bin focus** — overlay file drops now send a `batchId` so the CEP panel can switch to the destination bin and highlight the last imported item after every file in the batch has landed (F-OV-015) (`main.js`, `cep-extension/ext.js`)
+
+---
+
+## [v2.5.2] — 2026-06-01
+
+### Feature
+- **Confirmation dialog on template conflict** — before assigning a template to a Client / Funnel / Task pair that already has a different template, the app now shows a native dialog: `"[Old Template] is already assigned to this pair. Replace it with [New Template]?"`. User must explicitly confirm; cancelling aborts the assignment without any change. Applies in both the Database tab assign button and the FTS editor save flow (`renderer/app.js`)
+
+---
+
+## [v2.5.1] — 2026-06-01
+
+### Fix
+- **DB · One-template-per-pair enforcement** — `assign()` DELETE clause now removes ANY existing assignment for the client/funnel/task combination before inserting, so two templates can never target the same pair simultaneously. Previously only the same template's own row was deleted, allowing silent conflicts (`db.js`)
+
+---
+
+## [v2.5.0] — 2026-06-01
+
+### Fix (14 bugs — full defensive audit pass)
+- **H-01 · Tray crash on missing icon** — fallback changed from HTML file to `nativeImage.createEmpty()` so the tray initialises safely even if `tray_icon.png` is absent (`main.js`)
+- **H-02 · `JSON.parse(bins_json)` crash** — added `safeParseJson()` helper (try/catch, returns fallback `[]`) used in `flattenPremiereTree` and both Mode A / Mode B `create-project` paths (`main.js`)
+- **H-03 · `client.send()` not in try-catch** — wrapped both the `import-dropped-files` and `import-browser-image` WebSocket sends in try-catch; failures are logged to debug.log instead of crashing the IPC handler (`main.js`)
+- **H-04 · Async `ws.send()` in evalScript callback unguarded** — added `readyState === OPEN` check + try-catch around the `import_result` send in `ext.js` (`ext.js`)
+- **H-05 · Folder name not sanitized for Windows paths** — added `sanitizeName()` helper that replaces `< > : " / \ | ? *` with `_`; applied to all four folder name parts before `path.join` and `mkdirSync` (`main.js`)
+- **M-01 · `pendingProjectSetup` not cleared on send failure** — wrapped all three `ws.send` / `cepWs.send` calls (fallback timeout, Mode B immediate, Mode A immediate) in try-catch; `pendingProjectSetup = null` still executes unconditionally after each attempt (`main.js`)
+- **M-02 · `exec()` no timeout — zombie PowerShell processes** — added `{ timeout: 3000 }` to the `exec` call inside `startPremiereMonitor` (`main.js`)
+- **M-03 · `getAll()` returns duplicate rows per assignment** — wrapped the assignments JOIN in a `GROUP BY template_id` subquery so each template appears exactly once regardless of how many assignments it has (`db.js`)
+- **M-04 · `ws.send()` in project-tracking interval unguarded** — wrapped all three sends in `startProjectTracking` (`active_project` empty, `active_project` path, `project_ready`) in try-catch (`ext.js`)
+- **M-05 · Indirect circular parent_id not detected** — replaced simple self-reference check with full DFS cycle detection; builds a `_parentLookup` map and walks each node's ancestor chain, throwing on any revisited key (`db.js`)
+- **L-01 · Monitor interval not stored** — `setInterval` return value stored in `_premiereMonitorInterval` so it can be cleared if needed (`main.js`)
+- **L-02 · Version padding breaks at v100** — changed `padStart(2)` → `padStart(3)` for all version suffixes; added `if (vNum >= 999) break` safety cap (`main.js`)
+- **L-03 · `saveConfig` no mkdir guard** — added `fs.mkdirSync(path.dirname(configPath), { recursive: true })` before `writeFileSync` (`main.js`)
+- **L-04 · `move-overlay-window` IPC no type validation** — added `typeof number` + `Number.isFinite` guard on `deltaX`/`deltaY` before calling `setPosition`; `setPosition` wrapped in try-catch (`main.js`)
+
+---
+
+## [v2.4.4] — 2026-06-01
+
+### UI
+- **Reposition Overlay spring animation:** Clicking "Reposition Overlay" in the tray now animates the overlay window from its current screen position to the default corner (x:20, y:20) over 1.5 seconds using a spring easing curve (single ~10% overshoot, fully settled by 0.75 s). Implemented as a 60 fps `setInterval` loop in `main.js` with `_springEase(t) = 1 − 2^(−10t) × cos(3πt)`. If clicked mid-animation, the in-progress animation is cancelled and a new one starts from the current position. If the overlay was destroyed, it is recreated at the default position directly. (`main.js`)
+
+---
+
+## [v2.4.3] — 2026-06-01
+
+### UI
+- **Overlay animations:** Added 5 new micro-animations to the floating pill overlay (`overlay.css`):
+  - **Mount slide-in** — pill springs in from the left edge with a bouncy cubic-bezier curve each time the overlay window opens
+  - **Connected dot ping** — green status dot pulses a fading box-shadow ring outward every 2.2 s to show a live project link
+  - **Error shake** — pill jiggles horizontally for 0.5 s when an import fails, giving tactile error feedback
+  - **Success icon pop** — the drop icon scale-bounces on import success (spring overshoot)
+  - **Idle icon breathe** — when no project is detected, the icon opacity gently oscillates on a 3 s cycle
+  - **Text slide-up** — the text panel now slides up 6 px as it expands instead of just fading in
+
+---
+
+## [v2.4.2] — 2026-06-01
+
+### Fix
+- **Tray "Reposition Overlay" button:** Renamed tray menu item from "Show Overlay" to "Reposition Overlay". Clicking it now moves the overlay back to its default top-left position (x: 20, y: 20) in addition to showing it and re-asserting the screen-saver z-level. If the overlay was destroyed (e.g. by a screenshot tool), it is recreated at the default position. (`main.js`)
+
+---
+
+## [v2.3.6] — 2026-05-30
+
+### Fix
+- **CEP Extension Asset Imports:** Ensured that Common Library Assets are imported *only* after all structural bins have been completely created by the CEP panel. Previously, this ran on a strict timer which caused the import to fail to find the target bin if bin creation took longer than expected, resulting in assets dumping into the root of the project.
+
+---
+
+## [v2.3.5] — 2026-05-30
+
+### Fix
+- **Premiere Bin Multi-Slot Assignment:** Fixed an issue where the `+ Asset` button in the Database > Folder Structure > Premiere tab disappeared after assigning the first slot (e.g. Audio). You can now assign multiple asset media types (e.g. Video, Audio, and Image) to the same Premiere bin, and each is represented by its own clickable inline badge to remove it.
+
+---
+
+## [v2.3.4] — 2026-05-30
+
+### Fix
+- **Popup Suppression when CEP is Connected:** Added a hard block logic to ensure the main window never automatically pops up when the CEP extension is actively connected (`isCepConnected`). Auto-popup logic now only executes if CEP is disconnected AND Premiere's Welcome Screen is detected. (`main.js`)
+
+---
+
+## [v2.3.3] — 2026-05-30
+
+### Fix
+- **Auto-Hide on Premiere Quit:** Added auto-hide logic to the monitor's error and empty-title check blocks so that when Adobe Premiere Pro is closed, the freeXan main window is automatically hidden from the screen (instead of remaining floating on the desktop). (`main.js`)
+
+---
+
+## [v2.3.2] — 2026-05-30
+
+### Fix
+- **Unexpected Main Window Popups:** The background monitor auto-popped the main window during saves, loading, or dialogs because those states temporarily remove the project path from Premiere's window title. Implemented a hybrid strategy: auto-popups are completely blocked if the CEP panel is connected (`isCepConnected`). If disconnected, the title is verified against the precise regex pattern `/^Adobe Premiere Pro( \d{4})?$/i` to ensure it is exactly the Welcome/Home Screen before auto-showing the window. (`main.js`)
+
+---
+
+## [v2.4.1] — 2026-06-01
+
+### Fix
+- **Overlay hid and couldn't be reopened after taking a screenshot:** Three-part fix: (1) Changed `alwaysOnTop` level from default `'normal'` to `'screen-saver'` — the highest Electron z-level, stays above Windows Snipping Tool and other system overlays. (2) Added `app.on('browser-window-focus')` handler that re-asserts `alwaysOnTop` every time any window gains focus — Windows can silently drop the z-level after system overlays release the desktop. (3) Added auto-recreate in the overlay `closed` event — if the window is destroyed unexpectedly (not by app quit), it recreates itself after 600ms. (`main.js`)
+- **No way to manually restore the overlay without restarting:** Added "Show Overlay" option to the system tray right-click menu. Creates the overlay if destroyed, or shows and re-levels it if just hidden. (`main.js`)
+
+---
+
+## [v2.4.0] — 2026-06-01
+
+### Feature
+- **Drag-drop imports now reveal and select the file in Premiere's Project panel:** After a successful drop import, the Project panel automatically navigates to the target bin (`app.project.setCurrentBin`) and selects the imported item (`ProjectItem.select`). If no bin was specified, the panel scrolls to the root. Works with Premiere Pro 2020+. (`cep-extension/ext.js`)
+- **EXT_VERSION bumped 1.9.9 → 2.0.0** to force panel reload. (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v2.3.3] — 2026-06-01
+
+### Fix
+- **Slot picker showed "used elsewhere" with no context — user couldn't tell which bin held the slot:** Added `binSlotOwners()` helper that maps each slot type to the name of the bin that owns it. Picker now shows `in "Visual Assets"` instead of the generic "used elsewhere". (`renderer/app.js`)
+- **Folder tree `+ Asset` picker showed "used elsewhere" even for slots already on the same folder:** The folder picker was never passed `ownSlots`, so slots already on the current folder appeared as "used elsewhere" instead of "already added". Now computes the folder's own slot children and passes them as `ownSlots`. (`renderer/app.js`)
+
+---
+
+## [v2.3.2] — 2026-06-01
+
+### Fix
+- **`+ Asset` button couldn't add a second slot badge to a bin:** Same `return`-after-remove bug as BUG-13 — if a picker was open and user clicked the button again, it removed the picker and returned without re-opening. Removed the `return`. (`renderer/app.js`)
+- **Slot badges had no visible remove button:** Clicking the entire badge was the only way to remove it — not discoverable. Added an explicit `×` button inside each badge chip. Badges no longer respond to a full-badge click; only the `×` removes. (`renderer/app.js`, `renderer/styles.css`)
+- **`+ Asset` button stayed visible even when all 3 slots were globally taken:** Button now only renders when there are still assignable slots available. (`renderer/app.js`)
+- **Slot picker gave no context on why a slot was greyed out:** Disabled picker items now show "already added" (slot is on this bin) or "used elsewhere" (slot is on a different bin). (`renderer/app.js`, `renderer/styles.css`)
+
+---
+
+## [v2.3.1] — 2026-05-30
+
+### Fix
+- **GPU process crash on launch (`exit_code=0xC0000135 STATUS_DLL_NOT_FOUND`):** Chromium's GPU subprocess failed to find required DLLs on machines without the full GPU runtime stack. freeXan is a UI/overlay tool with no GPU rendering needs — disabled hardware acceleration entirely via `app.disableHardwareAcceleration()`. GPU process is no longer launched. (`main.js`)
+
+---
+
+## [v2.3.0] — 2026-05-29
+
+### Fix — db.js
+
+- **BUG-17 [CRITICAL] `clone()` silently dropped `slot_type` on all cloned bins:** The INSERT in `folderTemplatesApi.clone()` was missing the `slot_type` column. Any template with video/audio/image slot assignments lost them on clone. Added `slot_type` to the column list and `n.slot_type || null` to the values. (`db.js`)
+- **BUG-18 [HIGH] `assign()` DELETE + INSERT not atomic — data loss on failure:** Two separate `.run()` calls meant if the INSERT failed the DELETE had already run, permanently destroying the assignment. Wrapped both calls in `d.transaction(() => { ... })()`. (`db.js`)
+- **BUG-19 [MEDIUM] `initSchema()` migration DDL could crash and leave DB mid-migration:** All migration `db.exec()` calls are now wrapped in try-catch. On failure: logs the error and continues with existing schema (graceful degradation). (`db.js`)
+- **BUG-20 [LOW] `setNodes()` didn't detect circular parent_id references:** Added a pre-transaction check — throws `Error: Circular parent_id detected` if any node references itself as parent. (`db.js`)
+
+### Fix — cep-extension/ext.js
+
+- **BUG-21 [HIGH] `asset.sourcePath` crash when undefined in `setup-project` handler:** Added guard `if (!asset || typeof asset.sourcePath !== 'string') return;` at the top of the assets forEach loop. (`cep-extension/ext.js`)
+- **BUG-22 [HIGH] `data.filePath` crash on non-string in import handler:** Added guard `if (typeof data.filePath !== 'string') return;` at the top of the import message handler. (`cep-extension/ext.js`)
+- **BUG-23 [MEDIUM] WebSocket reconnect had no retry limit — infinite spin if server gone:** Added `reconnectAttempts` counter with `MAX_RECONNECT = 30`. Counter resets on `onopen`; reconnects stop after 30 failures. (`cep-extension/ext.js`)
+- **BUG-24 [MEDIUM] `evalScript` result validation was inconsistent across all callbacks:** Added `evalResult(r, label)` helper that checks for `undefined`, `EvalScript error.`, and `err:` prefix, logs uniformly, and returns `false` on failure. Used in all evalScript callbacks. (`cep-extension/ext.js`)
+- **BUG-25 [LOW] `findBin()` hardcoded 500-child limit — projects with deep bins silently missed items:** All loop limits in inline IIFE strings changed from `i<500` / `j<500` / `k<500` to `i<2000` / `j<2000` / `k<2000`. (`cep-extension/ext.js`)
+
+### Fix — main.js
+
+- **BUG-01 [HIGH] Duplicate `resize-overlay` IPC handler caused wrong overlay size:** Two registrations existed with different dimensions (244×84 and 260×100). Removed the second duplicate; only the correct 244×84 handler remains. (`main.js`)
+- **BUG-02 [HIGH] Tray icon fallback used HTML file as image — crash when `tray_icon.png` missing:** Changed fallback to `nativeImage.createEmpty()` for safe initialisation. (`main.js`)
+- **BUG-03 [MEDIUM] `saveConfig()` threw ENOENT on first run if userData directory didn't exist:** Added `fs.mkdirSync(path.dirname(configPath), { recursive: true })` before `writeFileSync`. (`main.js`)
+- **BUG-04 [MEDIUM] `client.send()` not in try-catch — uncaught exception if socket closed mid-send:** Wrapped all `client.send()` calls in try-catch in both `import-dropped-files` and `import-browser-image` handlers. (`main.js`)
+- **BUG-05 [MEDIUM] `pendingProjectSetup = null` cleared even when `ws.send()` threw:** Moved the clear inside the try block so it only happens after a confirmed successful send. (`main.js`)
+- **BUG-06 [LOW] Version string comparison appeared to be a bug — documented intent:** Added inline comment: `// Exact string match is intentional — any version difference forces panel reload`. (`main.js`)
+- **BUG-07 [LOW] Windows-invalid characters in client/funnel/project names caused `mkdirSync` to throw:** Added `sanitizeFolderName(str)` helper that replaces `[<>:"/\\|?*]` with `_`. Applied to all four `folderParts` values. (`main.js`)
+- **BUG-08 [LOW] Version counter broke two-digit padding above v99:** Changed `padStart(2, '0')` to `padStart(3, '0')` and added safety cap `if (vNum > 999) break`. (`main.js`)
+
+### Fix — renderer/app.js
+
+- **BUG-09 [HIGH] `JSON.parse(bins_json)` without try-catch crashed app on corrupted template data:** Both `bins_json` and `sequences_json` parses now have try-catch; on error defaults to `[]` and logs a warning. (`renderer/app.js`)
+- **BUG-10 [HIGH] `Date.now()` as tempId collided on rapid clicks — duplicate IDs broke Premiere tree:** Added `_ptidCounter` module variable and `ftNextPremiereTempId()` helper (`'p_' + Date.now() + '_' + counter`). Replaced all three `Date.now()` tempId usages in Premiere node creation. (`renderer/app.js`)
+- **BUG-11 [HIGH] Slot/asset picker event listeners leaked when tree was re-rendered:** Added module-level `_activePickerCleanup` tracker and `_closePicker()` helper. Both `buildSlotPicker` and `buildAssetPicker` call `_closePicker()` at start. `renderFtsTree()` and `renderPremiereTree()` call `_closePicker()` at entry to clean up any open picker before re-render. (`renderer/app.js`)
+- **BUG-12 [HIGH] `querySelector` results used without null check:** Verified `nameEl` and `defaultTile` already have null guards in the current code — no change needed.
+- **BUG-13 [MEDIUM] Asset picker re-open blocked after first click:** Removed `return` from `if (existing) { existing.remove(); return; }` — picker now re-opens on button click. (`renderer/app.js`)
+- **BUG-14 [MEDIUM] Sort order not recalculated after node deletion — sibling gaps accumulated:** After all three delete handlers (ftsPremiere recursive, ftsTree folder/asset recursive, ftsTree slot badge), re-index `sort_order` for remaining siblings with matching `parent_id`. (`renderer/app.js`)
+- **BUG-15 [LOW] `slot_type` vs `slotType` naming inconsistency — confusing across trees:** Added comment blocks above `usedFolderSlots()` and `usedBinSlots()` documenting the intentional naming difference (DB column vs bins_json camelCase). (`renderer/app.js`)
+- **BUG-16 [LOW] Template clone gave no feedback that clone is unassigned:** Added `console.warn('[freeXan] Template cloned — now unassigned. Set client/funnel in edit mode.')` after clone in the New button handler. (`renderer/app.js`)
+
+### Fix — renderer/overlay.js
+
+- **BUG-26 [HIGH] DOM elements used without null check — crash if element IDs changed:** Added guard after all four `getElementById` calls: `if (!pill || !statusText || !projText || !statusDot) { console.error('Overlay: required DOM elements missing'); return; }`. (`renderer/overlay.js`)
+- **BUG-27 [MEDIUM] `filePaths.length` threw TypeError if argument was not an array:** Changed `if (!filePaths.length)` to `if (!Array.isArray(filePaths) || !filePaths.length)`. (`renderer/overlay.js`)
+- **BUG-28 [MEDIUM] `dragleave` didn't reset pill if drag was cancelled (Escape / released outside):** Added `window.addEventListener('dragend', ...)` that clears timers and calls `restoreIdle()`. (`renderer/overlay.js`)
+- **BUG-29 [LOW] `mousemove` IPC fired on every pixel move — tens/hundreds per second:** Added `mouseMovePending` flag; `setIgnoreMouseEvents` is now called inside `requestAnimationFrame` so it fires at most once per display frame. (`renderer/overlay.js`)
+
+---
+
+## [v2.2.4] — 2026-05-29
+
+### Fix
+- **Project creation crashed with EPERM when a preset asset was a folder:** `create-project` used `fs.copyFileSync()` for all preset assets unconditionally — that call throws EPERM on Windows when the source path is a directory. Added `fs.statSync` check: folders are now copied with `fs.cpSync(src, dest, { recursive: true })` into the project root; files continue using `getDestSubfolder()` + `copyFileSync` as before. Same guard added to `import-dropped-files` for dropped folders. (`main.js`)
+
+---
+
+## [v2.2.3] — 2026-05-29
+
+### Fix
+- **Drag-drop imports now copy files to the project folder; DB asset imports do not:** Restored `getDestSubfolder()` + `fs.copyFileSync()` logic in `import-dropped-files`. Files dropped on the overlay are copied into the appropriate project subfolder (footage / audio / assets) and Premiere imports from the copy. Files from the Assets collection (`setup-project` handler in `ext.js`) are still imported from their original location — no copy. (`main.js`)
+
+---
+
+## [v2.2.2] — 2026-05-29
+
+### Fix
+- **Drag-drop imports were copying files into the project folder before importing:** The `import-dropped-files` handler was calling `getDestSubfolder()`, creating a versioned destination path, and running `fs.copyFileSync()` before sending the path to Premiere. This duplicated assets on disk unnecessarily. Removed all copy-to-disk logic from the handler — the original `filePath` is now sent directly to the CEP panel via WebSocket. `getDestSubfolder()` itself was kept; it is still used by `import-browser-image`. (`main.js`)
+
+---
+
+## [v2.2.1] — 2026-05-29
+
+### Fix
+- **Browse button in Assets section could not select folders:** The handler called `window.api.selectFiles()` which uses `openFile` only. Swapped to `window.api.ft.selectAsset()` which already passes `['openFile', 'openDirectory']` — the same dialog used in the folder template asset picker. (`renderer/app.js`)
+
+---
+
+## [v2.2.0] — 2026-05-29
+
+### Feature
+- **Library asset import via Premiere template:** The Premiere Pro tab in the template editor now has a `+ Import` button on each bin (edit mode). Clicking it opens a picker listing all assets from the DB Assets library. Selecting one attaches an `import` node to that bin — stored in `bins_json` with `{ type: "import", name, file_path, asset_id, parent_id }`. At project creation, `extractPremiereImports()` in `main.js` walks those nodes, expands any folder paths to individual files, and passes them to `pendingProjectSetup.assets`. Premiere receives them in `setup-project` and imports each file into the correct bin automatically. (`renderer/app.js`, `renderer/styles.css`, `main.js`)
+- **Import nodes visible in Premiere tree:** `renderPremiereNode()` handles `type === "import"` — renders with 📂 icon, amber name, and dimmed filename. Delete button removes the node. (`renderer/app.js`, `renderer/styles.css`)
+
+### Fix
+- **`setup-project` assets were never imported into Premiere (silent failure):** The handler in `ext.js` called `importAssetToBin()` as a named hostscript.jsx function — same pattern as the v1.8.3 / v2.1.1 bug, silently fails every time. Replaced with an inline IIFE using the same `findBin()` recursive search used for drag-drop imports. (`cep-extension/ext.js`)
+- **Mode B (open_template) always sent `assets: []`:** Never forwarded any attached imports to the CEP panel. Now uses `extractPremiereImports(rawBins)` so library assets fire on template open too. (`main.js`)
+- **EXT_VERSION bumped 1.9.8 → 1.9.9** to force panel reload. (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v2.1.4] — 2026-05-29
+
+### Fix
+- **Import not routing to nested bins:** The bin search only looked one level deep in `rootItem.children`. A target bin nested inside another bin was never found, so `tgt` fell back to `rootItem`. Replaced the flat loop with a recursive `findBin(parent, name)` DFS function inside the IIFE that walks the full bin tree at any depth. (`cep-extension/ext.js`)
+- **EXT_VERSION bumped 1.9.7 → 1.9.8** to force panel reload. (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v2.1.3] — 2026-05-29
+
+### Fix
+- **Import always landing in root bin instead of target bin:** The bin search loop in the `ext.js` import IIFE used `app.project.rootItem.numItems` as the loop limit — that property does not exist in Premiere ExtendScript, so the loop never ran and `tgt` stayed as `rootItem`. Replaced with the null-terminated `for(i<500){ if(!it)break; }` pattern used everywhere else in the file. (`cep-extension/ext.js`)
+- **EXT_VERSION bumped 1.9.6 → 1.9.7** to force panel reload. (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v2.1.2] — 2026-05-29
+
+### Refactor
+- **Silenced all general debug logging; added targeted import parameter debug:** All existing `extLog()` call sites in `ext.js` and all `dbg()` / `console.log` debug calls in `main.js` have been commented out. In their place, the `import` message handler in `ext.js` now logs every `app.project.importFiles()` call with its exact parameters (`params[0]` file array, `params[1]` suppressWarnings, `params[2]` resolved target bin or rootItem, `params[3]` addToRoot flag) plus the actual resolved target after the bin search. `main.js` `import-dropped-files` logs file type detection, slot-map routing, dest folder/path, bin name, and the exact WebSocket payload sent to CEP — all prefixed `[IMPORT]`. (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v2.1.1] — 2026-05-29
+
+### Fix
+- **Premiere bin import was silently failing:** The v2.1.0 import change called `importAssetToBin()` as a named hostscript.jsx function — but ext.js uses inline IIFEs exclusively (named calls are a silent no-op, the v1.8.3 bug). Replaced with an inline IIFE that searches `rootItem.children` for the bin by name and calls `app.project.importFiles()` directly. When `binName` is null the IIFE falls back to `rootItem` (root import). (`cep-extension/ext.js`)
+- **EXT_VERSION bumped 1.9.5 → 1.9.6** to force panel reload and pick up the fix. (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v2.1.0] — 2026-05-29
+
+### Feature
+- **Asset Slot system — explicit Video / Audio / Image routing:** Added a new `slot` node type to folder templates. In the folder structure editor, each folder now has a `+ Asset` button (edit mode) that opens a 3-option picker (🎬 Video, 🎵 Audio, 🖼 Image). Only one of each type can exist per template — already-used types appear grayed out in the picker. Slot nodes render as color-coded badges inside their parent folder. Deleting the badge removes the slot. (`renderer/app.js`, `renderer/styles.css`)
+- **Premiere bin slot tagging:** Same `+ Asset` button added to every bin row in the Premiere tree editor. Clicking it tags the bin as the destination for that media type (badge shown inline). Clicking the badge again removes the tag. (`renderer/app.js`)
+- **`_freexan_slot_map.json` written at project creation:** When a project is built from a template that has slot assignments, a `_freexan_slot_map.json` file is written to the project root containing explicit folder path + bin name for each media type. (`main.js` — `create-project` IPC, `buildFolderTree()`)
+- **Drag-drop routing uses slot map:** `getDestSubfolder()` now accepts an optional slot map and checks it before keyword matching. `import-dropped-files` reads `_freexan_slot_map.json` once, routes each file's destination folder via the map, and resolves the target Premiere bin. (`main.js`)
+- **Bin-targeted Premiere import:** The WebSocket `import` message now carries `binName`. `ext.js` calls `importAssetToBin(filePath, binName)` (already existed in `hostscript.jsx`) instead of the old root-only `importAsset`. Files land in the correct bin automatically. (`cep-extension/ext.js`)
+- **RAW/cinema formats added to video routing:** `.r3d`, `.braw`, `.arw`, `.cr2`, `.dng` added to `videoExts` — previously fell through to assets. (`main.js`)
+
+### DB
+- **`folder_template_nodes.slot_type` column:** Auto-migration adds `slot_type TEXT DEFAULT NULL` on first launch. `setNodes()` INSERT updated to persist it. (`db.js`)
+
+---
+
+## [v2.0.0] — 2026-05-27
+
+### UI
+- **Sliding nav indicator:** Left-edge accent bar animates between sidebar tabs via `getBoundingClientRect` + CSS `transition: top, height`. (`renderer/index.html`, `renderer/styles.css`, `renderer/app.js`)
+- **Progressive reveal — Builder form:** Funnel field starts dimmed/inactive until Client is selected; Task field reveals after Funnel is chosen. Smooth `opacity` + `transform` transition. (`renderer/index.html`, `renderer/styles.css`, `renderer/app.js`)
+- **Typewriter preview values:** Date Path, Root Folder, Project File fields animate character-by-character on change (max 200ms). (`renderer/app.js`)
+- **Initialize button shimmer + states:** Hover reveals a diagonal shimmer sweep via `::after`. On submit shows spinning loader + "Building…"; on success flashes green with a checkmark for 900ms before alert. (`renderer/styles.css`, `renderer/app.js`)
+- **Builder tree stagger:** Folder hierarchy nodes fade+slide in with 28ms stagger delay per node when tree rebuilds. (`renderer/app.js`, `renderer/styles.css`)
+- **Client avatars:** Each client row in Library tab now shows a 28px colored circle with initials. Color derived from client name hash → HSL hue. (`renderer/app.js`, `renderer/styles.css`)
+- **Sequence modal spring entry:** Modal card springs in with `scale(0.93)→scale(1)` + opacity on open via CSS animation. (`renderer/styles.css`)
+- **Dimension tiles:** `seq-modal-dims` select replaced with 3 visual tiles showing aspect-ratio rectangles (Landscape/Portrait/Square). Selected tile highlighted in accent purple. (`renderer/index.html`, `renderer/styles.css`, `renderer/app.js`)
+- **Modal keyboard hint:** Footer shows `↵ Add  Esc Cancel` hint with styled `<kbd>` elements. (`renderer/index.html`, `renderer/styles.css`)
+- **JetBrains Mono font:** Preview values, `db-item-file` paths now use JetBrains Mono for sharper monospace rendering. (`renderer/styles.css`)
+- **Terminal preview box:** Preview box gets a line-rule texture background + purple accent border. (`renderer/styles.css`)
+- **Amplified focus glow:** Input/select focus ring upgraded from 8px blur to `0 0 0 1px accent` + `0 0 14px rgba(purple)`. (`renderer/styles.css`)
+- **Sidebar narrowed:** 200px → 168px. (`renderer/styles.css`)
+- **Overlay connected glow:** Pill gets a faint green ring when project is connected (`has-project` class). (`renderer/overlay.css`)
+- **Overlay success flush:** On successful file drop, pill background briefly flushes green (800ms) before reverting. (`renderer/overlay.css`, `renderer/overlay.js`)
+- **Overlay drag scale:** Pill scales to 1.03× when dragging a file over it. (`renderer/overlay.css`)
+
+---
+
+## [v1.9.9] — 2026-05-27
+
+### Build
+- **Windows installer built and signed:** `dist/freeXan Setup 1.9.7.exe` — NSIS one-click, per-user, x64. `package.json` version bumped from `1.2.0` → `1.9.7`. Signed via signtool.exe. (`package.json`, `electron-builder.yml`)
+
+---
+
+## [v1.9.8] — 2026-05-27
+
+### Feature / Fix
+- **Sequence format stored per-template, picked per-sequence (not global):** Each sequence in a template already stores `width`, `height`, `fps` from the sequence modal. ext.js now reads these fields from the `premiereTree` nodes and builds the preset path per-sequence: `sqpersets/{width}x{height}_{fps}fps.sqpreset`. Global `sequencePreset` from config is kept as a fallback only for sequences that have no format data. (`cep-extension/ext.js`)
+- **Sequence modal options restricted to supported presets:** `seq-modal-dims` now shows only the 3 bundled resolutions (Landscape 1920×1080 / Portrait 1080×1920 / Square 1080×1080); `seq-modal-fps` shows only 24 / 25 / 30 fps — matching the 9 preset files in `sqpersets/`. (`renderer/index.html`)
+- **`EXT_VERSION` → `'1.9.5'`, `EXPECTED_EXT_VERSION` → `'1.9.5'`** (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.9.7] — 2026-05-27
+
+### Feature
+- **Sequence format picker in Settings (9 presets — resolution × FPS):** Users can now choose their sequence format before creating projects. Settings tab has two new dropdowns: Resolution (`Landscape 1920×1080` / `Portrait 1080×1920` / `Square 1080×1080`) and FPS (`24` / `25` / `30`). Selection is auto-saved to `config.json` as `seqResolution` and `seqFps`. Default: `1920×1080` at `25fps`. (`renderer/index.html`, `renderer/app.js`, `main.js`)
+- **9 preset files bundled in `cep-extension/sqpersets/`:** `1920x1080_24fps.sqpreset`, `1920x1080_25fps.sqpreset`, `1920x1080_30fps.sqpreset`, `1080x1920_24fps.sqpreset`, `1080x1920_25fps.sqpreset`, `1080x1920_30fps.sqpreset`, `1080x1080_24fps.sqpreset`, `1080x1080_25fps.sqpreset`, `1080x1080_30fps.sqpreset`. The `sqpersets/` subfolder is automatically copied to the CEP extension folder on every freeXan startup via the existing `copyDir` logic in `installCEPExtension`. (`cep-extension/sqpersets/`)
+- **`sequencePreset` field added to all `setup-project` sends:** All four send sites in `main.js` (fallback dispatch, `project_ready` handler, Mode A immediate, Mode B immediate) now include `sequencePreset: "1920x1080_25fps"` (built from current config). (`main.js`)
+- **ext.js uses preset from `sqpersets/`:** `setupFromPremiereTree` and `setupProjectBinsAndSequences` now accept a `sequencePreset` argument. When provided, preset path is `extensionPath\sqpersets\{sequencePreset}.sqpreset`; falls back to legacy `sequence-preset.sqpreset` if null. (`cep-extension/ext.js`)
+- **`EXT_VERSION` → `'1.9.4'`, `EXPECTED_EXT_VERSION` → `'1.9.4'`** (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.9.6] — 2026-05-27
+
+### Fix
+- **`moveBin` called on Sequence object instead of ProjectItem (ext.js):** `app.project.createNewSequence` returns a `Sequence` object. `Sequence` does not have a `moveBin` method — only `ProjectItem` does. So `s.moveBin(tgt)` was silently throwing or doing nothing, leaving the sequence in the project root. Fixed by finding the newly created sequence as a `ProjectItem` via `rootItem.children[k]` (matching by name, `type !== ProjectItemType.BIN`) and calling `moveBin` on that item instead.
+- **Sequence creation dialog + wrong dimensions/FPS (ext.js):** `createNewSequence(name, presetPath)` ignores the second argument (which is a Prelude placeholder ID, not a preset path) and always shows the sequence settings dialog with Premiere's defaults. Replaced with a three-method cascade:  
+  1. `createNewSequenceFromPreset(presetPath, name)` — no dialog, uses bundled preset (PP 2019+ API, tried first)  
+  2. `app.enableQE(); qe.project.newSequence(name, presetPath)` — QE domain, suppresses dialog, uses preset  
+  3. `createNewSequence(name, "")` — shows dialog (last resort if both above unavailable)  
+  The log now reports which method was used: `→ ok Xms [preset]` / `[qe]` / `[dialog]`.
+- **`EXT_VERSION` → `'1.9.3'`, `EXPECTED_EXT_VERSION` → `'1.9.3'`** (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.9.5] — 2026-05-27
+
+### Fix
+- **`p.numItems` is stale — switched to null-terminated child iteration (ext.js):** Root cause of all "parent not found" failures: `p.numItems` (on `ProjectItem`) returns the pre-creation count even after new bins are created, so `for(j < p.numItems)` never reaches the newly created children. The project panel showed 12 items at root while the search loop was iterating 0 or wrong times. Fixed by replacing `for(j < p.numItems)` with `for(j < 500)` with a `if(!c) break` inside — Premiere's `children[j]` returns `null`/`undefined` when the index is past the end, so we iterate until that null boundary regardless of what `numItems` says. Applied in both `createOneBin` (parent search) and `createNextSequence` (target-bin search). (`cep-extension/ext.js`)
+- **Diagnostic info added to "parent not found" and "target bin not found" errors:** On failure, the error string now includes what was actually visible in `children[0..29]` — e.g., `err:parent not found: Audios (saw:[Raw,Elements,Audios,Sequences])`. This confirms whether the bin is visible at all and whether the name/type check is the problem. (`cep-extension/ext.js`)
+- **Sequence retry minimum raised to 200ms:** `adaptiveT` at sequence-creation time was 6ms (last bin creation was fast), making retry interval `6ms` — all 8 retries finished in 48ms. Raised to `Math.max(adaptiveT, 200)` consistent with bin retries. (`cep-extension/ext.js`)
+- **`EXT_VERSION` → `'1.9.2'`, `EXPECTED_EXT_VERSION` → `'1.9.2'`** (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.9.4] — 2026-05-27
+
+### Fix
+- **Parent bin visible too late — minimum wait floors raised (ext.js):** `adaptiveT` after creating "Visual Assets" measured 10ms (fast Premiere response), so the after-ok delay was `max(10,30)=30ms` and retry interval was 10ms. All 8 retries completed in ~80ms total, but Premiere needs ~200–400ms to register a new bin in `rootItem.children`. Raised after-ok delay minimum to 250ms and retry interval minimum to 200ms (`Math.max(adaptiveT, 250)` / `Math.max(adaptiveT, 200)`). These floors are independent of `adaptiveT` — creation speed and children-list update latency are different operations. With T=10ms: first child attempt at 250ms, retries at 200ms intervals → 8 retries = 1.85 seconds max window. (`cep-extension/ext.js`)
+- **`createNewSequenceFromPreset` is not a function (ext.js):** `app.project.createNewSequenceFromPreset` does not exist in this Premiere Pro install — ExtendScript returned `ReferenceError`. Added `typeof` check with fallback: if `createNewSequenceFromPreset` exists, use it; otherwise call `app.project.createNewSequence(name, presetPath)` — when a preset path is passed as the second argument, `createNewSequence` uses it and suppresses the sequence-settings dialog. Applied to both `setupFromPremiereTree` and `setupProjectBinsAndSequences`. (`cep-extension/ext.js`)
+- **`EXT_VERSION` → `'1.9.1'`, `EXPECTED_EXT_VERSION` → `'1.9.1'`** (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.9.3] — 2026-05-27
+
+### Refactor
+- **DFS bin creation with adaptive T timing (complete rewrite of `setupFromPremiereTree` in `ext.js`):** Replaced the flat sequential queue with a true depth-first traversal. Root bins are created first; for each bin the algorithm immediately recurses into its children before moving to the next sibling — guaranteeing every parent exists before any child creation is attempted. Sequences are deferred to a final phase after all bins are confirmed done.
+- **One command at a time:** Only one `evalScript` call is in flight at any moment. The next command is not sent until the current one returns a result (or fails). This eliminates any overlap where Premiere hasn't updated `rootItem.children` yet.
+- **Adaptive T timing:** Each `createOneBin` call records the elapsed milliseconds from script send to `"ok"` received. This measured value becomes the new `adaptiveT`. Every subsequent delay (wait before next bin, retry wait on `"err:parent not found"`) uses the latest `adaptiveT` instead of a hardcoded constant — the algorithm self-calibrates to actual Premiere speed.
+- **Retry with T wait:** On `"err:parent not found"` responses (up to 8 attempts), the retry waits exactly `adaptiveT` ms before re-trying — matching Premiere's own children-list update cadence.
+- **`buildPath` for sequences:** A `buildPath(parentId)` helper walks the `tempId → parent_id` chain upward to build a full path array for every sequence's parent bin, enabling reliable `moveBin` navigation even for deeply nested bins.
+- **Crash fix — `getSystemPath` removed:** Previous v1.9.2 code called `csInterface.getSystemPath(SystemPath.EXTENSION)` at startup to derive the extension path for the preset file. The project's `CSInterface.js` is a 12-line stub with no `getSystemPath` method — this threw a TypeError before `connectWebSocket()` was ever called, leaving the panel permanently "Disconnected". Fixed by deriving the extension path from `window.location.href` instead, which always works in CEP panels.
+- **`EXT_VERSION` → `'1.9.0'`, `EXPECTED_EXT_VERSION` → `'1.9.0'`** (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.9.2] — 2026-05-27
+
+### Fix
+- **Immediate dispatch when panel already connected (Fix A):** `pendingProjectSetup` could be queued after the CEP panel already sent `active_project` and `project_ready` — so neither handler ever fired again and bins were never created. Fixed by adding an immediate dispatch check right after both Mode A and Mode B `pendingProjectSetup` assignments in `main.js`: if `isCepConnected`, `cepWs.readyState === OPEN`, and `activeProjectPath` matches, `setup-project` is sent immediately and `pendingProjectSetup` is cleared. Added `let cepWs = null` module-level var, assigned on `connection`, cleared on `close`. (`main.js`)
+- **`waitForProjectReady` resolves in under 1 second (Fix B):** Previous check `typeof ri.numItems !== "undefined"` kept returning `"wait"` for 20 seconds even though `createBin()` worked immediately. Changed to `ri.children` access in a try/catch — if accessing `.children` does not throw, rootItem is ready. Same fix applied to `TRACKING_SCRIPT` so `project_ready` fires promptly. Poll interval reduced from 500ms to 300ms. (`cep-extension/ext.js`)
+- **Nested bins no longer fail "parent not found" (Fix C):** `createBin()` returns `"ok"` before Premiere updates `rootItem.children`, so the very next IIFE (running 4ms later) couldn't find the parent. Added a retry loop: up to 5 attempts with 150ms between each on `"err:parent not found"` responses before giving up. (`cep-extension/ext.js`)
+- **Sequence creation dialog eliminated (Fix D):** `app.project.createNewSequence()` opened Premiere's sequence settings dialog, blocking the entire queue until the user clicked OK. Replaced with `app.project.createNewSequenceFromPreset(presetPath, name)` using a bundled `sequence-preset.sqpreset` (HD 1080p 25fps, copied from Premiere's own install). Preset file is installed to `%APPDATA%\Adobe\CEP\extensions\freexan-link\` on every freeXan start. Extension path retrieved via `csInterface.getSystemPath(SystemPath.EXTENSION)` at startup. (`cep-extension/ext.js`, `cep-extension/sequence-preset.sqpreset`)
+- **Sequences now land in their parent bin, not root (Fix E):** `collectOrder` was not storing `parentPath` for sequence queue items, so the creation IIFE had no target bin information and always called `createNewSequence` at root. Fixed by passing `parentPath: parentPath.slice()` in the sequence queue push. After `createNewSequenceFromPreset` returns the new sequence object, the IIFE navigates to the target bin via `parentPath` and calls `seq.moveBin(targetBin)`. Same retry logic as Fix C applied to moveBin's target-bin lookup. (`cep-extension/ext.js`)
+- **`EXPECTED_EXT_VERSION` / `EXT_VERSION` bumped to `1.8.9`** (`main.js`, `cep-extension/ext.js`)
+
+---
+
+## [v1.9.1] — 2026-05-27
+
+### Fix
+- **Date folder format changed to `{Month}{Year}` (e.g. `July2026`):** Year-month directory was `2026 May`; now matches the requested `July2026` style. (`main.js`, `renderer/app.js`)
+- **`.prproj` auto-increments version instead of overwriting:** If `CLI_FNL_001_v01.prproj` already exists in `01_Project_Files`, the next run creates `…_v02.prproj`, then `…_v03.prproj`, etc. No file is ever overwritten. (`main.js`)
+- **README skipped if already present:** Re-running `create-project` into an existing project folder no longer clobbers the original README. (`main.js`)
+- **Resolved vars applied to prproj filename:** `projectName` in the file parts now also goes through `resolveVars()`, consistent with how the folder name is built. (`main.js`)
+
+---
+
+## [v1.9.0] — 2026-05-27
+
+### Feature
+- **Universal date/time variables in all folder/filename inputs:** Users can type `{Date}`, `{Month}`, `{Year}`, `{HH}`, `{MM}`, `{SS}` anywhere a name is entered (project name field, folder template node names, target directory path) and they resolve to the current PC date/time at project creation. Example: typing `001_{Date}{Month}` creates `001_27May`. (`main.js`, `renderer/app.js`)
+- **Automatic date hierarchy wrapping:** Every project is now created inside a two-level date folder under the root: `TargetDir / {Year} {Month} / {DD} {Month} / ProjectFolder`. Today's projects go into `2026 May / 27 May /`. The hierarchy folders are created automatically if absent. (`main.js` — `create-project` IPC handler)
+- **Live date-path preview in UI:** The Builder tab's "Project Structure Preview" now shows a "Date Path" row (`2026 May  →  27 May`) that always reflects today's date. (`renderer/app.js`, `renderer/index.html`)
+- **Variable resolution in folder template nodes:** Folder names stored in templates (e.g. `{Month} Exports`) are resolved at project creation time via `resolveVars()` in `buildFolderTree()`. (`main.js`)
+- **Input validation — invalid Windows filename chars:** Typing `\ / : * ? " < > |` outside of a `{Variable}` token in any folder/filename input shows a red border. Literal slashes and backslashes in folder-name inputs are blocked at submit time. Path inputs (target directory) are unaffected. Variable tokens (`{Date}` etc.) are whitelisted and never trigger the error. (`renderer/app.js`, `renderer/styles.css`)
+- **Variable hint labels:** The Project Name field help text now lists all six supported tokens as styled chips. (`renderer/index.html`, `renderer/styles.css`)
+
+---
+
+## [v1.8.9] — 2026-05-26
+
+### Fix
+- **Legacy "Project Builder Link" CEP extension now auto-removed on startup:** Root cause of "bins not creating, no errors": two CEP panels were installed in Premiere — the new `freexan-link` (ID `com.bloomx.freexan.link`, menu "freeXan Link") AND the legacy `project-builder-link` from before the brand rename (ID `com.swastik.projectbuilder.link`, menu "Project Builder Link"). Both connect to `ws://localhost:4554`. The legacy panel — running an old ext.js with no `ext_hello`, no `extLog`, no `project_ready`, and no inline-IIFE bin creation — connected first and intercepted every WebSocket session. The new v1.8.8 panel never got a chance to run. Symptoms: server logged `[CEP] Panel connected` and `active_project`, but no version-check log line, no `[EXT]` forwarding, and the 8-second fallback dispatch was sent to the legacy panel which ignored `setup-project` entirely.
+- `installCEPExtension` in `main.js` now removes `project-builder-link`, `projectbuilder-link`, and `project_builder_link` folders from `%APPDATA%\Adobe\CEP\extensions\` on every freeXan start, before installing the current panel. Idempotent — silently skipped if the folder is already gone. (`main.js`)
+- One-time manual cleanup performed: removed the legacy extension folder and its stale CEP cache entries (`%LOCALAPPDATA%\Temp\cep_cache\PPRO_25.3.0_com.swastik.projectbuilder.link.panel` and `…\PPRO_25.3.0_com.projectbuilder.link`).
+
+---
+
+## [v1.8.8] — 2026-05-26
+
+### Fix
+- **TRACKING_SCRIPT crash no longer resets project path:** When Premiere is mid-load, accessing `app.project.rootItem` throws an exception. The previous single try/catch caught this and returned `"NONE||"` — which reset `lastProjectPath` to empty on every tick, making `projectReadySent` reset as well, so `project_ready` could never fire. Fixed with a nested try/catch: the outer catch still returns `"NONE||"` for a missing `app` or `app.project`, but the inner catch (rootItem access failure) returns `"NOT_READY||"+path`, preserving the path and letting the loop wait properly for rootItem to stabilize. (`cep-extension/ext.js`)
+- **`waitForProjectReady` restored in both setup functions:** After v1.8.5 removed this function, the 8-second fallback dispatch (`active_project` handler) could fire `setup-project` while rootItem was still inaccessible — all bin/sequence IIFEs would return `"err:rootItem not ready"`. Restored `waitForProjectReady` (inline IIFE, 40 retries × 500ms = 20s max) in both `setupFromPremiereTree` and `setupProjectBinsAndSequences` as a safety net for fallback-path execution. (`cep-extension/ext.js`)
+- **Version constant mismatch:** `EXPECTED_EXT_VERSION` in `main.js` was left at `'1.8.7'` while `EXT_VERSION` in `ext.js` became `'1.8.8'` — this caused every panel connect to trigger a `reload` command, creating an infinite reload loop that prevented the panel from ever staying connected long enough to function. Fixed by bumping `EXPECTED_EXT_VERSION` to `'1.8.8'`. (`main.js`)
+
+---
+
+## [v1.8.7] — 2026-05-26
+
+### Perf
+- **CEP extension logs now appear in debug.log:** Added `extLog(msg)` helper to `ext.js` — every call logs to the CEP browser console AND sends `{ type: "ext_log", msg }` over WebSocket. `main.js` receives it and writes `[EXT] <msg>` to `debug.log` via `dbg()`. All insertion events (queue built, each bin/sequence creation attempt + result, errors) are now in the same log file as the server-side events. Panel info-text also updates per-item during insertion showing the current bin/sequence name and "ok" or "ERROR: ...". (`cep-extension/ext.js`, `main.js`)
+
+---
+
+## [v1.8.6] — 2026-05-26
+
+### Fix
+- **Restored fallback dispatch for panels running pre-v1.8.5 code:** v1.8.5 moved `setup-project` dispatch exclusively to the `project_ready` handler. Old panels (not yet restarted after the update) only send `active_project`, so nothing was ever dispatched. Fixed by reinstating a 3-second delayed dispatch inside the `active_project` handler — if `project_ready` fires first and clears `pendingProjectSetup`, the delayed fallback detects the reference change and cancels itself. New panels use `project_ready` (instant, guaranteed-ready); old panels fall back to the delayed path with a 3-second buffer for `rootItem` to become accessible. (`main.js`)
+
+---
+
+## [v1.8.5] — 2026-05-26
+
+### Fix
+- **Inverted handshake — CEP signals readiness before setup is sent:** Previously main.js dispatched `setup-project` the moment the active project path arrived (`active_project`), then ext.js had to poll internally for `rootItem` to become accessible. Race condition: path is available early in project load, rootItem is not. Redesigned to: CEP's tracking script now checks BOTH `path` AND `app.project.rootItem.numItems` in a single evalScript call every 1 s. When rootItem is confirmed accessible it sends `{ type: "project_ready" }` — the server dispatches `setup-project` only in response. The extension is guaranteed ready when it receives the command, so `waitForProjectReady` polling has been removed from the setup functions entirely.
+  - `cep-extension/ext.js`: `startProjectTracking` rewritten — single IIFE per tick returns `"READY||<path>"` or `"NOT_READY||<path>"`. Sends `active_project` on path change (overlay sync), sends `project_ready` once per project when rootItem confirms accessible. `waitForProjectReady` function removed. (`EXT_VERSION` bumped to `1.8.5`)
+  - `main.js`: `active_project` handler now UI-only. New `project_ready` handler does path comparison and dispatches `setup-project`. (`EXPECTED_EXT_VERSION` bumped to `1.8.5`)
+
+---
+
+## [v1.8.4] — 2026-05-26
+
+### Perf
+- **Debug logging for bin/sequence insertion:** Full timestamped log written to `%APPDATA%/freeXan/debug.log` at every step of the project setup flow — template data read from DB, `pendingProjectSetup` contents, path comparison (both sides shown), `setup-project` payload summary, plus `waitForProjectReady` retry count and each IIFE result in the CEP panel console. Open the log file in Notepad while the app is running to watch entries arrive live. (`main.js`, `cep-extension/ext.js`)
+
+---
+
+## [v1.8.3] — 2026-05-26
+
+### Fix
+- **CEP panel auto-reloads when a new ext.js is installed:** The panel now announces its version (`EXT_VERSION`) to the WebSocket server on connect. If the server's `EXPECTED_EXT_VERSION` is newer, it sends a `{ type: "reload" }` command and the panel calls `window.location.reload()` to pick up the latest code. Eliminates the requirement to restart Premiere Pro after freeXan updates. (`cep-extension/ext.js`, `main.js`)
+- **All remaining named ExtendScript function calls removed:** Sequences in `setupFromPremiereTree` and all calls in `setupProjectBinsAndSequences` (both bins and sequences) were still calling named functions (`createSequence`, `createBin`) defined in `hostscript.jsx`. If the JSX hadn't reloaded since the last freeXan update, these calls failed silently. Converted to self-contained inline IIFEs — zero dependency on pre-loaded JSX functions. (`cep-extension/ext.js`)
+- **Path comparison trims whitespace:** `path.normalize(p.trim())` now used on both sides of the `active_project` path match in `main.js` — prevents silent mismatch if ExtendScript returns a path with trailing whitespace. (`main.js`)
+- **Setup progress visible in panel:** Info text now shows "Project setup received", "Waiting for project…", "Creating N item(s)…" during the setup flow so the user can confirm the command arrived. (`cep-extension/ext.js`)
+
+---
+
+## [v1.8.2] — 2026-05-26
+
+### Fix
+- **Bins and sequences now actually create in Premiere Pro:** Two root-cause bugs prevented any bin or sequence from being created when a project was set up.
+  - **Bug 1 — Timing race condition:** The `setup-project` WebSocket message fired as soon as `app.project.path` was available, but Premiere's `app.project.rootItem` API is not ready at that point — all `createBin` / `createNewSequence` calls silently failed. Fixed by adding `waitForProjectReady(callback)` in `cep-extension/ext.js` — polls `app.project && app.project.rootItem ? "ready" : "wait"` every 500ms, up to 20 retries (10 seconds), before firing any bin/sequence creation.
+  - **Bug 2 — ExtendScript named function not loaded:** `setupFromPremiereTree` previously called `createBinAtPath()` by name — a function defined in `hostscript.jsx`. If Premiere was already running when freeXan installed new CEP files, the old JSX without `createBinAtPath` was still in ExtendScript memory. Fixed by replacing all named-function calls with self-contained inline IIFEs passed to `evalScript` — no dependency on any pre-loaded JSX function.
+  - Both `setupFromPremiereTree` and `setupProjectBinsAndSequences` (fallback) now use `waitForProjectReady`. (`cep-extension/ext.js`)
+
+---
+
+## [v1.8.1] — 2026-05-26
+
+### Feature
+- **Nested bin creation in Premiere Pro:** When a project is set up, bins are now created in the correct parent-child order instead of being flattened to root level.
+  - `cep-extension/hostscript.jsx`: Added `createBinAtPath(pathStr, binName)` — navigates to the correct parent bin using a pipe-separated path string (e.g. `"Footage|A-Roll"`) then creates the child bin inside it
+  - `cep-extension/ext.js`: Added `setupFromPremiereTree(nodes)` — builds a depth-first ordered queue of bins and sequences, then executes each `createBinAtPath` call sequentially via callbacks (parent confirmed created before child is attempted). Falls back to old `setupProjectBinsAndSequences` if no tree is present
+  - `main.js`: `premiereTree` added to `pendingProjectSetup` in both Mode A and Mode B paths; broadcast in `setup-project` WebSocket message
+
+---
+
+## [v1.8.0] — 2026-05-26
+
+### Feature
+- **Premiere Pro tab — interactive bin/sequence tree:** Fully replaced the old bins + sequences tag-pill layout with a live tree editor matching the Folder Structure tab's visual style.
+  - **Ghost add card:** A dashed hollow "+ Add Bin" card sits at the bottom of the tree in edit mode. Clicking it creates a new root-level bin immediately, selects the name, and the user types to rename then presses Enter.
+  - **Nested bins:** Each bin has `+ Bin` and `+ Seq` hover buttons. `+ Bin` creates a child bin inside the parent with the same inline-rename flow.
+  - **Sequence modal:** `+ Seq` opens a Premiere-style modal with Name, Dimensions (HD/4K/QHD/vertical presets), and Frame Rate (23.976–60fps). Enter or "Add Sequence" confirms. The sequence appears in the tree as a leaf node with a `width×height · fps` badge.
+  - **Delete:** Hover `✕` on any node removes it and all children (same as folder tree).
+  - **Data:** Premiere tree stored as a node-object array in `bins_json` (replaces separate flat `bins_json`/`sequences_json` string arrays). Backward compatible — old flat string arrays auto-migrate on load.
+  - `renderer/index.html`: Tab 2 replaced with unified tree + ghost card; sequence modal added before `</body>`
+  - `renderer/app.js`: `ftsPremiere` state replaces `ftsBins`/`ftsSequences`; `renderPremiereTree`, `renderPremiereNode`, `addPremiereBin`, `openSeqModal`, `closeSeqModal`, `confirmAddSequence` added; `saveFtsTemplate` updated
+  - `renderer/styles.css`: `.premiere-add-card`, `.premiere-seq-badge`, modal styles added
+  - `main.js`: `flattenPremiereTree()` helper added; both `pendingProjectSetup` paths updated to handle new tree format with backward compat
+
+---
+
+## [v1.7.2] — 2026-05-26
+
+### UI
+- **Premiere Pro tab redesigned to match Folder Structure tab:** Bins and Sequences now render as `ft-node` rows inside bordered `ft-tree` containers — same icon/name/hover-delete layout as the folder tree. Replaced pill/tag layout (`fts-tags-list`, `fts-tag`) with tree-row layout. Empty state shows "No bins yet" / "No sequences yet". Add buttons relabelled "+ Bin" / "+ Sequence". (`renderer/index.html`, `renderer/app.js` — `renderFtsBins`, `renderFtsSequences`)
+
+---
+
+## [v1.7.1] — 2026-05-26
+
+### UI
+- **Removed "+ Asset" button from Folder Structure template tree editor:** Button appeared on each folder node in edit mode in the Database → Templates section. Removed from both `renderFtsNode` (fts-* section) and `renderFtNode` (legacy ft-* section). (`renderer/app.js`)
+
+---
+
+## [v1.7.0] — 2026-05-26
+
+### Fix
+- **Funnel dropdown shows only the selected client's funnels:** Added `refreshFunnelDropdown()` — when a client is selected, filters `dbFunnels` to entries where `client_id` matches or is null (global funnels). Previous funnel selection is cleared on client change. (`renderer/app.js`)
+
+---
+
+## [v1.6.9] — 2026-05-26
+
+### Logic
+- **Builder Folder Hierarchy — explicit Default-first behaviour:** Rewrote `refreshBuilderTree` with a simple two-state rule: always show the Default template's nodes; only swap to a specific template when Client + Funnel + Task are all selected AND an exact assignment with nodes exists for that combo. `defaultBuilderNodes` is pre-loaded once inside `loadFtsTemplates` and used as the persistent base — no more complex cache/resolution chain that could silently return empty. (`renderer/app.js`)
+- **Builder tree appears immediately on Client select:** `updatePreviews()` moved before `await refreshTaskDropdownForPair()` in client and funnel change handlers so the hierarchy renders the moment a Client is chosen. (`renderer/app.js`)
+
+---
+
+## [v1.5.0] — 2026-05-25
+
+### Feature
+- **Folder Structure Template System:** Replaces the flat folder list in Settings with a full tree editor. Users can define nestable folder hierarchies, attach asset references (file or folder), create named templates, assign templates to client/funnel pairs, and choose between two .prproj modes per template.
+  - **Template types:** Default/user-created (folder tree, optional .prproj), Mode A "Copy to New Project" (creates new folder, copies .prproj, builds tree, imports assets), Mode B "Open Template Directly" (opens .prproj in-place, applies bins/sequences only)
+  - **Asset nodes:** Asset references inside the tree are imported into Premiere Pro's matching root-level bin after the project opens — no copy to disk
+  - **Assignment system:** Templates can be assigned to any number of client/funnel combinations; resolution priority: funnel-exact → client-exact → Default
+  - **DB:** 3 new tables (`folder_templates`, `folder_template_nodes`, `folder_template_assignments`); auto-seeds Default template with 5 standard folders on first run
+  - `db.js`: `folderTemplatesApi` (12 methods); new tables in `initSchema()`; export updated
+  - `main.js`: `buildFolderTree()` helper; `create-project` updated for Mode A/B; `pendingProjectSetup.assets`; `setup-project` WebSocket dispatch includes assets; 12 `ft-*` IPC handlers
+  - `preload.js`: `window.api.ft.*` (12 methods) exposed via contextBridge
+  - `renderer/index.html`: Flat folder section hidden; new Folder Template Editor section (selector, .prproj picker, open mode, tree editor, save buttons, assignment panel)
+  - `renderer/app.js`: Full tree editor — state, render, CRUD, save, assignment management, event binding
+  - `renderer/styles.css`: Tree editor component styles + `.btn-danger`
+  - `cep-extension/ext.js`: `setup-project` handler imports assets into matching bins (800ms delay after bin creation)
+  - `cep-extension/hostscript.jsx`: `importAssetToBin(filePath, binName)` added
+
+---
+
+## [v1.4.0] — 2026-05-25
+
+### Feature
+- **Fresh Project default template:** When no client/funnel-specific template is configured, the fallback now uses `Premiere Pro Utilities/Fresh Project Pr 2025.prproj` (falls back to `blank_template.prproj` if file missing). Fallback branch also now uses the correct initials-based filename (`AAP_MAW_AV_001_v01.prproj`) instead of the full folder name. (`main.js` → `create-project` else branch)
+
+- **Default Bins & Sequences per project:** New Settings sections let users define bins and sequences to auto-create inside every new Premiere project. Stored in config as `defaultBins` and `defaultSequences`. After a project opens in Premiere, the freeXan CEP panel receives a `setup-project` WebSocket message and calls ExtendScript to create each bin (`app.project.rootItem.createBin`) and sequence (`app.project.createNewSequence`). Requires the freeXan panel to be open in Premiere.
+  - `main.js`: `pendingProjectSetup` global; `setup-project` WebSocket dispatch on matching `active_project`; `defaultBins`/`defaultSequences` in `appConfig` defaults
+  - `renderer/index.html`: Default Premiere Bins + Default Premiere Sequences sections added to Settings tab
+  - `renderer/app.js`: DOM refs, `renderDefaultBinsList()`, `renderDefaultSequencesList()`, `makeListRow()` helper; add/remove/save wired up
+  - `cep-extension/ext.js`: `setup-project` message handler; `setupProjectBinsAndSequences()` function
+  - `cep-extension/hostscript.jsx`: `createBin(name)` and `createSequence(name, id)` ExtendScript functions
+
+---
+
+## [v1.3.2] — 2026-05-25
+
+### Logic
+- When user opens the panel from the tray (menu click or double-click), the Premiere monitor no longer auto-hides the window when a project is detected. The window stays visible until the user manually minimizes or closes it, at which point normal auto-hide behaviour resumes. (`main.js` — `userOpenedManually` flag, tray handlers, `mainWindow.on('hide')` reset, monitor guard)
+
+---
+
+## [v1.3.1] — 2026-05-25
+
+### Fix
+- Settings — Default Target Directory and Template inputs were marked `readonly`, preventing manual typing or pasting. Removed `readonly` from both fields. (`renderer/index.html` lines 179, 189)
+- Settings — Browse selection only updated in-memory state but never wrote to disk; settings were lost on every restart. Added `savePathSettings()` auto-save helper that persists immediately after Browse returns a value. Also added `change` event listeners on both inputs so manually typed or pasted paths are saved when the user leaves the field. (`renderer/app.js` — `bindSettingsEvents()`)
+
+---
+
+## [v1.3.0] — 2026-05-25
+
+### Feature
+- Browser image drag-drop: drag any image directly from a browser tab onto the overlay pill. App detects `text/uri-list` in the drop payload, downloads via `axios`, converts unsupported formats (WebP/AVIF/HEIC/HEIF → PNG) via `ffmpeg`, copies to project's `04_Assets` folder, and auto-imports into active Premiere bin through existing WebSocket → CEP pipeline. No new dependencies — `axios` and `@ffmpeg-installer/ffmpeg` were already in `package.json`.
+  - `preload.js`: URL detection in drop handler; `window.api.onUrlsDropped` + `window.api.importBrowserImage` exposed
+  - `renderer/overlay.js`: URL drop handler registered; `setProcessing()` accepts label (`'Downloading…'`)
+  - `main.js`: `axios` + `ffmpegInstaller` imports added; `convertWithFfmpeg()` helper added; `import-browser-image` IPC handler added (URL validation, 50 MB cap, content-type guard, format conversion, conflict resolution, WebSocket broadcast)
+
+---
+
+## [v1.2.1] — 2026-05-25
+
+### Fix
+- Prevent multiple app instances launching simultaneously. Second launch focuses existing window. (`main.js`)
+
+---
+
+## [v1.2.0] — 2026-05-25 (Baseline — Logging Begins)
+
+> This is the state of the project when the changelog was introduced.  
+> All prior changes are summarized below as the v1.2.0 feature set.
+
+### Feature
+- Electron 30 desktop app: frameless main window (800×600), system tray, startup with `--hidden` flag
+- Project Builder tab: client/funnel/task dropdowns, live path preview, folder structure creation, template copy, preset asset import, opens in Premiere
+- Floating drag-drop overlay pill (56×56 idle → 244×84 on hover with drag)
+- Overlay auto-sorts dropped files: video → `02_Footage`, audio → `03_Audio`, image → `04_Assets`
+- Filename conflict resolution: auto-increment (`file_1.mp4`, `file_2.mp4`)
+- WebSocket server on port 4554 for CEP ↔ main process communication
+- CEP extension (`com.bloomx.freexan.link`) auto-installs on app launch for Premiere 14.0+
+- ExtendScript `importAsset()` — auto-imports dropped files into active Premiere bin
+- CEP panel polls `app.project.path` every 1.5s via ExtendScript; sends active project path over WebSocket
+- PowerShell monitor polls Premiere window title every 2.5s for active project detection (fallback)
+- Auto-popup: Builder window shows when Premiere Home Screen is detected (if enabled)
+- Settings tab: target directory, global template, folder structure list, auto-popup toggle
+- Settings persisted to `%APPDATA%/Roaming/project-builder-link/config.json`
+- SQLite database (`better-sqlite3`, WAL mode): clients, funnels, tasks, funnel_tasks, templates, assets
+- Database tab: full CRUD for clients, funnels, tasks, templates, assets
+- Initials-first keystroke search on all dropdowns
+- Initials auto-derived from name (multi-word → first letters; single-word → first 3 chars)
+- CEP PlayerDebugMode registry keys set at launch (CSXS 9–12)
+- Per-user NSIS installer with desktop + Start Menu shortcuts, auto-launch after install
+- Startup registry entry (`HKCU\...\Run`) for launch-at-boot
+
+### DB
+- Schema: `clients`, `funnels`, `tasks`, `funnel_tasks`, `templates`, `assets`
+- Foreign keys with cascading deletes
+- Auto-migration support
+- Seed script with 30+ pre-built clients (`npm run seed`)
+
+### Build
+- `electron-builder 26`, `electron-rebuild 4`
+- Build output: `dist/freeXan Setup 1.2.0.exe` + unpacked
+
+---
+
+## [v1.2.1] — 2026-05-25
+
+### Fix
+- Prevent multiple app instances from launching simultaneously. Second launch attempt now focuses the existing window instead of opening a duplicate. (`main.js` — `app.requestSingleInstanceLock()` + `second-instance` handler before `app.whenReady()`)
+
+---
+
+## [v1.6.0] — 2026-05-25
+
+### Feature
+- **Folder Structure Templates — Database tab:** New "Folder Structure Templates" section at the bottom of the Library tab. Shows all templates as a clickable list; clicking one opens a "Template Structure" panel below with the full folder tree, assigned Client/Funnel/Task, Premiere Bins, and Premiere Sequences.
+  - **View mode:** tree and dropdowns are read-only. Buttons: Edit + New.
+  - **Edit mode:** Edit → Cancel, New → Save. Tree becomes editable (add/rename/delete folders and assets). The 3 assignment dropdowns (Client, Funnel, Task) unlock. Bins and Sequences become editable. Saving a shared template prompts Overwrite vs Save as New.
+  - **New button (view mode):** clones the selected template (full tree, bins, sequences) and opens the clone in edit mode with blank assignment dropdowns.
+  - **+ New Template button:** creates a blank template and opens it in edit mode.
+- **Template bins + sequences per template:** Each folder template now stores its own Premiere bins and sequences (previously global settings).
+- **Task-level template assignment:** Template assignments now include Task type — resolution priority: Client+Funnel+Task → Client+Funnel → Client → Default.
+  - `db.js`: migrations add `bins_json`, `sequences_json` to `folder_templates`; `task_id` to `folder_template_assignments`; `folderTemplatesApi` updated (all methods); `clone()` added.
+  - `main.js`: `create-project` passes `taskId` to resolve; uses template `bins_json`/`sequences_json`; `ft-*` IPC handler signatures updated; `ft-clone` added.
+  - `preload.js`: `window.api.ft.*` signatures updated; `ft.clone` added.
+  - `renderer/index.html`: `fts-*` section added to Database tab.
+  - `renderer/app.js`: `fts*` state, DOM refs, and all functions added; `bindFtsEvents()` and `loadFtsTemplates()` wired into init.
+  - `renderer/styles.css`: `.fts-*` styles added.
+
+---
+
+## [v1.5.3] — 2026-05-25
+
+### UI
+- Removed "Base Premiere Pro Template" and "Folder Structure Templates" sections from the Settings tab. Settings now contains only: Target Directory, Auto-popup toggle, and Save button. (`renderer/index.html`, `renderer/app.js`)
+
+---
+
+## [v1.5.2] — 2026-05-25
+
+### UI
+- Removed "Default Premiere Bins" and "Default Premiere Sequences" sections from the Settings tab. (`renderer/index.html`, `renderer/app.js`)
+
+---
+
+## [v1.5.1] — 2026-05-25
+
+### Fix
+- **All buttons unclickable after v1.5.0:** `DOMContentLoaded` async handler called `await loadFolderTemplates()` before any `bind*Events()` calls — if it threw, no event listeners were ever attached. Fixed by moving all `bind*Events()` calls to the top of the handler (before any awaits), and wrapping each async init in its own try-catch so a single failure can't cascade. (`renderer/app.js` — `DOMContentLoaded` handler)
+
+### UI
+- **Database tab — Preset Assets moved above Templates:** Section order in the Library tab is now Clients → Funnels → Tasks → Preset Assets → Templates. (`renderer/index.html`)
+
+---
+
+## [v1.6.8] — 2026-05-25
+
+### Fix
+- **Builder Folder Hierarchy blank on cold start:** `refreshBuilderTree` relied solely on the `ftsTemplates` in-memory cache to find the Default template. If the cache wasn't populated yet (race on startup), `resolveFtsTemplateForBuilder()` returned null and the tree stayed blank. Fixed by adding `ft-get-default` IPC handler (`main.js`), `window.api.ft.getDefault()` in `preload.js`, and a direct DB fallback in `refreshBuilderTree` — if the cache returns null, the Default template is fetched from the DB directly. (`main.js`, `preload.js`, `renderer/app.js`)
+
+---
+
+## [v1.6.7] — 2026-05-25
+
+### Fix
+- **Builder Folder Hierarchy shows wrong structure with no selection:** `renderBuilderTree` was falling back to `configState.folderStructure` (an old flat list from the removed Settings UI) whenever `builderTreeNodes` was empty. Removed that fallback entirely — the tree stays blank until the Default template nodes load (a brief moment at startup). Also fixed `refreshBuilderTree` to re-fetch nodes if the cache is empty even when the resolved ID hasn't changed. (`renderer/app.js`)
+
+---
+
+## [v1.6.6] — 2026-05-25
+
+### Logic
+- **Mandatory `01_Project_Files` folder:** Every template always contains a root-level `01_Project_Files` folder that cannot be renamed or deleted. When loading a template that doesn't have it (e.g. newly created), it is injected automatically. Inside it, `project.prproj` is shown as a locked visual placeholder (not stored — it represents the auto-generated project file). A 🔒 badge appears on the folder and the placeholder to make the lock visible. Users can still add subfolders and assets inside `01_Project_Files`. (`renderer/app.js` — `selectFtsTemplate`, `renderFtsNode`, new `renderLockedPrprojNode`; `renderer/styles.css` — `.ft-lock-badge`, `.ft-locked-file`)
+
+---
+
+## [v1.6.5] — 2026-05-25
+
+### Feature
+- **Builder tab — live folder hierarchy preview:** The Folder Hierarchy panel now shows the actual folder template structure instead of the flat settings list. On startup it shows the Default template's full folder tree. When Client, Funnel, and/or Task are selected, it resolves the matching template (same priority: Client+Funnel+Task → Client+Funnel → Client → Default) and updates the tree live. Sub-folders are indented. The `.prproj` filename appears inside `01_Project_Files` when present. (`renderer/app.js` — `resolveFtsTemplateForBuilder`, `refreshBuilderTree`, `renderBuilderTree`, `renderBuilderTreeNode`; `loadFtsTemplates` pre-loads default nodes on startup)
+
+---
+
+## [v1.6.4] — 2026-05-25
+
+### Fix
+- **Bins/Sequences × button invisible:** `opacity: 0.45` on top of the parent's already-translucent white produced ~30% effective opacity — nearly invisible. Replaced with `color: rgba(255,255,255,0.5)` at full opacity; turns red on hover. (`renderer/styles.css`)
+- **Bins/Sequences not renameable:** Tags were static text. Now in edit mode the name span is `contentEditable` — click to rename, Enter or click away to confirm. (`renderer/app.js` — `renderFtsBins`, `renderFtsSequences`)
+- **Template name not editable:** Panel header showed a static "Template Structure" label with no way to rename. Replaced with an `<input>` that is disabled in view mode and enabled in edit mode; value is used when saving. (`renderer/index.html`, `renderer/app.js`, `renderer/styles.css` — `.fts-template-name-input`)
+- **Folder names not visually editable:** `contentEditable` was set in JS but there was no visual cue. Added a purple underline on hover/focus for `.ft-name[contenteditable="true"]`. (`renderer/styles.css`)
+
+---
+
+## [v1.6.3] — 2026-05-25
+
+### Fix
+- **Folder delete buttons missing in edit mode:** `fts-tree-view` CSS class was permanently on the tree element (set in HTML, never removed), so `.ft-node-actions { display: none !important }` suppressed all action buttons even after clicking Edit. Fixed by removing the class in `enterFtsEditMode()` and re-adding it in `exitFtsEditMode()`. (`renderer/app.js`)
+- **No way to delete templates from the list:** `renderFtsList` had no delete control. Added a hover-visible × button to each non-default list item — clicking it confirms, calls `ft.delete`, hides the panel if that template was open, and reloads the list. (`renderer/app.js`, `renderer/styles.css` — `.fts-list-del`)
+
+---
+
+## [v1.6.2] — 2026-05-25
+
+### UI
+- **Templates section — merged + 3-dropdown filter:** Removed the separate "Folder Structure Templates" section. The folder structure template list, "+ New Template" button, and Template Structure panel now live inside the main Templates section. Three filter dropdowns (Client, Funnel, Task) sit above the list — selecting any combination narrows the list to matching templates. Default ★ template always shows. The existing "Project File Templates" (.prproj assignments) moved below as a subsection with a divider label. (`renderer/index.html`, `renderer/app.js` — `refreshFtsFilterFunnels`, `refreshFtsFilterTasks`, `renderFtsList` filter logic; `renderer/styles.css` — `.fts-filter-row`, `.db-subsection-label`)
+
+---
+
+## [v1.6.1] — 2026-05-25
+
+### UI
+- **Template Structure panel — 2-tab layout:** The panel now has two inner tabs: **Folder Structure** (folder tree + add-root row) and **Premiere Pro** (Bins + Sequences). Assignment dropdowns and Edit/New buttons remain above the tabs and apply to both. (`renderer/index.html`, `renderer/app.js` — `switchFtsTab()`, `bindFtsEvents()`, `renderer/styles.css` — `.fts-inner-tabs`, `.fts-inner-tab`)
+
+---
+
+## [Unreleased]
+
+> Add new entries below this line in the following format:
+>
+> ### [vX.Y.Z] — YYYY-MM-DD HH:MM | Author
+> #### Type
+> - Description of change (file: `path/to/file.js:line`)
+
+---
+
+<!-- ENTRY TEMPLATE (copy this block for each new change):
+
+## [vX.Y.Z] — YYYY-MM-DD HH:MM
+
+### Feature
+-
+
+### Fix
+-
+
+### Logic
+-
+
+### UI
+-
+
+### DB
+-
+
+### Build
+-
+
+-->

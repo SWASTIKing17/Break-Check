@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audio freeXan</title>
+  <link rel="stylesheet" href="audio-player.css">
+</head>
+<body>
+
+  <header id="app-header">
+    <div class="brand">audio <span class="brand-x">fX</span></div>
+    <div class="header-right">
+      <div class="sync-wrap">
+        <span class="sync-label">Hover</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-hover">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <span class="sync-label" style="margin-left:8px;">Sync</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-sync">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="scale-wrap">
+        <span class="scale-ico" title="Card size">⊞</span>
+        <input type="range" id="slider-card-scale" min="60" max="180" value="96" step="6">
+      </div>
+    </div>
+  </header>
+
+  <div class="layout" id="main-layout">
+
+    <nav class="sidebar" id="sidebar">
+      <div class="sb-group">
+        <div class="sb-item active" data-filter="all">
+          <span class="sb-ico">♪</span><span class="sb-txt">All Files</span>
+        </div>
+        <div class="sb-item" data-filter="favorites">
+          <span class="sb-ico">★</span><span class="sb-txt">Favorites</span>
+        </div>
+        <div class="sb-item" data-filter="bgm">
+          <span class="sb-ico bgm-dot">●</span><span class="sb-txt">BGM</span>
+        </div>
+        <div class="sb-item" data-filter="sfx">
+          <span class="sb-ico sfx-dot">●</span><span class="sb-txt">SFX</span>
+        </div>
+      </div>
+
+      <div class="sb-group" id="group-essentials" style="display:none">
+        <div class="sb-section-title">Essentials</div>
+        <div class="sb-item" data-filter="recommended" id="sb-recommended">
+          <span class="sb-ico">✦</span><span class="sb-txt">Recommended</span>
+        </div>
+        <div class="sb-item" data-filter="frequent" id="sb-frequent">
+          <span class="sb-ico">↻</span><span class="sb-txt">Frequent</span>
+        </div>
+      </div>
+
+      <div class="sb-group" id="folder-tree">
+        <!-- populated dynamically -->
+      </div>
+    </nav>
+    <div class="sidebar-resizer" id="sidebar-resizer"></div>
+
+    <div class="content" id="content-area">
+      <div class="search-row">
+        <input type="text" id="search-input" class="search-input" placeholder="Search…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="audio-grid" id="audio-grid">
+        <div class="empty-state">No audio found.<br>Add watched folders in freeXan settings.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="detail-drawer" id="detail-drawer">
+    <div class="drawer-header">
+      <div class="drawer-track-info">
+        <span class="drawer-name" id="drawer-name">—</span>
+        <span class="drawer-type-badge" id="drawer-type-badge"></span>
+      </div>
+      <button class="btn-drawer-close" id="btn-drawer-close" title="Close">×</button>
+    </div>
+
+    <div class="drawer-mood-row" id="drawer-mood-row"></div>
+
+    <div class="waveform-container" id="waveform-container">
+      <canvas class="waveform-canvas" id="waveform-canvas"></canvas>
+      <div class="waveform-trim-region" id="waveform-trim-region"></div>
+      <div class="waveform-playhead" id="waveform-playhead"></div>
+      <div class="trim-handle trim-handle-start" id="handle-start"><div class="handle-bar"></div></div>
+      <div class="trim-handle trim-handle-end" id="handle-end"><div class="handle-bar"></div></div>
+      <!-- Micro-trim precision handles on the top detail view -->
+      <div class="micro-handle micro-handle-left" id="micro-handle-left"></div>
+      <div class="micro-handle micro-handle-right" id="micro-handle-right"></div>
+      <div class="waveform-cursor-line" id="waveform-cursor-line"></div>
+      <div class="waveform-drag-dim"    id="waveform-drag-dim"></div>
+    </div>
+    
+    <!-- Minimap: context track with custom brush selector overlay -->
+    <div class="minimap-wrap" id="minimap-wrap">
+      <div id="waveform-minimap"><canvas id="minimap-canvas"></canvas><div class="minimap-playhead" id="minimap-playhead"></div></div>
+      <div class="brush-selector" id="brush-selector">
+        <div class="brush-fill" id="brush-fill"></div>
+        <div class="brush-handle brush-handle-left" id="brush-handle-left">
+          <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 7 C0 3.13 3.13 0 7 0 L25 0 C26.66 0 28 1.34 28 3 L28 7 C28 8.66 26.66 10 25 10 L10 10 L10 25 C10 26.66 8.66 28 7 28 L3 28 C1.34 28 0 26.66 0 25 L0 7 Z" fill="#50E3C2"/>
+            <path d="M6 11 L11 6 M9 14 L14 9 M12 17 L17 12" stroke="rgba(0,0,0,0.35)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brush-handle brush-handle-right" id="brush-handle-right">
+          <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+            <path d="M28 21 C28 24.87 24.87 28 21 28 L3 28 C1.34 28 0 26.66 0 25 L0 21 C0 19.34 1.34 18 3 18 L18 18 L18 3 C18 1.34 19.34 0 21 0 L25 0 C26.66 0 28 1.34 28 3 L28 21 Z" fill="#50E3C2"/>
+            <path d="M22 17 L17 22 M19 14 L14 19 M16 11 L11 16" stroke="rgba(0,0,0,0.35)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tc-row">
+      <span class="tc" id="lbl-trim-start">0.00s</span>
+      <span class="tc tc-end" id="lbl-trim-end">—</span>
+    </div>
+
+    <div class="drawer-controls">
+      <button class="btn-play" id="btn-play" title="Play (Space)">▶</button>
+
+      <div class="mod-group">
+        <div class="mod-row">
+          <span class="mod-label">Pitch</span>
+          <input type="range" class="mod-slider pitch-slider" id="slider-pitch" min="-12" max="12" value="0" step="1">
+          <span class="mod-val" id="val-pitch">0 st</span>
+          <button class="btn-reset" id="btn-reset-pitch" title="Reset">↺</button>
+        </div>
+        <div class="mod-row">
+          <span class="mod-label">Speed</span>
+          <input type="range" class="mod-slider speed-slider" id="slider-speed" min="50" max="200" value="100" step="5">
+          <span class="mod-val" id="val-speed">1.0×</span>
+          <button class="btn-reset" id="btn-reset-speed" title="Reset">↺</button>
+        </div>
+        <div class="mod-row">
+          <span class="mod-label">Volume</span>
+          <input type="range" class="mod-slider vol-slider" id="slider-volume" min="0" max="200" value="100" step="1">
+          <span class="mod-val" id="val-volume">100%</span>
+          <button class="btn-reset" id="btn-reset-volume" title="Reset">↺</button>
+        </div>
+      </div>
+
+      <div class="add-container">
+        <button class="btn-add" id="btn-import">Add</button>
+        <div class="drag-handle" id="drag-handle" title="Drag to timeline">
+          <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="drawer-footer">
+      <div class="fx-tray" id="fx-tray">
+        <button class="fx-btn" data-fx="AutoFilter" title="AutoFilter">Filter</button>
+        <button class="fx-btn" data-fx="AutoPanner" title="AutoPanner">Pan</button>
+        <button class="fx-btn" data-fx="AutoWah" title="AutoWah">Wah</button>
+        <button class="fx-btn" data-fx="BitCrusher" title="BitCrusher">8-Bit</button>
+        <button class="fx-btn" data-fx="Chebyschev" title="Chebyschev">Warmth</button>
+        <button class="fx-btn" data-fx="Chorus" title="Chorus">Chorus</button>
+        <button class="fx-btn" data-fx="Compressor" title="Compressor">Comp</button>
+        <button class="fx-btn" data-fx="Distortion" title="Distortion">Distort</button>
+        <button class="fx-btn" data-fx="EQ3" title="EQ3">EQ3</button>
+        <button class="fx-btn" data-fx="FeedbackDelay" title="FeedbackDelay">Delay</button>
+        <button class="fx-btn" data-fx="Freeverb" title="Freeverb">Reverb</button>
+        <button class="fx-btn" data-fx="JCReverb" title="JCReverb">JCRvrb</button>
+        <button class="fx-btn" data-fx="Phaser" title="Phaser">Phaser</button>
+        <button class="fx-btn" data-fx="PingPongDelay" title="PingPongDelay">PingPong</button>
+        <button class="fx-btn" data-fx="PitchShift" title="PitchShift">PShift</button>
+        <button class="fx-btn" data-fx="StereoWidener" title="StereoWidener">Widen</button>
+        <button class="fx-btn" data-fx="Tremolo" title="Tremolo">Tremolo</button>
+        <button class="fx-btn" data-fx="Vibrato" title="Vibrato">Vibrato</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BGM/SFX Type Confirmation overlay -->
+  <div class="type-confirm" id="type-confirm">
+    <div class="tc-title">Confirm Audio Type</div>
+    <div class="tc-btns">
+      <button class="btn-type bgm" id="btn-confirm-bgm">BGM</button>
+      <button class="btn-type sfx" id="btn-confirm-sfx">SFX</button>
+    </div>
+    <label class="tc-no-ask">
+      <input type="checkbox" id="chk-no-ask"> Don't ask again this session
+    </label>
+  </div>
+
+  <!-- Batch tag modal -->
+  <div class="batch-tag-modal" id="batch-tag-modal" hidden>
+    <div class="btm-inner">
+      <div class="btm-header">
+        <span class="btm-title" id="btm-title">Tag folder</span>
+        <button class="btm-close" id="btm-close">×</button>
+      </div>
+      <div class="btm-moods" id="btm-moods"></div>
+      <div class="btm-footer">
+        <span class="btm-count" id="btm-count"></span>
+        <button class="btm-apply" id="btm-apply">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="wavesurfer.min.js"></script>
+  <script src="regions.min.js"></script>
+  <script src="Tone.js"></script>
+  <script src="CSInterface.js"></script>
+  <script src="audio.js"></script>
+</body>
+</html>

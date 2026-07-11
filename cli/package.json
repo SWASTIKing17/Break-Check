@@ -1,0 +1,14 @@
+{
+  "name": "freexan-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for freeXan by BloomX",
+  "bin": {
+    "freexan": "freexan.js"
+  },
+  "main": "freexan.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "ISC",
+  "private": true
+}

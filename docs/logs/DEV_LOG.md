@@ -5,8 +5,12 @@ Record decisions, blockers, ideas, and progress here — not in code comments.
 
 ---
 
-## Current Version: v3.8.36
-[2026-07-11] Empty Profile Ghost UI Cleanup (`app.js`): Fixed a visual bug where switching to a profile with no data cleared the Chart.js instances but left the text KPIs, project list table, modifier gauge text, hourly heatmap cells, context switches per hour, and RAM alert borders displaying the previous user's data. Added a dedicated `resetDashboardUI()` helper that handles standardizing all elements back to an empty/default state. Also resolved a duplicate hours label rendering issue in the heatmap.
+## Current Version: v3.8.37
+[2026-07-11] Dashboard Chart Animations (`app.js`): Modified Chart.js rendering logic to support smooth animations when switching user profiles or auto-refreshing. Removed the aggressive `destroyAllCharts()` pre-clear step during normal refresh. Changed `.update('none')` to `.update()` and `animation: false` to `animation: true` across all Chart instances, allowing Chart.js to cleanly transition data points. Retained `destroyAllCharts()` exclusively for `resetDashboardUI()` to handle complete UI teardown when switching to an empty profile.
+
+[2026-07-11] Break Check Dashboard v3 & Gemini AI Chat: Overhauled the entire data architecture to run exclusively on the `admin_events` table, removing reliance on the Supabase `team_profiles` table to simplify maintenance. The web dashboard now pulls employee lists dynamically via `SELECT DISTINCT employee_id FROM admin_events`. Replaced the "Team Profiles" tab with a high-level "Overview" landing page displaying key metrics (Active vs Idle %, Flow Score, Modifier Ratio) and an automated Workflow Friction warning box based on context switch rates. Built a fully integrated AI Copilot (Google Gemini 2.5 Flash) via a new `chat.js` Netlify function. The chat widget automatically injects the current editor's live dashboard KPIs as context, allowing admins to query the data via natural language without needing to manually prompt the AI.
+
+## Version: v3.8.36
 
 ## Version: v3.8.35
 [2026-07-11] Break Check Dashboard v2 & GitHub Remote Migration (`index.html`, `style.css`, `app.js`, git remote): Complete ground-up redesign of the Break Check Admin Dashboard based on the Dashboard Matrix Scopes document. Implemented a 5-view sidebar navigation layout (Activity Flow, Editor Proficiency, Hardware Health, Workflow Friction, Team Profiles) and a global KPI strip. Replaced local `nle` tracking with Netlify serverless functions and Chart.js integrations. Solved ghost chart rendering issues by introducing a direct reference-based `destroyAllCharts()` helper called before every profile switch. Switched the repository git remote origin to `https://github.com/SWASTIKing17/Break-Check.git` and successfully pushed the master branch to GitHub.

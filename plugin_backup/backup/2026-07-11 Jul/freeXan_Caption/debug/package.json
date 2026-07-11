@@ -1,0 +1,13 @@
+{
+  "name": "submachine-debug",
+  "version": "1.0.0",
+  "description": "Terminal debug bridge for SubMachine / Premiere Pro",
+  "main": "submachine-debug.js",
+  "bin": {
+    "smdebug": "./submachine-debug.js"
+  },
+  "scripts": {
+    "watch": "node submachine-debug.js watch",
+    "start": "node submachine-debug.js"
+  }
+}

@@ -1,0 +1,3160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="panel.css" id="hostStyle" />
+    <link rel="stylesheet" href="command_center.css" />
+    <link rel="stylesheet" href="css/mogrt_param_editor.css" />
+    <!-- Workflow tab fonts: distinct from Inter/Roboto/Arial defaults -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ════════════════════════════════════════════════════════════════════════
+         *  W O R K F L O W   ·   I N F R A S T R U C T U R E   T E R M I N A L
+         *  Mission-control aesthetic for the freeXan Caption caption pipeline.
+         *  Scoped to .wf-shell — does not leak into other tabs.
+         * ════════════════════════════════════════════════════════════════════════ */
+
+        .wf-shell {
+            --wf-bg:           #121214;
+            --wf-bg-elev:      #18181b;
+            --wf-bg-card:      #161618;
+            --wf-bg-deep:      #0c0c0e;
+            --wf-bg-hot:       #1f1f23;
+
+            --wf-accent:       #997DFF;
+            --wf-accent-soft:  rgba(153, 125, 255, 0.07);
+            --wf-accent-dim:   rgba(153, 125, 255, 0.18);
+            --wf-accent-mid:   rgba(153, 125, 255, 0.34);
+            --wf-accent-glow:  rgba(153, 125, 255, 0.45);
+
+            --wf-success:      #10b981;
+            --wf-success-dim:  rgba(16, 185, 129, 0.18);
+            --wf-success-soft: rgba(16, 185, 129, 0.08);
+
+            --wf-error:        #ef4444;
+            --wf-warn:         #f59e0b;
+
+            --wf-text:         #f3f3f5;
+            --wf-text-mute:    #9a9aa3;
+            --wf-text-dim:     #5e5e66;
+            --wf-text-deep:    #38383d;
+
+            --wf-hairline:     #232328;
+            --wf-hairline-hot: #2e2e36;
+            --wf-hairline-lit: rgba(153, 125, 255, 0.28);
+
+            --wf-font-sans:    'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            --wf-font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+            color: var(--wf-text);
+            font-family: var(--wf-font-sans);
+            font-feature-settings: 'cv11', 'ss01';
+            -webkit-font-smoothing: antialiased;
+            padding: 14px 12px 18px 12px;
+            background: var(--wf-bg);
+
+            /* Subtle dotted ground — gives depth without visual noise */
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.012) 1px, transparent 0);
+            background-size: 22px 22px;
+        }
+
+        /* ─── Session header (mission-control banner) ──────────────────────────── */
+        .wf-session {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding: 0 2px 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--wf-hairline);
+            position: relative;
+        }
+        .wf-session::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: -1px;
+            width: 28px; height: 1px;
+            background: var(--wf-accent);
+        }
+        .wf-session-eyebrow {
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--wf-text-mute);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+        .wf-session-eyebrow span {
+            color: var(--wf-accent);
+            margin-right: 6px;
+            font-weight: 700;
+        }
+        .wf-session-title {
+            display: block;
+            font-family: var(--wf-font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--wf-text);
+            margin-top: 5px;
+        }
+        .wf-session-version {
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            font-weight: 500;
+            color: var(--wf-text-deep);
+            letter-spacing: 0.08em;
+        }
+        .wf-session-version b { color: var(--wf-text-mute); font-weight: 500; }
+
+        /* ─── Stepper layout ───────────────────────────────────────────────────── */
+        .wf-stepper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-left: 2px;
+        }
+        /* The vertical fiber spine — runs behind all nodes from top to bottom */
+        .wf-stepper::before {
+            content: '';
+            position: absolute;
+            left: 13px;
+            top: 22px;
+            bottom: 22px;
+            width: 1px;
+            background:
+                linear-gradient(180deg,
+                    transparent 0,
+                    var(--wf-hairline) 4px,
+                    var(--wf-hairline) calc(100% - 4px),
+                    transparent 100%);
+            z-index: 0;
+        }
+
+        /* ─── Single step ──────────────────────────────────────────────────────── */
+        .wf-step {
+            display: grid;
+            grid-template-columns: 28px 1fr;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+            transition: opacity .35s ease, filter .35s ease;
+        }
+        .wf-step.wf-locked {
+            opacity: 0.42;
+            pointer-events: none;
+            filter: saturate(0.55);
+        }
+
+        /* Node column (the dot on the spine) */
+        .wf-node {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 18px;
+            position: relative;
+        }
+        .wf-node::before {
+            /* Decorative tick: extends rightward toward the card */
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            width: 14px;
+            height: 1px;
+            background: var(--wf-hairline);
+            z-index: 1;
+            transition: background .3s ease, width .3s ease;
+        }
+        .wf-step.wf-active .wf-node::before { background: var(--wf-accent-mid); width: 16px; }
+        .wf-step.wf-done   .wf-node::before { background: var(--wf-success-dim); }
+
+        /* Node marker — a stacked square */
+        .wf-badge {
+            position: relative;
+            width: 11px;
+            height: 11px;
+            background: var(--wf-bg);
+            border: 1px solid var(--wf-text-deep);
+            font-size: 0;
+            color: transparent;
+            flex-shrink: 0;
+            transition: all .35s cubic-bezier(.42, 0, .34, 1.01);
+            z-index: 2;
+        }
+        .wf-badge::after {
+            /* Inner fill */
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: transparent;
+            transition: background .3s ease;
+        }
+        .wf-step.wf-active .wf-badge {
+            border-color: var(--wf-accent);
+            box-shadow: 0 0 0 4px var(--wf-accent-soft), 0 0 14px -2px var(--wf-accent-glow);
+            animation: wf-node-pulse 2.6s cubic-bezier(.42, 0, .34, 1.01) infinite;
+        }
+        .wf-step.wf-active .wf-badge::after { background: var(--wf-accent); }
+        .wf-step.wf-done .wf-badge {
+            border-color: var(--wf-success);
+            background: var(--wf-success);
+            box-shadow: 0 0 0 3px var(--wf-success-soft);
+        }
+        .wf-step.wf-done .wf-badge::after { background: var(--wf-bg-deep); inset: 3px; }
+        @keyframes wf-node-pulse {
+            0%, 100% { box-shadow: 0 0 0 4px var(--wf-accent-soft), 0 0 14px -2px var(--wf-accent-glow); }
+            50%      { box-shadow: 0 0 0 7px rgba(153, 125, 255, 0.04), 0 0 22px -2px var(--wf-accent-glow); }
+        }
+
+        /* Step number floats above the node (only visible on active/done) */
+        .wf-node-index {
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--wf-text-deep);
+            letter-spacing: 0;
+            line-height: 1;
+            transition: color .3s ease;
+        }
+        .wf-step.wf-active .wf-node-index { color: var(--wf-accent); }
+        .wf-step.wf-done   .wf-node-index { color: var(--wf-success); }
+
+        /* ─── Card ─────────────────────────────────────────────────────────────── */
+        .wf-card {
+            position: relative;
+            background: var(--wf-bg-card);
+            border: 1px solid var(--wf-hairline);
+            padding: 12px 14px 14px 14px;
+            transition: border-color .35s ease, background .35s ease;
+            min-width: 0;
+        }
+        /* Subtle inner corner ticks — engineering brutalism detail */
+        .wf-card::before,
+        .wf-card::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border: 1px solid var(--wf-hairline-hot);
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .wf-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .wf-card::after  { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+        .wf-step.wf-active .wf-card {
+            border-color: var(--wf-hairline-lit);
+            background: linear-gradient(180deg, var(--wf-accent-soft) 0%, var(--wf-bg-card) 60%);
+        }
+        .wf-step.wf-active .wf-card::before,
+        .wf-step.wf-active .wf-card::after { border-color: var(--wf-accent); opacity: 1; }
+        .wf-step.wf-done .wf-card { border-color: rgba(16, 185, 129, 0.22); }
+
+        /* Card header — tag line + title + sub */
+        .wf-card-header {
+            margin-bottom: 10px;
+        }
+        .wf-tag-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 7px;
+            min-height: 12px;
+        }
+        .wf-tag {
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--wf-text-mute);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wf-tag b {
+            color: var(--wf-text-dim);
+            font-weight: 600;
+            margin: 0 4px;
+        }
+        .wf-step.wf-active .wf-tag { color: var(--wf-accent); }
+        .wf-step.wf-active .wf-tag b { color: var(--wf-accent-mid); }
+        .wf-step.wf-done   .wf-tag { color: var(--wf-success); }
+        .wf-step.wf-done   .wf-tag b { color: var(--wf-success-dim); }
+
+        .wf-check {
+            font-size: 10px;
+            color: var(--wf-success);
+            opacity: 0;
+            transition: opacity .35s ease, transform .35s ease;
+            transform: scale(0.6);
+        }
+        .wf-step.wf-done .wf-check { opacity: 1; transform: scale(1); }
+
+        .wf-step-title {
+            display: block;
+            font-family: var(--wf-font-sans);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: -0.014em;
+            color: var(--wf-text);
+            line-height: 1.25;
+            margin-bottom: 3px;
+        }
+        .wf-step-sub {
+            display: block;
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--wf-text-dim);
+            letter-spacing: 0.005em;
+            line-height: 1.4;
+        }
+        .wf-step-sub code, .wf-code {
+            font-family: var(--wf-font-mono);
+            font-size: inherit;
+            color: var(--wf-accent);
+            background: var(--wf-accent-soft);
+            border: 1px solid var(--wf-accent-dim);
+            padding: 1px 5px;
+            border-radius: 2px;
+        }
+
+        /* Card body */
+        .wf-card-body { /* container only */ }
+        .wf-desc {
+            font-family: var(--wf-font-sans);
+            font-size: 11px;
+            color: var(--wf-text-mute);
+            line-height: 1.55;
+            margin: 0 0 10px 0;
+        }
+
+        /* ─── Status row (LED + message) ───────────────────────────────────────── */
+        .wf-status-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 10px;
+            margin-bottom: 8px;
+            background: var(--wf-bg-deep);
+            border: 1px solid var(--wf-hairline);
+            font-family: var(--wf-font-mono);
+        }
+        .wf-status-msg {
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--wf-text-mute);
+            letter-spacing: 0.01em;
+            line-height: 1.4;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* LED dot — radial gradient for actual glow */
+        .wf-dot {
+            position: relative;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #444 0%, #1a1a1a 100%);
+            flex-shrink: 0;
+            transition: background .3s ease, box-shadow .3s ease;
+        }
+        .wf-dot-ok {
+            background: radial-gradient(circle at 30% 30%, #34d399 0%, #047857 100%);
+            box-shadow: 0 0 6px var(--wf-success-dim);
+        }
+        .wf-dot-warn {
+            background: radial-gradient(circle at 30% 30%, #fbbf24 0%, #b45309 100%);
+            box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+        }
+        .wf-dot-error {
+            background: radial-gradient(circle at 30% 30%, #f87171 0%, #b91c1c 100%);
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+        }
+        .wf-dot-pulse {
+            background: radial-gradient(circle at 30% 30%, #b8a4ff 0%, #5a3fc4 100%);
+            box-shadow: 0 0 6px var(--wf-accent-glow);
+            animation: wf-led-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes wf-led-pulse {
+            0%, 100% { box-shadow: 0 0 6px var(--wf-accent-glow); opacity: 1; }
+            50%      { box-shadow: 0 0 12px var(--wf-accent), 0 0 18px var(--wf-accent-soft); opacity: 0.75; }
+        }
+
+        /* ─── File badges ──────────────────────────────────────────────────────── */
+        .wf-file-badge {
+            display: none;
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+            color: var(--wf-accent);
+            background: var(--wf-accent-soft);
+            border: 1px solid var(--wf-accent-dim);
+            padding: 5px 9px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0;
+        }
+
+        .wf-file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .wf-file-list:empty { display: none; }
+        .wf-file-badge-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+            color: var(--wf-accent);
+            background: var(--wf-accent-soft);
+            border: 1px solid var(--wf-accent-dim);
+            padding: 6px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background .18s ease, border-color .18s ease, color .18s ease;
+            margin: 0;
+            position: relative;
+        }
+        .wf-file-badge-item::before {
+            content: '▸';
+            margin-right: 6px;
+            color: var(--wf-accent-mid);
+            font-size: 9px;
+        }
+        .wf-file-badge-item:hover {
+            background: var(--wf-accent-dim);
+            border-color: var(--wf-accent-mid);
+            color: var(--wf-text);
+        }
+        .wf-file-badge-item:hover::before { color: var(--wf-accent); }
+        .wf-file-badge-item.wf-file-badge-confirmed {
+            cursor: default;
+            color: var(--wf-success);
+            background: var(--wf-success-soft);
+            border-color: var(--wf-success-dim);
+        }
+        .wf-file-badge-item.wf-file-badge-confirmed::before {
+            content: '◆';
+            color: var(--wf-success);
+        }
+
+        /* ─── Connectors (segments between cards on the rail) ──────────────────── */
+        .wf-connector {
+            width: 1px;
+            height: 16px;
+            margin-left: 13px;
+            background: var(--wf-hairline);
+            transition: background .35s ease, box-shadow .35s ease;
+            position: relative;
+            z-index: 0;
+        }
+        .wf-connector.wf-lit {
+            background: var(--wf-accent);
+            box-shadow: 0 0 6px var(--wf-accent-glow);
+        }
+
+        /* ─── Buttons ──────────────────────────────────────────────────────────── */
+
+        /* Ghost (Browse) — minimal, hairline */
+        .wf-btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            color: var(--wf-text-dim);
+            border: 1px solid var(--wf-hairline-hot);
+            padding: 5px 12px 4px 12px;
+            font-family: var(--wf-font-mono);
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .2s ease;
+            border-radius: 0;
+        }
+        .wf-btn-ghost:hover {
+            color: var(--wf-accent);
+            border-color: var(--wf-accent-mid);
+            background: var(--wf-accent-soft);
+        }
+        .wf-btn-glyph {
+            font-family: var(--wf-font-mono);
+            font-size: 11px;
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        /* Primary (Copy to AI) — purple fill, the small hero */
+        .wf-btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background: var(--wf-accent);
+            color: #0f0f12;
+            border: 1px solid var(--wf-accent);
+            padding: 9px 14px;
+            font-family: var(--wf-font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .2s ease;
+            border-radius: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .wf-btn-primary::before {
+            /* Sheen on hover */
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+            transition: left .55s ease;
+        }
+        .wf-btn-primary:hover::before { left: 100%; }
+        .wf-btn-primary:hover {
+            background: #a896ff;
+            box-shadow: 0 0 18px -4px var(--wf-accent-glow);
+        }
+        .wf-btn-primary:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .wf-btn-primary:disabled:hover::before { left: -100%; }
+
+        /* Generate — the page hero. Full-width, two-line, big presence */
+        .wf-btn-generate {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            background: var(--wf-bg-deep);
+            color: var(--wf-text);
+            border: 1px solid var(--wf-hairline-hot);
+            border-left: 2px solid var(--wf-accent);
+            padding: 12px 14px;
+            font-family: var(--wf-font-sans);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all .25s cubic-bezier(.42, 0, .34, 1.01);
+            border-radius: 0;
+            margin-top: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .wf-btn-generate::before {
+            /* Scanline that sweeps on hover */
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, var(--wf-accent-soft) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity .25s ease;
+            pointer-events: none;
+        }
+        .wf-btn-generate:hover {
+            border-color: var(--wf-accent-mid);
+            border-left-color: var(--wf-accent);
+            background: #131318;
+            box-shadow: inset 0 0 24px -8px var(--wf-accent-dim), 0 0 16px -6px var(--wf-accent-glow);
+        }
+        .wf-btn-generate:hover::before { opacity: 1; }
+        .wf-btn-generate:active { transform: translateY(1px); }
+
+        .wf-generate-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+            position: relative;
+            z-index: 1;
+        }
+        .wf-generate-eyebrow {
+            font-family: var(--wf-font-mono);
+            font-size: 8.5px;
+            font-weight: 600;
+            color: var(--wf-accent);
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .wf-generate-label {
+            font-family: var(--wf-font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--wf-text);
+            letter-spacing: -0.01em;
+        }
+        .wf-generate-arrow {
+            font-family: var(--wf-font-mono);
+            font-size: 14px;
+            color: var(--wf-accent);
+            transition: transform .25s cubic-bezier(.42, 0, .34, 1.01);
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+        .wf-btn-generate:hover .wf-generate-arrow { transform: translateX(4px); }
+
+        .wf-generate-info {
+            color: var(--wf-text-deep);
+            margin-left: 8px;
+            font-size: 11px;
+            vertical-align: middle;
+            cursor: pointer;
+            transition: color .2s ease;
+        }
+        .wf-generate-info:hover { color: var(--wf-accent); }
+
+        /* Pill button (Split for Hindi) — smaller secondary */
+        .wf-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: transparent;
+            color: var(--wf-accent);
+            border: 1px solid var(--wf-accent-dim);
+            padding: 6px 14px;
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .2s ease;
+            border-radius: 0;
+            margin-bottom: 12px;
+        }
+        .wf-pill-btn:hover {
+            background: var(--wf-accent-soft);
+            border-color: var(--wf-accent);
+            box-shadow: 0 0 12px -4px var(--wf-accent-glow);
+        }
+        .wf-pill-glyph {
+            font-family: var(--wf-font-mono);
+            font-size: 11px;
+            line-height: 1;
+            opacity: 0.85;
+        }
+
+        /* ─── Input fields (MOGRT, SRT, Phrasing) ──────────────────────────────── */
+        .wf-field-group {
+            margin-bottom: 12px;
+        }
+        .wf-field-label {
+            display: block;
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--wf-text-mute);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            line-height: 1;
+        }
+        /* Override Bootstrap input-group for our look */
+        .wf-shell .input-group.wf-field {
+            display: flex;
+            align-items: stretch;
+            background: var(--wf-bg-deep);
+            border: 1px solid var(--wf-hairline);
+            transition: border-color .2s ease;
+            position: relative;
+        }
+        .wf-shell .input-group.wf-field:hover,
+        .wf-shell .input-group.wf-field:focus-within {
+            border-color: var(--wf-accent-mid);
+        }
+        .wf-shell .wf-field-chip {
+            background: transparent;
+            color: var(--wf-accent);
+            border: none;
+            border-right: 1px solid var(--wf-hairline);
+            padding: 0 10px;
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background .18s ease, color .18s ease;
+            min-width: 68px;
+            border-radius: 0 !important;
+        }
+        .wf-shell .wf-field-chip:hover {
+            background: var(--wf-accent-soft);
+            color: #b8a4ff;
+        }
+        .wf-shell .wf-field-input.form-control {
+            background: transparent !important;
+            color: var(--wf-text) !important;
+            border: none !important;
+            border-radius: 0 !important;
+            font-family: var(--wf-font-mono);
+            font-size: 11px;
+            padding: 0 10px;
+            box-shadow: none !important;
+            outline: none;
+            flex: 1;
+            min-width: 0;
+        }
+        .wf-shell .wf-field-input.form-control::placeholder {
+            color: var(--wf-text-deep);
+            font-family: var(--wf-font-mono);
+            font-size: 10.5px;
+            letter-spacing: 0;
+        }
+        .wf-shell .wf-field-input.form-control:focus {
+            background: transparent !important;
+            color: var(--wf-text) !important;
+            box-shadow: none !important;
+        }
+        .wf-field-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            color: var(--wf-text-deep);
+            font-size: 11px;
+            cursor: pointer;
+            transition: color .2s ease;
+            border-left: 1px solid var(--wf-hairline);
+        }
+        .wf-field-info:hover { color: var(--wf-accent); }
+        .wf-field-info-inline {
+            color: var(--wf-text-deep);
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 6px;
+            vertical-align: middle;
+            transition: color .2s ease;
+        }
+        .wf-field-info-inline:hover { color: var(--wf-accent); }
+
+        /* ─── Progress bar ─────────────────────────────────────────────────────── */
+        .wf-progress-wrap {
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+        .wf-shell .progress.wf-progress {
+            height: 4px;
+            background: var(--wf-bg-deep);
+            border: 1px solid var(--wf-hairline);
+            border-radius: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .wf-shell .progress-bar.wf-progress-bar {
+            background: linear-gradient(90deg, var(--wf-accent) 0%, #b8a4ff 100%) !important;
+            box-shadow: 0 0 8px var(--wf-accent-glow);
+            color: transparent;
+            font-size: 0;
+            min-width: 0 !important;
+            transition: width .3s ease;
+            position: relative;
+        }
+        .wf-shell .progress-bar.wf-progress-bar::after {
+            /* Animated shimmer on the leading edge */
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 24px; height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 100%);
+        }
+        .wf-progress-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            letter-spacing: 0.12em;
+        }
+        .wf-progress-meta-left  { color: var(--wf-text-dim); text-transform: uppercase; }
+        .wf-progress-meta-right { color: var(--wf-accent); font-weight: 600; }
+
+        /* Spinners */
+        .wf-spinner-slot {
+            display: inline-block;
+            margin-top: 8px;
+            margin-left: 0;
+            height: 28px;
+            position: relative;
+        }
+        .wf-spinner-slot .spinner {
+            position: relative !important;
+            width: 24px !important;
+            margin: 0 !important;
+            opacity: 0.7;
+        }
+
+        /* ─── Advanced "Subsystems" panel ──────────────────────────────────────── */
+        .wf-advanced {
+            margin-top: 14px;
+            border-top: 1px dashed var(--wf-hairline);
+            padding-top: 12px;
+        }
+        .wf-advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            list-style: none;
+            font-family: var(--wf-font-mono);
+            font-size: 9.5px;
+            font-weight: 600;
+            color: var(--wf-text-mute);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            user-select: none;
+            transition: color .2s ease;
+            padding: 4px 0;
+        }
+        .wf-advanced-toggle::-webkit-details-marker { display: none; }
+        .wf-advanced-toggle:hover { color: var(--wf-accent); }
+        .wf-advanced-glyph {
+            font-family: var(--wf-font-mono);
+            font-size: 14px;
+            line-height: 0.7;
+            color: var(--wf-text-dim);
+            transition: transform .25s ease, color .2s ease;
+            display: inline-block;
+            width: 12px;
+            text-align: center;
+        }
+        details[open] .wf-advanced-glyph {
+            transform: rotate(45deg);
+            color: var(--wf-accent);
+        }
+        .wf-advanced-hint {
+            font-family: var(--wf-font-sans);
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--wf-text-deep);
+            letter-spacing: 0;
+            text-transform: none;
+            margin-left: auto;
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wf-advanced-body {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--wf-bg-deep);
+            border: 1px solid var(--wf-hairline);
+            position: relative;
+        }
+        .wf-advanced-body::before {
+            /* Top-left corner tick */
+            content: 'AUX';
+            position: absolute;
+            top: -7px;
+            left: 10px;
+            font-family: var(--wf-font-mono);
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--wf-text-deep);
+            letter-spacing: 0.24em;
+            background: var(--wf-bg-card);
+            padding: 0 6px;
+        }
+
+        /* ─── Toggle switch (Phrasing Mode) ────────────────────────────────────── */
+        .wf-toggle-row {
+            margin: 12px 0;
+            padding: 0;
+        }
+        .wf-shell .wf-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        .wf-shell .wf-toggle-input.form-check-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+        }
+        .wf-toggle-track {
+            position: relative;
+            display: inline-block;
+            width: 26px;
+            height: 12px;
+            background: var(--wf-bg-deep);
+            border: 1px solid var(--wf-hairline-hot);
+            transition: all .2s ease;
+            flex-shrink: 0;
+        }
+        .wf-toggle-thumb {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 8px;
+            height: 8px;
+            background: var(--wf-text-dim);
+            transition: all .25s cubic-bezier(.42, 0, .34, 1.01);
+        }
+        .wf-toggle-input:checked + .wf-toggle-track {
+            background: var(--wf-accent-soft);
+            border-color: var(--wf-accent);
+        }
+        .wf-toggle-input:checked + .wf-toggle-track .wf-toggle-thumb {
+            left: 15px;
+            background: var(--wf-accent);
+            box-shadow: 0 0 6px var(--wf-accent-glow);
+        }
+        .wf-toggle-label {
+            font-family: var(--wf-font-mono);
+            font-size: 9.5px;
+            font-weight: 600;
+            color: var(--wf-text-mute);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+        .wf-toggle-input:checked ~ .wf-toggle-label { color: var(--wf-accent); }
+
+        /* ─── Range slider (Chars per phrase) ──────────────────────────────────── */
+        .wf-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 0;
+        }
+        .wf-shell input[type="range"].wf-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .wf-shell input[type="range"].wf-slider::-webkit-slider-runnable-track {
+            height: 2px;
+            background: var(--wf-hairline-hot);
+        }
+        .wf-shell input[type="range"].wf-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            margin-top: -4px;
+            background: var(--wf-accent);
+            border: 1px solid var(--wf-accent);
+            border-radius: 0;
+            box-shadow: 0 0 8px var(--wf-accent-glow);
+            transition: transform .15s ease;
+            cursor: grab;
+        }
+        .wf-shell input[type="range"].wf-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15) rotate(45deg);
+        }
+        .wf-shell input[type="range"].wf-slider:active::-webkit-slider-thumb { cursor: grabbing; }
+        .wf-shell input[type="range"].wf-slider::-moz-range-track {
+            height: 2px;
+            background: var(--wf-hairline-hot);
+        }
+        .wf-shell input[type="range"].wf-slider::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            background: var(--wf-accent);
+            border: 1px solid var(--wf-accent);
+            border-radius: 0;
+            cursor: grab;
+        }
+        .wf-slider-value {
+            font-family: var(--wf-font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--wf-accent);
+            min-width: 32px;
+            text-align: right;
+            letter-spacing: 0.04em;
+        }
+        .wf-slider-value::after {
+            content: ' ch';
+            color: var(--wf-text-deep);
+            font-weight: 400;
+            font-size: 9px;
+        }
+
+        /* ─── Footer ───────────────────────────────────────────────────────────── */
+        .wf-footer {
+            margin-top: 22px;
+            padding-top: 14px;
+            border-top: 1px solid var(--wf-hairline);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+        .wf-footer::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 28px;
+            height: 1px;
+            background: var(--wf-accent-mid);
+        }
+        .wf-footer-logo {
+            width: 56px;
+            opacity: 0.5;
+            cursor: pointer;
+            transition: opacity .2s ease;
+        }
+        .wf-footer-logo:hover { opacity: 0.9; }
+        .wf-footer-btn {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: transparent;
+            color: var(--wf-text-mute);
+            border: 1px solid var(--wf-hairline-hot);
+            padding: 5px 12px;
+            font-family: var(--wf-font-mono);
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .2s ease;
+            border-radius: 0;
+        }
+        .wf-footer-btn:hover {
+            color: var(--wf-text);
+            border-color: var(--wf-accent-mid);
+            background: var(--wf-accent-soft);
+        }
+        .wf-footer-discord {
+            width: 12px;
+            opacity: 0.6;
+            vertical-align: middle;
+        }
+        .wf-footer-btn:hover .wf-footer-discord { opacity: 1; }
+
+        .wf-loggedin {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--wf-hairline);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+        }
+        .wf-loggedin-dot {
+            margin: 0;
+            width: 8px;
+            height: 8px;
+        }
+        .wf-loggedin-email {
+            margin: 0;
+            color: var(--wf-text-mute);
+            font-family: var(--wf-font-mono);
+            font-size: 10px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wf-loggedin-tag {
+            font-family: var(--wf-font-mono);
+            font-size: 9px;
+            color: var(--wf-text-deep);
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        /* ─── Staggered entrance animations ────────────────────────────────────── */
+        .wf-session                  { animation: wf-rise .55s cubic-bezier(.42, 0, .34, 1.01) both; animation-delay: 0ms; }
+        .wf-stepper > .wf-step:nth-of-type(1)    { animation: wf-rise .55s cubic-bezier(.42, 0, .34, 1.01) both; animation-delay: 70ms; }
+        .wf-stepper > .wf-step:nth-of-type(2)    { animation: wf-rise .55s cubic-bezier(.42, 0, .34, 1.01) both; animation-delay: 130ms; }
+        .wf-stepper > .wf-step:nth-of-type(3)    { animation: wf-rise .55s cubic-bezier(.42, 0, .34, 1.01) both; animation-delay: 190ms; }
+        .wf-stepper > .wf-step:nth-of-type(4)    { animation: wf-rise .55s cubic-bezier(.42, 0, .34, 1.01) both; animation-delay: 250ms; }
+        .wf-footer                   { animation: wf-rise .55s cubic-bezier(.42, 0, .34, 1.01) both; animation-delay: 320ms; }
+
+        @keyframes wf-rise {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── Tab-content sizing override ────────────────────────────────────────
+         * The Workflow tab must fill the full panel height so the dark bg
+         * extends below the content when the panel is resized taller than the
+         * cards. Edit/Params do this via flex+react; Workflow uses plain block
+         * scroll because its content is static HTML.
+         * ──────────────────────────────────────────────────────────────────────── */
+        #tab-1:checked ~ label ~ .tab__content.wf-shell-scroller {
+            /* fills the viewport from below the tab bar down to the bottom */
+            height: calc(100vh - 80px) !important;
+            min-height: 300px;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            background: #121214; /* matches --wf-bg so resize never reveals host bg */
+            padding: 0 !important;
+        }
+        /* wf-shell expands to fill the visible area — so its background reaches
+         * the bottom of the panel even when the content above is short */
+        .wf-shell-scroller > .wf-shell {
+            min-height: 100%;
+            box-sizing: border-box;
+        }
+        /* Scrollbar styling */
+        .wf-shell-scroller::-webkit-scrollbar { width: 8px; }
+        .wf-shell-scroller::-webkit-scrollbar-track { background: transparent; }
+        .wf-shell-scroller::-webkit-scrollbar-thumb {
+            background: #2e2e36;
+            border-radius: 0;
+        }
+        .wf-shell-scroller::-webkit-scrollbar-thumb:hover { background: rgba(153,125,255,0.28); }
+    </style>
+    
+    <!-- Premiere Pro Simulator (Debugger) - ONLY for Standalone Browser Testing -->
+    <link rel="stylesheet" href="css/premiere_simulator.css" />
+    <script src="js/premiere_simulator.js"></script>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+        integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+        crossorigin="anonymous" />
+    <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
+    <style>
+        /* 
+         * Tab Content Positioning Fix
+         * 
+         * WHY: The legacy tab system uses opacity:0/1 for show/hide, but content
+         * still takes up flow space when invisible, causing layout shifts.
+         * We fix this by making ALL .tab__content position:absolute so they
+         * stack on top of each other without affecting the tab bar layout.
+         * 
+         * The Edit tab gets additional flex/sizing rules when active.
+         */
+
+        /* All tab contents: stack them absolutely so they don't push the layout */
+        .tab__content {
+            position: absolute !important;
+            top: 40px;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s cubic-bezier(.42, 0, .34, 1.01);
+        }
+
+        /* When any tab is checked, show its content */
+        .myTab:checked ~ label ~ .tab__content {
+            opacity: 1;
+            z-index: 1;
+            pointer-events: auto;
+        }
+
+        /* Edit tab: when checked, use flex layout for the React grid */
+        #tab-edit:checked ~ label ~ .tab__content {
+            display: flex !important;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+            min-height: 500px;
+            overflow: hidden !important; /* React will handle scrolling */
+            background: #1a1a1a;
+            padding: 0 !important; /* No padding here, React handles it */
+        }
+
+        /* The React root fills the Edit tab's flex container.
+           Grid layout and overflow are handled by command_center.css */
+        #react-edit-root {
+            flex: 1;
+            width: 100%;
+        }
+
+        /* Params tab: same full-height treatment as Edit tab */
+        #tab-params:checked ~ label ~ .tab__content {
+            display: flex !important;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+            min-height: 300px;
+            overflow: hidden !important;
+            background: #232323;
+            padding: 0 !important;
+        }
+
+        #react-params-root {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body onload="initPanel()">
+
+    <!-- Internal styles moved to panel.css -->
+
+    <!--
+    The StatusBar requires the body's margin to be 0 pixels. This is harcoded
+    in the StatusBar module of the framework. Therefore we set the margin on
+    the main div. So make sure you keep your UI within this div.
+    -->
+    <div id="main">
+
+        <!-- <div style="color: white; margin: 10px auto; width: 90%; font-family: sans-serif;">
+            <div style="width: 80%; margin: auto;">
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                    viewBox="0 0 430.3 174">
+                    <path fill="#BDBDBD" d="M58.3 114.9l46.4 17.2L126.6 97 74.4 86.1z" />
+                    <path fill="#F16A22" d="M35.8 131.8l68.9.3 5.5-65.1-57.6.2z" />
+                    <path fill="#BF541B" d="M37.2 126.6l67.5 5.5 5.5-65.1-57.6.2z" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        d="M44.1 118.4l-.3 1 1 .2" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        stroke-dasharray="1.9418,1.9418" d="M46.7 120l56.1 11.7" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        d="M103.7 131.9l1 .2.3-1" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        stroke-dasharray="1.9979,1.9979" d="M105.6 129.2l19.6-64" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        d="M125.5 64.3l.3-1h-1" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        stroke-dasharray="2.009,2.009" d="M122.8 63.3H59.5" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        d="M58.5 63.3h-1l-.2 1" />
+                    <path fill="none" stroke="#F16522" stroke-width="2.12" stroke-miterlimit="10"
+                        stroke-dasharray="2.0634,2.0634" d="M56.8 66.3l-12.5 51.1" />
+                    <g>
+                        <path fill="#676767" d="M17.8 121.3l86.9 10.8 20.2-97.9-91.6 15.3z" />
+                    </g>
+                    <g>
+                        <clipPath id="a">
+                            <use xlink:href="#cards_x002E_darkgrey_4_" overflow="visible" />
+                        </clipPath>
+                        <path clip-path="url(#a)" fill="none" stroke="#FFF" d="M17.8 121.3l107.1-87.1" />
+                    </g>
+                    <g>
+                        <circle fill="#F16A22" cx="104.7" cy="132.1" r="5.5" />
+                    </g>
+                    <path fill="#F16A22" d="M394.7 74V59.5h-13.4V56h13.4V42h3.5v14h13.4v3.5h-13.4V74h-3.5z" />
+                    <path fill="#676767"
+                        d="M169.6 132.6v-3c-2.5 2.5-4.8 3.3-9 3.3-4.3 0-6.8-.8-8.8-2.8-1.5-1.5-2.3-3.9-2.3-6.3 0-5.4 3.8-9 10.7-9h9.3v-3c0-4.5-2.3-6.8-8-6.8-4 0-6 .9-7.8 3.5l-3.1-2.8c2.8-3.6 5.9-4.6 11-4.6 8.3 0 12.4 3.6 12.4 10.4v21.1h-4.4zm0-14.4h-8.7c-4.7 0-7 1.9-7 5.5s2.2 5.3 7.1 5.3c2.7 0 5-.2 6.9-2.1 1.1-1 1.6-2.8 1.6-5.4v-3.3zm12.1 0c0 6.8 3.2 10.7 9.2 10.7 3.6 0 5.7-1.1 8.1-3.5l3.1 2.7c-3.2 3.2-6.1 4.8-11.4 4.8-8.2 0-13.6-4.9-13.6-15.9 0-10 4.9-15.9 12.8-15.9 8 0 12.8 5.8 12.8 15v2.1h-21zm15.5-8.6c-1.2-2.8-4-4.7-7.3-4.7s-6.1 1.8-7.3 4.7c-.7 1.7-.8 2.7-.9 5.2h16.4c-.1-2.5-.2-3.5-.9-5.2zm46.1 22.9s-.7.2-1.9.2c-2.9 0-4.9-1.7-4.9-6V86.2h4v39.9c0 2 .6 3.2 2.7 3.2v3.2zm30.3 0s-.6.2-1.9.2c-2.3 0-4.1-1.2-4.5-4.7v-2.2c-1.5 3.8-5 7.1-10.7 7.1-6.3 0-9.8-3.4-9.8-10.6v-20.6h4v19.7c0 5.6 2.9 7.7 6.9 7.7 6.3 0 9.2-6.2 9.2-9.3v-18.2h4v24.3c0 2.1.6 3.3 2.7 3.3v3.3zm18.5-3c6.5 0 11.3 2.9 11.3 8.9 0 5.9-4 10-14.4 10-9.8 0-14.1-3.5-14.1-9.4 0-5.6 4.3-7.2 5.3-7.7-.7-.4-4-1.2-4-4.8 0-2.9 1.8-4.7 4.3-5.2-.6-.6-3.8-3.3-3.8-8.3 0-7.1 5.6-11.5 12.3-11.5 7.3 0 12.4 4.5 12.4 11.5 0 7.1-5.7 11.4-12.3 11.4-3.1 0-5.4-1.1-5.8-1.3-1.8 0-3.3 1-3.3 3.2 0 2.7 2.5 3.3 5.9 3.3h6.2zm-6.3 3.6c-4.1.1-6.8 2-6.8 5.6 0 3.7 3 5.8 9.9 5.8 7.3 0 10.7-2.1 10.7-6.2 0-3.4-3-5.2-7.3-5.2h-6.5zm3.2-28c-4.6 0-8.2 3.1-8.2 7.8 0 4.7 3.6 7.7 8.2 7.7 4.7 0 8.4-3.1 8.4-7.7 0-4.7-3.8-7.8-8.4-7.8zm18.6-10.4c-1.6 0-2.9-1.1-2.9-2.7 0-1.7 1.3-2.8 2.9-2.8 1.7 0 2.9 1.1 2.9 2.8 0 1.6-1.3 2.7-2.9 2.7zm4.6 37.8s-.6.2-1.9.2c-2.9 0-4.9-1.7-4.9-5.7v-25.2h4v25c0 1.9.6 2.9 2.7 2.9v2.8zm31.5 0s-.7.2-1.9.2c-2.9 0-4.8-1.7-4.8-6v-12.9c0-4.9-2.6-8.7-7.7-8.7-5.9 0-8.6 5.7-8.6 9.9v17.6h-4v-25c0-1.7-.6-2.8-2.7-2.8v-2.9s.7-.2 1.9-.2c2.2 0 4.3 1.3 4.3 4.8v2.5c1-4 4.1-7.5 10-7.5 7.7 0 10.8 5.4 10.8 11.9v12.8c0 2 .6 3.2 2.7 3.2v3.1zm21.5-19.7s.3-1 .3-2.6c0-2.9-2-5.7-7.4-5.7-4.8 0-7.3 2.5-7.3 5.9 0 9.1 19.3 2.3 19.3 14 0 5.4-4 8.7-11.8 8.7-9.6 0-12.7-6.3-12.7-6.3l2.4-2.2s3.1 5.3 10.1 5.3c5 0 7.5-2 7.5-5.3 0-8.1-18.9-1.9-18.9-14.2 0-4.7 3.1-9.1 11.4-9.1 8.4 0 11.1 4.4 11.1 8.5 0 1.7-.4 2.8-.4 2.8h-3.6zm-158.7 35.3v-35.2c0-7.6 6.3-11.5 13.8-11.5 6.4 0 12.4 4.4 12.4 15.5 0 11.6-5.9 16-12.6 16-7.3 0-9.6-5-9.6-5v20.2h-4zm4-25.4c.1.5 1.8 6.6 8.9 6.6 5.4 0 9.3-3.9 9.3-12.3 0-8.6-4.5-11.9-9.4-11.9-7 0-8.8 5.8-8.8 7.5v10.1zM175.7 73.5v-3c-2.5 2.5-4.8 3.3-9 3.3-4.3 0-6.8-.8-8.8-2.8-1.5-1.5-2.3-3.9-2.3-6.3 0-5.4 3.8-9 10.7-9h9.3v-3c0-4.5-2.3-6.8-8-6.8-4 0-6 .9-7.8 3.5l-3.1-2.8c2.8-3.6 5.9-4.6 11-4.6 8.3 0 12.4 3.6 12.4 10.4v21.1h-4.4zm0-14.3H167c-4.7 0-6.9 1.9-6.9 5.5s2.2 5.3 7.1 5.3c2.7 0 5-.2 6.9-2.1 1.1-1 1.6-2.8 1.6-5.4v-3.3zm12 0c0 6.8 3.2 10.7 9.2 10.7 3.6 0 5.7-1.1 8.1-3.5l3.1 2.7c-3.2 3.2-6.1 4.8-11.4 4.8-8.2 0-13.6-4.9-13.6-15.9 0-10 4.9-15.9 12.8-15.9 8 0 12.8 5.8 12.8 15v2.1h-21zm15.5-8.6c-1.2-2.8-4-4.7-7.3-4.7s-6.1 1.8-7.3 4.7c-.7 1.7-.8 2.7-.9 5.2h16.4c-.1-2.6-.2-3.5-.9-5.2zm26.9 3.1s.4-1 .4-2.6c0-2.9-2-5.7-7.4-5.7-4.8 0-7.3 2.5-7.3 5.9 0 9.1 19.3 2.3 19.3 14 0 5.4-4 8.7-11.8 8.7-9.6 0-12.7-6.3-12.7-6.3l2.4-2.2s3.1 5.3 10.1 5.3c5 0 7.5-2 7.5-5.3 0-8.1-18.9-1.9-18.9-14.2 0-4.7 3.1-9.1 11.4-9.1 8.4 0 11.1 4.4 11.1 8.5 0 1.7-.5 2.8-.5 2.8h-3.6zm32.2 14.6s-2.9 5.6-11.2 5.6c-6.6 0-13.5-4-13.5-15.8 0-10.9 5.4-15.8 13.5-15.8 7.7 0 10.7 4.5 10.7 9.3 0 1.9-.3 3.1-.3 3.1h-3.6s.3-1.2.3-2.4c0-2.8-1.5-6.3-7.1-6.3-5.5 0-9.4 3.5-9.4 12.1 0 9.9 5.9 12.2 10 12.2 5.7 0 8.4-4.2 8.4-4.2l2.2 2.2zm3.2 5.2V55c0-7.7 4.4-12.7 12.6-12.7 2.5 0 4.5.9 4.5.9l-1.6 3.5s-1.1-.6-3.2-.6c-5.7 0-8.4 3.7-8.4 9.9v17.6h-3.9zm22.2-37.9c-1.6 0-2.9-1.1-2.9-2.7 0-1.7 1.3-2.8 2.9-2.8 1.7 0 2.9 1.1 2.9 2.8 0 1.6-1.3 2.7-2.9 2.7zm4.6 37.8s-.6.2-1.8.2c-2.9 0-4.9-1.7-4.9-5.7V42.7h4v25c0 1.9.6 2.9 2.7 2.9v2.8zm51.9-2.9s-2.9 3.4-7.7 3.4c-7 0-10-3.8-10-10.9V46h-4.9v-3.3h4.9v-9.6h4v9.6h12.3V46h-12.3v16.9c0 4.9 1.8 7.4 6.3 7.4 3.8 0 6-2.7 6-2.7l1.4 2.9zm21.5-16.8s.4-1 .4-2.6c0-2.9-2-5.7-7.4-5.7-4.8 0-7.3 2.5-7.3 5.9 0 9.1 19.3 2.3 19.3 14 0 5.4-4 8.7-11.8 8.7-9.6 0-12.7-6.3-12.7-6.3l2.4-2.2s3.1 5.3 10.1 5.3c5 0 7.5-2 7.5-5.3 0-8.1-18.9-1.9-18.9-14.2 0-4.7 3.1-9.1 11.4-9.1 8.4 0 11.1 4.4 11.1 8.5 0 1.7-.5 2.8-.5 2.8h-3.6zm-70.2 35.4V53.8c0-7.6 6.3-11.5 13.8-11.5 6.4 0 12.4 4.4 12.4 15.5 0 11.6-5.9 16-12.6 16-7.3 0-9.6-5-9.6-5V89h-4zm4-25.5c.1.5 1.8 6.6 8.9 6.6 5.4 0 9.3-3.9 9.3-12.3 0-8.6-4.5-11.9-9.4-11.9-7 0-8.8 5.8-8.8 7.5v10.1z" />
+                </svg>
+            </div>
+            <h3 style="text-align: center; margin:10px;">Welcome to freeXan Caption!</h3>
+            <div id="licensing-version-info-message" style="margin: 20px 0; text-align: center;"></div>
+            <div id="my-status-message" style="margin: 20px 0; text-align: center;"></div>
+            <div style="margin: 0 auto; width: 160px">
+                <button style="display: block; width: 100%; margin: 5px 0;" id="analytics-test-btn">analytics
+                    test</button>
+                <button style="display: block; width: 100%; margin: 5px 0;" id="log-message-test-btn">log message
+                    test</button>
+                <button style="display: block; width: 100%; margin: 5px 0;" id="prefs-test-btn">preferences
+                    test</button>
+                <button style="display: block; width: 100%; margin: 5px 0;" id="license-check-test-btn">license check
+                    test</button>
+                <button style="display: block; width: 100%; margin: 5px 0;" id="flyout-menu-test-btn">flyout menu
+                    test</button>
+                <button style="display: block; width: 100%; margin: 5px 0;" id="open-dialog-test-btn">open licensing
+                    dialog test</button>
+                <button style="display: block; width: 100%; margin: 5px 0;" id="say-hello">say hello to jsx</button>
+            </div>
+        </div> -->
+
+        <div data-tabs class="tabs">
+
+            <div class="tab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-1" checked>
+                <label for="tab-1">Workflow</label>
+                <div class="tab__content wf-shell-scroller">
+                    <div class="wf-shell">
+
+                        <!-- ─── Session header ─────────────────────────────────────── -->
+                        <header class="wf-session">
+                            <div>
+                                <div class="wf-session-eyebrow"><span>▎</span>SUBMACHINE / WORKFLOW</div>
+                                <div class="wf-session-title">Hindi → Hinglish Caption Pipeline</div>
+                            </div>
+                            <div class="wf-session-version">v <b>1.2</b></div>
+                        </header>
+
+                        <!-- ─── Stepper ────────────────────────────────────────────── -->
+                        <div class="wf-stepper">
+
+                            <!-- ── Stage 01: Export SRT ── -->
+                            <div class="wf-step wf-active" id="wf-step-1">
+                                <div class="wf-node">
+                                    <div class="wf-badge" id="wf-badge-1">1</div>
+                                </div>
+                                <div class="wf-card">
+                                    <div class="wf-card-header">
+                                        <div class="wf-tag-row">
+                                            <span class="wf-tag">Stage 01<b>/</b>Ingest</span>
+                                            <i class="fas fa-check wf-check" id="wf-check-1"></i>
+                                        </div>
+                                        <span class="wf-step-title">Export SRT from Premiere</span>
+                                        <span class="wf-step-sub">File &rarr; Export &rarr; Captions &rarr; save to project folder</span>
+                                    </div>
+                                    <div class="wf-card-body">
+                                        <div class="wf-status-row">
+                                            <span class="wf-dot" id="wf-s1-dot"></span>
+                                            <span class="wf-status-msg" id="wf-s1-msg">Connecting to freeXan&hellip;</span>
+                                        </div>
+                                        <div class="wf-file-list" id="wf-s1-file"></div>
+                                        <button class="wf-btn-ghost" id="wf-browse-srt">
+                                            <span class="wf-btn-glyph">+</span>Browse
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="wf-connector" id="wf-conn-12"></div>
+
+                            <!-- ── Stage 02: Copy to AI ── -->
+                            <div class="wf-step wf-locked" id="wf-step-2">
+                                <div class="wf-node">
+                                    <div class="wf-badge" id="wf-badge-2">2</div>
+                                </div>
+                                <div class="wf-card">
+                                    <div class="wf-card-header">
+                                        <div class="wf-tag-row">
+                                            <span class="wf-tag">Stage 02<b>/</b>Transfer</span>
+                                            <i class="fas fa-check wf-check" id="wf-check-2"></i>
+                                        </div>
+                                        <span class="wf-step-title">Send to AI</span>
+                                        <span class="wf-step-sub">Paste into ChatGPT, Claude, or any LLM</span>
+                                    </div>
+                                    <div class="wf-card-body">
+                                        <p class="wf-desc">Copies your SRT + translation prompt as files — paste directly into the AI chat.</p>
+                                        <button class="wf-btn-primary" id="wf-copy-btn">
+                                            <span class="wf-btn-glyph">↗</span>Copy to AI
+                                        </button>
+                                        <div class="wf-status-msg" id="wf-s2-msg" style="margin-top:8px;display:none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="wf-connector" id="wf-conn-23"></div>
+
+                            <!-- ── Stage 03: Save AI output ── -->
+                            <div class="wf-step wf-locked" id="wf-step-3">
+                                <div class="wf-node">
+                                    <div class="wf-badge" id="wf-badge-3">3</div>
+                                </div>
+                                <div class="wf-card">
+                                    <div class="wf-card-header">
+                                        <div class="wf-tag-row">
+                                            <span class="wf-tag">Stage 03<b>/</b>Return</span>
+                                            <i class="fas fa-check wf-check" id="wf-check-3"></i>
+                                        </div>
+                                        <span class="wf-step-title">Save AI Output</span>
+                                        <span class="wf-step-sub">Save as <code class="wf-code">hinglish_&lt;original_name&gt;.srt</code> in project folder</span>
+                                    </div>
+                                    <div class="wf-card-body">
+                                        <div class="wf-status-row">
+                                            <span class="wf-dot wf-dot-pulse" id="wf-s3-dot"></span>
+                                            <span class="wf-status-msg" id="wf-s3-msg">Waiting for step 2&hellip;</span>
+                                        </div>
+                                        <div class="wf-file-badge" id="wf-s3-file"></div>
+                                        <button class="wf-btn-ghost" id="wf-browse-wbw">
+                                            <span class="wf-btn-glyph">+</span>Browse
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="wf-connector" id="wf-conn-34"></div>
+
+                            <!-- ── Stage 04: Generate (hero) ── -->
+                            <div class="wf-step wf-locked" id="wf-step-4">
+                                <div class="wf-node">
+                                    <div class="wf-badge" id="wf-badge-4">4</div>
+                                </div>
+                                <div class="wf-card">
+                                    <div class="wf-card-header">
+                                        <div class="wf-tag-row">
+                                            <span class="wf-tag">Stage 04<b>/</b>Compile</span>
+                                        </div>
+                                        <span class="wf-step-title">Generate Captions</span>
+                                        <span class="wf-step-sub">Select your MOGRT template, then trigger compilation</span>
+                                    </div>
+                                    <div class="wf-card-body">
+
+                                        <!-- MOGRT picker -->
+                                        <div class="wf-field-group">
+                                            <label class="wf-field-label">Template Source</label>
+                                            <div class="input-group wf-field">
+                                                <button class="wf-field-chip" type="button" id="selectMogrt">Mogrt</button>
+                                                <input id="mogrtFile" type="text" class="form-control wf-field-input"
+                                                    placeholder="Drop .mogrt file here, or click MOGRT"
+                                                    ondragenter="event.stopPropagation();event.preventDefault();"
+                                                    ondragover="event.stopPropagation();event.preventDefault();"
+                                                    ondrop="event.stopPropagation();event.preventDefault();dodrop(event);">
+                                                <i id="mogrtInfo" class="far fa-question-circle openModal wf-field-info"></i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Generate (hero button) -->
+                                        <button id="createCaptions" class="wf-btn-generate">
+                                            <span class="wf-generate-stack">
+                                                <span class="wf-generate-eyebrow">▎ Initiate Build</span>
+                                                <span class="wf-generate-label">Generate Captions</span>
+                                            </span>
+                                            <span class="wf-generate-arrow">▶</span>
+                                        </button>
+                                        <i id="createCaptionsInfo" class="far fa-question-circle openModal wf-generate-info"></i>
+
+                                        <!-- Progress -->
+                                        <div class="wf-progress-wrap">
+                                            <div class="progress wf-progress">
+                                                <div id="progressBarWorkflow" class="progress-bar wf-progress-bar" role="progressbar"
+                                                    style="width:0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                            </div>
+                                            <div class="wf-progress-meta">
+                                                <span class="wf-progress-meta-left">Compile Status</span>
+                                                <span class="wf-progress-meta-right">Idle</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Spinners (used by panel.js) -->
+                                        <div class="wf-spinner-slot">
+                                            <img id="staticSpinnerWorkflow" class="spinner" src="images/BMP_Logo_Still.png" alt="">
+                                            <img id="gifSpinnerWorkflow" class="spinner" style="display:none;" src="images/Logo_Spin_Optimized.gif" alt="">
+                                        </div>
+
+                                        <!-- Advanced (collapsed) -->
+                                        <details class="wf-advanced">
+                                            <summary class="wf-advanced-toggle">
+                                                <span class="wf-advanced-glyph">+</span>
+                                                <span>Subsystems</span>
+                                                <span class="wf-advanced-hint">phrasing, hindi split, manual SRT</span>
+                                            </summary>
+                                            <div class="wf-advanced-body">
+
+                                                <!-- SRT override input -->
+                                                <div class="wf-field-group">
+                                                    <label class="wf-field-label">SRT Override</label>
+                                                    <div class="input-group wf-field">
+                                                        <button class="wf-field-chip" type="button" id="selectSRT">SRT</button>
+                                                        <input id="srtFilePath" type="text" class="form-control wf-field-input"
+                                                            placeholder="word_by_word.srt (auto-set)"
+                                                            ondragenter="event.stopPropagation();event.preventDefault();"
+                                                            ondragover="event.stopPropagation();event.preventDefault();"
+                                                            ondrop="event.stopPropagation();event.preventDefault();dodrop(event);">
+                                                        <i id="selectSRTInfo" class="far fa-question-circle openModal wf-field-info"></i>
+                                                    </div>
+                                                </div>
+
+                                                <button id="splitHindiSRT" class="wf-pill-btn">
+                                                    <span class="wf-pill-glyph">⤴</span>Split for Hindi
+                                                </button>
+
+                                                <!-- Phrasing toggle -->
+                                                <div class="wf-toggle-row form-check form-switch">
+                                                    <label class="wf-toggle">
+                                                        <input class="form-check-input wf-toggle-input" type="checkbox" id="phrasingModeToggle">
+                                                        <span class="wf-toggle-track"><span class="wf-toggle-thumb"></span></span>
+                                                        <span class="wf-toggle-label">Use External Phrasing SRT</span>
+                                                    </label>
+                                                </div>
+
+                                                <div id="phrasingSrtContainer" class="wf-field-group" style="display:none;">
+                                                    <label class="wf-field-label">Phrased SRT</label>
+                                                    <div class="input-group wf-field">
+                                                        <button class="wf-field-chip" type="button" id="selectPhrasingSRT">Phrased</button>
+                                                        <input id="phrasingSRTPath" type="text" class="form-control wf-field-input"
+                                                            placeholder="Drop Phrased SRT here"
+                                                            ondragenter="event.stopPropagation();event.preventDefault();"
+                                                            ondragover="event.stopPropagation();event.preventDefault();"
+                                                            ondrop="event.stopPropagation();event.preventDefault();dodrop(event);">
+                                                        <i id="selectPhrasingSRTInfo" class="far fa-question-circle openModal wf-field-info"></i>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Chars-per-phrase slider -->
+                                                <div class="wf-field-group" style="margin-bottom:0;">
+                                                    <label class="wf-field-label">
+                                                        Chars / Phrase
+                                                        <i id="charactersPerMogrtInfo" class="far fa-question-circle openModal wf-field-info-inline"></i>
+                                                    </label>
+                                                    <div class="wf-slider-row">
+                                                        <input id="range-slider__range" type="range" value="20" min="1" max="100" class="wf-slider">
+                                                        <span id="range-slider__value" class="wf-slider-value">20</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div><!-- /.wf-stepper -->
+
+                        <!-- ─── Footer ─────────────────────────────────────────────── -->
+                        <div class="wf-footer">
+                            <img id="cwsWebsite" class="wf-footer-logo" src="images/Logos_CWS-Icon-Light.png" alt="">
+                            <button class="discordCommunity wf-footer-btn">
+                                <img class="discordCommunity wf-footer-discord" src="images/discord-icon.png" alt="">Community
+                            </button>
+                        </div>
+
+                        <div class="loggedInData wf-loggedin" style="visibility:hidden;">
+                            <span class="dot loggedInDot wf-loggedin-dot"></span>
+                            <p class="loggedInEmail wf-loggedin-email"></p>
+                            <span class="wf-loggedin-tag">#createdWithFreeXanCaption</span>
+                        </div>
+
+                    </div><!-- /.wf-shell -->
+                </div>
+            </div>
+
+            <!-- AI Translate Tab -->
+            <div class="tab" id="aiTranslateTab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-ai">
+                <label for="tab-ai">AI</label>
+                <div class="tab__content" style="overflow-y: auto; max-height: calc(100vh - 80px); padding-bottom: 20px;">
+
+                    <p style="font-weight: bold; margin-bottom: 4px; font-size: 13px; color: #29BFBE;">
+                        <i class="fas fa-magic" style="margin-right: 6px;"></i>Hindi &rarr; Hinglish
+                    </p>
+                    <p style="font-size: 11px; color: #888; margin-bottom: 14px;">
+                        Transliterates Devanagari SRT to Hinglish, then auto-fills the Workflow tab.
+                    </p>
+
+                    <!-- API Key Section -->
+                    <div id="ai-key-section" style="margin-bottom: 14px; background: #1a1a1a; border: 1px solid #29BFBE33; border-radius: 8px; padding: 10px;">
+                        <p style="font-size: 11px; font-weight: bold; color: #29BFBE; margin-bottom: 6px;">
+                            <i class="fas fa-key" style="margin-right: 5px;"></i>Gemini API Key
+                        </p>
+                        <input id="ai-api-key" type="password"
+                            class="form-control"
+                            style="background-color: #2a2a2a; color: white; font-size: 12px; border-radius: 5px; border: 1px solid #444; margin-bottom: 8px;"
+                            placeholder="Paste your Gemini API key..." />
+                        <button id="ai-save-key-btn" class="btn btn-sm"
+                            style="width: 100%; background-color: #29BFBE; color: #111; border-radius: 20px; font-family: 'Montserrat'; font-size: 11px; font-weight: bold; border: none;">
+                            Save Key
+                        </button>
+                    </div>
+
+                    <!-- File Input -->
+                    <div class="input-group mb-3">
+                        <button class="btn btn-outline-default btn-sm" type="button" id="ai-select-btn"
+                            style="color: white; width: 100px;">Hindi SRT</button>
+                        <input id="ai-srt-path" type="text" class="form-control"
+                            style="background-color: #232323; color: white; margin-right: 30px; font-size: 12px; border-radius: 0px 5px 5px 0px;"
+                            placeholder="Drop Hindi SRT here"
+                            ondragenter="event.stopPropagation(); event.preventDefault();"
+                            ondragover="event.stopPropagation(); event.preventDefault();"
+                            ondrop="event.stopPropagation(); event.preventDefault();" />
+                    </div>
+
+                    <!-- Translate Button -->
+                    <div style="margin-bottom: 12px;">
+                        <button id="ai-translate-btn" class="btn btn-sm"
+                            style="width: 100%; background-color: #232323; color: #29BFBE; border: 1px solid #29BFBE; border-radius: 25px; font-family: 'Montserrat'; font-size: 13px; font-weight: bold; padding: 8px 0;">
+                            <i class="fas fa-magic" style="margin-right: 8px;"></i>Translate to Hinglish
+                        </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress" style="margin-bottom: 8px; margin-right: 15px;">
+                        <div id="ai-progress-bar" class="progress-bar" role="progressbar"
+                            style="min-width: 2em; width: 0%; background-color: #29BFBE; transition: width 0.4s ease;"
+                            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+
+                    <!-- Status -->
+                    <p id="ai-status" style="font-size: 11px; color: #29BFBE; min-height: 16px; margin-bottom: 12px;"></p>
+
+                    <!-- Output Section (hidden until done) -->
+                    <div id="ai-output-section" style="display: none; background: #1a1a1a; border: 1px solid #29BFBE44; border-radius: 8px; padding: 10px; margin-bottom: 12px; margin-right: 15px;">
+                        <p style="font-size: 11px; font-weight: bold; color: #aaa; margin-bottom: 6px;">
+                            <i class="fas fa-check-circle" style="color: #29BFBE; margin-right: 5px;"></i>Output saved to:
+                        </p>
+                        <input id="ai-output-path" type="text" class="form-control"
+                            style="background-color: #2a2a2a; color: #29BFBE; font-size: 10px; border-radius: 5px; margin-bottom: 8px; border: 1px solid #333;"
+                            readonly />
+                        <button id="ai-goto-workflow-btn" class="btn btn-sm"
+                            style="width: 100%; background-color: #232323; color: white; border: 1px solid #555; border-radius: 20px; font-family: 'Montserrat'; font-size: 11px;">
+                            Go to Workflow Tab &nbsp;<i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="line" style="border-bottom: 1px solid #2a2a2a; margin: 10px 15px 10px 0;"></div>
+
+                    <button id="ai-settings-btn"
+                        style="color: #555; font-size: 10px; background: none; border: none; padding: 0; cursor: pointer; font-family: 'Montserrat';">
+                        <i class="fas fa-cog" style="margin-right: 4px;"></i>Change API Key
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- React Command Center (Edit Tab) -->
+            <div class="tab" id="commandCenterTab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-edit">
+                <label for="tab-edit">Edit</label>
+                <div class="tab__content">
+                    <div id="react-edit-root"></div>
+                </div>
+            </div>
+
+            <!-- MOGRT Param Editor (Params Tab) — isolated, no overlap with Edit tab -->
+            <div class="tab" id="mogrtParamsTab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-params">
+                <label for="tab-params">Params</label>
+                <div class="tab__content" id="params-tab-content">
+                    <div id="react-params-root"></div>
+                </div>
+            </div>
+
+            <div class="tab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-2">
+                <label for="tab-2">Tools</label>
+                <div class="tab__content">
+
+                    <div>
+                        <button id="syncAll" class="btn btn-sync-all btn-sm" style="width: 150px;">Sync
+                            All</button>
+                        <i id="syncAllInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="syncText" class="btn btn-sync-sub btn-sm" style="width: 250px;">
+                            Ⓣ Sync
+                            Text & Typeface</button>
+                        <i id="syncTextInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="syncStyle" class="btn btn-sync-sub btn-sm" style="width: 250px;">Sync
+                            Style & Animation</button>
+                        <i id="syncStyleInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div style="margin-bottom: 25px">
+                        <button id="syncPSR" class="btn btn-sync-sub btn-sm" style="width: 250px;">Sync
+                            Position/Scale/Rotation</button>
+                        <i id="syncPSRInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="resetWordProgressions" class="btn btn-progression btn-sm" style="width: 225px;">Reset
+                            Word Progression</button>
+                        <i id="resetWordProgressionsInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div style="margin-bottom: 25px">
+                        <button id="minus1WordProgressions" class="btn btn-progression-sub btn-sm" style="width: 120px;">-1
+                        </button>
+                        <button id="plus1WordProgressions" class="btn btn-progression-sub btn-sm" style="width: 120px;">+1
+                        </button>
+                        <i id="minusPlusWordProgressionsInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="joinSelection" class="btn btn-phrase-all btn-sm" style="width: 200px;">Split & Join Selection</button>
+                        <i id="joinSelectionInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="splitPhrase" class="btn btn-phrase-sub btn-sm" style="width: 250px;">Split
+                            1 Entire Phrase</button>
+                        <i id="splitPhraseInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="joinPhrases" class="btn btn-phrase-sub btn-sm" style="width: 250px;">Join
+                            2 Entire Phrases</button>
+                        <i id="joinPhrasesInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div class="progress" style="margin-top: 15px; margin-right: 15px; margin-bottom: 5px;">
+                        <div id="progressBarTools" class="progress-bar" role="progressbar"
+                            style="min-width: 2em; width: 0%; background-color: #29BFBE;" aria-valuenow="0"
+                            aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+
+                    <!-- Word Surgery: Add / Remove -->
+                    <div style="margin-top: 15px; margin-right: 15px; margin-bottom: 10px;">
+                        <p style="font-weight: bold; margin-bottom: 8px; font-size: 12px;">Word Surgery</p>
+
+                        <!-- Add Word input + button -->
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                            <input
+                                id="addWordInput"
+                                type="text"
+                                placeholder="New word..."
+                                maxlength="60"
+                                style="flex:1; padding:4px 8px; border-radius:4px; border:1px solid #555; background:#2a2a2a; color:#eee; font-size:12px; font-family: 'Montserrat';"
+                            />
+                            <button id="addWordBtn" class="btn btn-outline-default btn-sm"
+                                    style="padding:4px 8px; font-size:11px; white-space:nowrap;"
+                                    title="Inserts the typed word AFTER the word under the playhead">
+                                ✚ Add Word
+                            </button>
+                        </div>
+
+                        <button id="removeWordBtn" class="btn btn-outline-default btn-sm"
+                                style="width:100%; padding:4px 8px; font-size:11px;"
+                                title="Removes the word under the playhead from the phrase">
+                            ✂ Remove Word
+                        </button>
+                    </div>
+
+                    <div class="line"
+                        style="border-bottom: 1px solid #29BFBE; margin-top: 15px; margin-bottom: 15px; margin-right: 15px;">
+                    </div>
+
+                    <div>
+                        <img id="cwsWebsite" style="width:100px;" src="images/Logos_CWS-Icon-Light.png" alt="">
+
+                        <img id="staticSpinnerTools" class="spinner" style="width:50px; margin-left:15px;"
+                            src="images/BMP_Logo_Still.png" alt="">
+                        <img id="gifSpinnerTools" class="spinner" style="width:50px; margin-left:15px; display: none"
+                            src="images/Logo_Spin_Optimized.gif" alt="">
+
+                        <button class="btn btn-outline-default btn-sm discordCommunity"
+                            style="width: 200px; margin-left: 15px; margin-right: 15px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px; float: right;"><img
+                                class="discordCommunity"
+                                style="width:20px; margin-top: -3px; margin-left: 5px; margin-right: 20px;"
+                                src="images/discord-icon.png" alt="">Community<i class="fas fa-caret-right"
+                                style="margin-left: 20px"></i></button>
+                    </div>
+
+                    <div class="loggedInData" style="visibility: hidden">
+                        <span class="dot loggedInDot" style="float: left; margin-top: 12px; margin-right: 15px"></span>
+                        <p class="loggedInEmail" style="float: left;"></p>
+                        <span
+                            style="font-family: 'Montserrat';font-size: 15px; margin-right: 15px; margin-left:15px; margin-top: 5px; float: right; ">#createdWithFreeXanCaption</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="tab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-3">
+                <label for="tab-3">Advanced Tools</label>
+                <div class="tab__content">
+
+                    <div>
+                        <button id="resetAll" class="btn btn-outline-default btn-sm"
+                            style="width: 250px; margin-bottom: 15px; margin-bottom: 10px; background-color: #232323; color: white; border-radius: 25px;font-family: 'Montserrat';font-size: 15px; margin-right: 5px;">Reset
+                            All Mogrt Properties</button>
+                        <i id="resetAllInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+
+                    <div>
+                        <button id="resetSpecific" class="btn btn-outline-default btn-sm"
+                            style="width: 250px; margin-bottom: 15px; margin-bottom: 10px; background-color: #232323; color: white; border-radius: 25px;font-family: 'Montserrat';font-size: 15px; margin-right: 5px;">Reset
+                            Specific Mogrt Property</button>
+                        <i id="resetSpecificInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <input id="resetSpecificValue" type="text" class="form-control"
+                            style="background-color: #232323; color: white; width: 250px; margin-right:30px; margin-bottom: 15px; margin-bottom: 10px; font-size:12px; border-radius: 5px 5px 5px 5px"
+                            placeholder="1 specific mogrt property name here"
+                            aria-label="Example text with button addon" aria-describedby="button-addon1">
+                    </div>
+
+                    <div class="progress" style="margin-top: 15px; margin-right: 15px; margin-bottom: 5px;">
+                        <div id="progressBarAdvancedTools" class="progress-bar" role="progressbar"
+                            style="min-width: 2em; width: 0%; background-color: #29BFBE;" aria-valuenow="0"
+                            aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+
+                    <div class="line"
+                        style="border-bottom: 1px solid #29BFBE; margin-top: 15px; margin-bottom: 15px; margin-right: 15px;">
+                    </div>
+
+                    <div>
+                        <img id="cwsWebsite" style="width:100px;" src="images/Logos_CWS-Icon-Light.png" alt="">
+                        <img id="staticSpinnerWorkflow" class="spinner" style="width:50px; margin-left:15px;"
+                            src="images/BMP_Logo_Still.png" alt="">
+
+                        <button class="btn btn-outline-default btn-sm discordCommunity"
+                            style="width: 200px; margin-left: 15px; margin-right: 15px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px; float: right;"><img
+                                class="discordCommunity"
+                                style="width:20px; margin-top: -3px; margin-left: 5px; margin-right: 20px;"
+                                src="images/discord-icon.png" alt="">Community<i class="fas fa-caret-right"
+                                style="margin-left: 20px"></i></button>
+                    </div>
+
+                    <div class="loggedInData" style="visibility: hidden">
+                        <span class="dot loggedInDot" style="float: left; margin-top: 12px; margin-right: 15px"></span>
+                        <p class="loggedInEmail" style="float: left;"></p>
+                        <span
+                            style="font-family: 'Montserrat';font-size: 15px; margin-right: 15px; margin-left:15px; margin-top: 5px; float: right; ">#createdWithFreeXanCaption</span>
+                    </div>
+
+
+                </div>
+            </div>
+
+
+
+
+            <div id="loginTab" class="tab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-4">
+                <label for="tab-4">Login</label>
+                <div class="tab__content">
+
+                    <button class="btn btn-outline-default btn-sm openAbout"
+                        style="width: 200px; margin-left: 15px; margin-right: 15px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Login<i
+                            class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+
+                    <p>The easiest way to install and manage your licenses is by using the <span class="tutLinks"
+                            data-value="https://bloomxsolutions.com/freexan-caption/">BloomX support
+                            aeplugins manager</span>.</p>
+
+                    <!-- <p>To install a trial you can select 'Add Trial' from the 'Account' menu.</p> -->
+
+                    <!-- <label for="emailAddress">Email Address:</label>
+                    <div class="input-group mb-3">
+                        <input id="emailAddress" type="text" class="form-control"
+                            style="background-color: #232323; color: white; margin-right:30px; font-size:12px; border-radius: 5px 5px 5px 5px">
+                        <i id="emailAddressInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <label for="licenseKey">License Key:</label>
+                    <div class="input-group mb-3">
+                        <input id="licenseKey" type="password" class="form-control"
+                            style="background-color: #232323; color: white; margin-right:15px; font-size:12px; border-radius: 5px 5px 5px 5px">
+                        <i id="hidePassword" class="fa fa-eye-slash" aria-hidden="true"
+                            style="margin-right:15px; margin-top: 8px;"></i>
+                        <i id="licenseKeyInfo" style="margin-right: 15px; margin-top: 8px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div>
+
+                    <div>
+                        <button id="login" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Login<i
+                                class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <i id="loginInfo" style="margin-top: 18px; margin-right:15px; float: right;"
+                            class="far fa-question-circle openModal"></i>
+                    </div> -->
+
+                    <div class="line"
+                        style="border-bottom: 1px solid #29BFBE; margin-top: 15px; margin-bottom: 15px; margin-right: 15px;">
+                    </div>
+
+                    <div>
+                        <img id="cwsWebsite" style="width:100px;" src="images/Logos_CWS-Icon-Light.png" alt="">
+                        <img id="staticSpinnerWorkflow" class="spinner" style="width:50px; margin-left:15px;"
+                            src="images/BMP_Logo_Still.png" alt="">
+
+                        <button class="btn btn-outline-default btn-sm discordCommunity"
+                            style="width: 200px; margin-left: 15px; margin-right: 15px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px; float: right;"><img
+                                class="discordCommunity"
+                                style="width:20px; margin-top: -3px; margin-left: 5px; margin-right: 20px;"
+                                src="images/discord-icon.png" alt="">Community<i class="fas fa-caret-right"
+                                style="margin-left: 20px"></i></button>
+                    </div>
+
+                    <div class="loggedInData" style="visibility: hidden">
+                        <span class="dot loggedInDot" style="float: left; margin-top: 12px; margin-right: 15px"></span>
+                        <p class="loggedInEmail" style="float: left;"></p>
+                        <span
+                            style="font-family: 'Montserrat';font-size: 15px; margin-right: 15px; margin-left:15px; margin-top: 5px; float: right; ">#createdWithFreeXanCaption</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="tab">
+                <input class="form-check-input myTab" type="radio" name="tabgroup" id="tab-5">
+                <label for="tab-5">Help</label>
+                <div class="tab__content">
+
+
+                    <!--                     <div>
+                        <button id="community" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Support<i
+                                class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button id="youtubeChannel" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Youtube
+                            Channel<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button id="userGuide" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">User
+                            Guide<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button id="faq" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">FAQ<i
+                                class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button id="mogrtLibrary" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Mogrt
+                            Library<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button id="bugReport" class="btn btn-outline-default btn-sm"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Bug
+                            Report<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                    </div> -->
+
+                    <div>
+                        <button class="btn btn-outline-default btn-sm tutLinks"
+                            data-value="https://discord.gg/MrYsAsWV3Q"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Support<i
+                                class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button id="youtubeChannel" class="btn btn-outline-default btn-sm tutLinks"
+                            data-value="https://www.youtube.com/@CreativeWorkflowSolutions/videos"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Youtube
+                            Channel<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button class="btn btn-outline-default btn-sm tutLinks"
+                            data-value="https://drive.google.com/file/d/1zWlYRxuXMyCWdA10tNJzUl2bR8qeohAE/view?usp=drive_link"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">User
+                            Guide<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button class="btn btn-outline-default btn-sm tutLinks"
+                            data-value="https://drive.google.com/file/d/1CPfEFLaYfGYuCg3Bae8Z72IO2pIqhiSW/view?usp=drive_link"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">FAQs<i
+                                class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button class="btn btn-outline-default btn-sm tutLinks"
+                            data-value="https://docs.google.com/presentation/d/17AKlQ_xnQbKgvYUvmyMxSP29MdV0J51nb0IS4kM8w2Y/edit?usp=sharing"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Mogrt
+                            Library<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                        <button class="btn btn-outline-default btn-sm tutLinks"
+                            data-value="https://docs.google.com/forms/d/e/1FAIpQLSeBlTeeN1H_84jpM1XrI76Ccd8xZfvzfxXLMWvOIQB59dsDMg/viewform"
+                            style="width: 200px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px;">Bug
+                            Report<i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+                    </div>
+
+                    <br>
+
+                    <div>
+                        <p>Full Walkthroughs:</p>
+                        <img class="tutLinks" data-value="https://youtu.be/xYidiPvc_LY?si=JbR5QEYcpB9BSMYX"
+                            src="../panel/images/Walkthrough.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://www.youtube.com/watch?v=M2vdZc3hG_Q"
+                            src="../panel/images/PG-1.png" alt="" style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://www.youtube.com/watch?v=3acU9PtwF9E"
+                            src="../panel/images/PG-2.png" alt="" style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://www.youtube.com/watch?v=G4kg0XXqbhM"
+                            src="../panel/images/VR-1.png" alt="" style="width:200px; margin: 10px; cursor: pointer">
+                    </div>
+
+                    <br>
+
+
+                    <div>
+                        <p>Quick Tutorials:</p>
+                        <img class="tutLinks" data-value="https://youtu.be/DBM6-iO3X_A?si=-XwuZIrtOuBkGmlb"
+                            src="../panel/images/SubMachine Create SRT.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/ecTnrWUijyo?si=iQtfGGm_45JawBcW"
+                            src="../panel/images/SubMachine Create Subs.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/kKW-gMM_nNg?si=VATrzNcqccyrFNb9"
+                            src="../panel/images/SubMachine Sync All.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/juBWVkpuY78?si=GomR9VjRiAzS0dtf"
+                            src="../panel/images/SubMachine Sync Text and Typeface.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/LgqMiAvbjOw?si=1u-dHAJlQ03sMqv-"
+                            src="../panel/images/SubMachine Sync Style and Animation.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/J4Fpd_ONhTk?si=auu7KOvDShmPA54u"
+                            src="../panel/images/SubMachine Sync Position, Scale & Rotation.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/WP9Y07Zosps?si=WHoolhUDVRk7Dvk-"
+                            src="../panel/images/SubMachine Reset Word Progression.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/WmeC6dmFnZU?si=0Y_6NkpqKwwFPW3p"
+                            src="../panel/images/SubMachine Split & Join Selection.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/lF2GddXBrE4?si=axUpDgTHBWSpebuC"
+                            src="../panel/images/SubMachine Split 1 Entire Phrase.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/h_mRXSU29Ts?si=YL_R1iE1x3sNtW2a"
+                            src="../panel/images/SubMachine Join 2 Entire Phrases.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/oj-WvilSWF4?si=kjVAe3NA9K0ygH8a"
+                            src="../panel/images/SubMachine Reset All and Reset Reset Specific.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img class="tutLinks" data-value="https://youtu.be/Q_dF-3Maq3k?si=6ZiXDSyzgBPsyf4v"
+                            src="../panel/images/SubMachine Editing Mogrts.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer"></a>
+                    </div>
+
+                    <br>
+
+                    <!-- <div style="background-color: white;"> -->
+                    <div>
+
+                        <h3>Mogrts:</h3>
+                        <p>These gifs show just a fraction of the potential design variations that are possible using
+                            freeXan Caption.</p>
+
+                        <br>
+
+                        <p>Animator Mogrt:</p>
+
+                        <div style="margin-right: 25px">
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Animator_A-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Animator_A.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Animator_B-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Animator_B.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px;"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Animator_C-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Animator_C.gif" alt="" />
+
+                        </div>
+
+                        <br>
+                        <br>
+
+                        <p>Animator Pro Mogrt:</p>
+
+                        <div style="margin-right: 25px">
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/AnimatorPro_A-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/AnimatorPro_A.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/AnimatorPro_B-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/AnimatorPro_B.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px;"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/AnimatorPro_C-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/AnimatorPro_C.gif" alt="" />
+
+                        </div>
+
+                        <br>
+                        <br>
+
+                        <p>Dynamo Mogrt:</p>
+
+                        <div>
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Dynamo_A-17 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Dynamo_A.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Dynamo_B-63 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Dynamo_B.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Dynamo_C-9 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Dynamo_C.gif" alt="" />
+
+                        </div>
+
+                        <br>
+                        <br>
+
+                        <p>Karaoke Mogrt:</p>
+
+                        <div>
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Karaoke_A-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Karaoke_A.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Karaoke_B-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Karaoke_B.gif" alt="" />
+
+                            <img class="static"
+                                style="width: 292px; position: absolute; background: white; margin-right: 25px"
+                                onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100"
+                                src="../panel/images/Karaoke_C-65 (dragged).png" alt="" />
+                            <img class="active" style="width: 292px; margin-right: 25px"
+                                src="../panel/images/Karaoke_C.gif" alt="" />
+
+                        </div>
+
+
+                    </div>
+
+                    <br>
+
+                    <p>freeXan Caption is a collaboration between <span class="tutLinks"
+                            data-value="https://bmpcreative.com/">BMP Creative</span> and <span class="tutLinks"
+                            data-value="https://creativeworkflowsolutions.com">Creative Workflow Solutions</span>.</p>
+
+                    <!-- <div>
+                        <img id="tutorial1" src="images/SubMachine Create SRT.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial2" src="images/SubMachine Create Subs.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial3" src="images/SubMachine Sync All.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial4" src="images/SubMachine Sync Text and Typeface.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial5" src="images/SubMachine Sync Style and Animation.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial6" src="images/SubMachine Sync Position, Scale & Rotation.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial7" src="images/SubMachine Reset Word Progression.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial8" src="images/SubMachine Split & Join Selection.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial9" src="images/SubMachine Split 1 Entire Phrase.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial10" src="images/SubMachine Join 2 Entire Phrases.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                        <img id="tutorial11" src="images/SubMachine Join 2 Entire Phrases.png" alt=""
+                            style="width:200px; margin: 10px; cursor: pointer">
+                    </div> -->
+
+                    <div class="line"
+                        style="border-bottom: 1px solid #29BFBE; margin-top: 15px; margin-bottom: 15px; margin-right: 15px;">
+                    </div>
+
+                    <div>
+                        <img id="cwsWebsite" style="width:100px;" src="images/Logos_CWS-Icon-Light.png" alt="">
+                        <img id="staticSpinnerWorkflow" class="spinner" style="width:50px; margin-left:15px;"
+                            src="images/BMP_Logo_Still.png" alt="">
+
+                        <button class="btn btn-outline-default btn-sm discordCommunity"
+                            style="width: 200px; margin-left: 15px; margin-right: 15px; margin-bottom: 15px; margin-top: 10px; background-color: #232323; color: white; border-radius: 25px; font-family: 'Montserrat';font-size: 15px; float: right;"><img
+                                class="discordCommunity"
+                                style="width:20px; margin-top: -3px; margin-left: 5px; margin-right: 20px;"
+                                src="images/discord-icon.png" alt="">Community<i class="fas fa-caret-right"
+                                style="margin-left: 20px"></i></button>
+                    </div>
+
+                    <div class="loggedInData" style="visibility: hidden">
+                        <span class="dot loggedInDot" style="float: left; margin-top: 12px; margin-right: 15px"></span>
+                        <p class="loggedInEmail" style="float: left;"></p>
+                        <span
+                            style="font-family: 'Montserrat';font-size: 15px; margin-right: 15px; margin-left:15px; margin-top: 5px; float: right; ">#createdWithFreeXanCaption</span>
+                    </div>
+
+
+                </div>
+            </div>
+
+
+
+        </div>
+
+
+        <!-- freeXan Caption Generic Modal Template -->
+        <div id="genericModal" class="modal">
+            <div class="modal-content">
+                <div>
+                    <span id="genericModalHeader" class="modalHeader">Information:</span>
+                    <span style="float: right"><i id="genericModalClose" class="far fa-times-circle close"></i></span>
+                    <img class="discordCommunity" style="width:17px; margin-left: 5px; margin-right: 15px; float: right" src="images/discord-icon.png" alt="">
+                </div>
+                
+                <div style="margin-top: 10px; margin-bottom: 10px;">
+                    <span>
+                        <span class="modalBody userGuide" style="cursor: pointer; color: #29BFBE !important;">User Guide</span> | 
+                        <span class="modalBody faqs" style="cursor: pointer; color: #29BFBE !important;">FAQs</span> | 
+                        <span class="modalBody mogrtLibrary" style="cursor: pointer; color: #29BFBE !important;">Mogrt Library</span> | 
+                        <span class="modalBody youtube" style="cursor: pointer; color: #29BFBE !important;">Youtube Tutorials</span> | 
+                        <span class="modalBody community" style="cursor: pointer; color: #29BFBE !important;">Support</span>
+                    </span>
+                </div>
+
+                <span id="genericModalTitle" class="modalTitle" style="display: block; margin-top: 10px;"></span>
+                <span id="genericModalBody" class="modalBody" style="display: block; margin-top: 5px; white-space: pre-line;"></span>
+                
+                <br>
+                <span class="modalBody">If you have any questions contact <span class="infoEmail">contentai@bloomxsolutions.com</span>.</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- </div> -->
+
+</body>
+
+</html>
+
+<!-- DO NOT REMOVE -->
+<script src="js/CSInterface.js"></script>
+<script src="js/workflow.js"></script>
+<script src="js/ui_manager.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/phrasing.js"></script>
+<script src="js/tools_refactor.js"></script>
+<script src="js/workflow_refactor.js"></script>
+<script src="js/ai_translate.js"></script>
+
+<!-- Libraries -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script src="js/libs/jszip.min.js"></script>
+<script src="js/mogrt_patcher.js"></script>
+<script type="text/babel" src="js/mogrt_param_editor.js"></script>
+
+<!-- React Application (v4.0.1) -->
+<script type="text/babel" src="js/command_center_react.js?v=2"></script>
+<script src="js/safe_eval.js"></script>
+
+<!-- Debug Bridge Heartbeat: polls sm_debug_poll() every 2s so the terminal
+     debugger can send commands via the inbox file. Zero-cost when no inbox
+     file is present (JSX exits immediately if file doesn't exist). -->
+<script>
+(function () {
+  function _startDebugHeartbeat() {
+    setInterval(function () {
+      try {
+        window.__adobe_cep__.evalScript('if(typeof sm_debug_poll==="function")sm_debug_poll()', function(){});
+      } catch(e) {}
+    }, 2000);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _startDebugHeartbeat);
+  } else {
+    _startDebugHeartbeat();
+  }
+}());
+</script>
+
+<!-- Legacy Inline Code Disabled for v4.0.1
+<script type="text/babel">
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// Safe Framer Motion fallback for CEP environment
+const motion = (window.Motion && window.Motion.motion) || (window.FramerMotion && window.FramerMotion.motion) || { div: 'div', span: 'span', section: 'section' };
+const AnimatePresence = (window.Motion && window.Motion.AnimatePresence) || (window.FramerMotion && window.FramerMotion.AnimatePresence) || (({children}) => children);
+
+// --- Helper: JSX Bridge ---
+const callJSX = (funcName, params) => {
+    const script = (params !== undefined)
+        ? `${funcName}(${JSON.stringify(params)})`
+        : `${funcName}()`;
+
+    return new Promise((resolve, reject) => {
+        if (!window.__adobe_cep__) {
+            console.warn(`[Mock] Calling JSX: ${funcName}`, params);
+            if (funcName === 'getTimelinePhraseMap') {
+                return resolve([
+                    {
+                        start: 0, end: 5, isLocked: false,
+                        clips: [
+                            { text: "Welcome", start: 0, end: 1, track: 1, index: 0, progression: 1 },
+                            { text: "to", start: 1, end: 2, track: 1, index: 1, progression: 2 },
+                            { text: "freeXan Caption", start: 2, end: 5, track: 1, index: 2, progression: 3 }
+                        ]
+                    }
+                ]);
+            }
+            if (funcName === 'inspectMogrtProperties') {
+                return resolve([
+                    { displayName: "Ⓣ Text", value: params.clipIndex === 0 ? "Welcome" : "Other", type: "text" },
+                    { displayName: "Ⓢ Font Size", value: 80, type: "slider" },
+                    { displayName: "Ⓢ Color", value: "#3399ff", type: "color" }
+                ]);
+            }
+            return resolve({ status: 'Mock Success' });
+        }
+        window.__adobe_cep__.evalScript(script, (res) => {
+            if (!res || res === 'EvalScript error.') {
+                reject(new Error(`JSX CRASH: ${funcName}`));
+            } else {
+                try {
+                    const parsed = JSON.parse(res);
+                    if (parsed && typeof parsed === 'object' && 'ok' in parsed) {
+                        if (parsed.ok) resolve(parsed.data);
+                        else reject(new Error(parsed.error || 'Unknown Backend Error'));
+                    } else {
+                        resolve(parsed); // Legacy JSON
+                    }
+                } catch (e) {
+                    resolve(res); // Raw string
+                }
+            }
+        });
+    });
+};
+
+const formatTime = (seconds) => {
+    if (!seconds) return '00:00.000';
+    const date = new Date(0);
+    date.setSeconds(seconds);
+    return date.toISOString().substr(14, 9);
+};
+
+// --- Components ---
+
+const SplitTrigger = ({ onClick }) => (
+    <div className="cc-split-trigger" onClick={onClick} title="Split Phrase Here">
+        <div className="cc-split-line"></div>
+        <span className="cc-split-icon">✂️</span>
+    </div>
+);
+
+const WordBubble = ({ clip, pIdx, cIdx, isActive, isSelected, isSyncing, onClick, onDoubleClick }) => {
+    const clipId = `${pIdx}-${cIdx}`;
+    
+    return (
+        <motion.span 
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`cc-word-bubble ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''} ${isSyncing ? 'is-syncing' : ''}`}
+            data-clip-id={clipId}
+            data-phrase-id={pIdx}
+            data-word-index={cIdx}
+            onClick={(e) => onClick(clip, clipId, e)}
+            onDoubleClick={(e) => onDoubleClick(clip, pIdx, cIdx)}
+            style={{ animationDelay: `${(pIdx * 50) + (cIdx * 20)}ms` }}
+        >
+            {clip.text}
+            <span className="cc-bubble-idx">{clip.progression || ''}</span>
+        </motion.span>
+    );
+};
+
+const PhraseCard = ({ phrase, pIdx, activeClipId, selection, selectionRef, timelineMapRef, isSyncing, onBubbleClick, onBubbleEdit, onLock, onPhraseSelect, isPhraseSelected, onSplit }) => {
+    const bubbleZoneRef = useRef(null);
+    const hasActiveClip = activeClipId && activeClipId.startsWith(`${pIdx}-`);
+
+    // Initialize Sortable for Word Surgery
+    useEffect(() => {
+        if (!bubbleZoneRef.current) return;
+        
+        const sortable = Sortable.create(bubbleZoneRef.current, {
+            group: 'phrases',
+            animation: 150,
+            swapThreshold: 0.65,
+            invertSwap: true,
+            fallbackOnBody: true,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'is-dragging',
+            onMove: (evt) => {
+                const fromIdx = parseInt(evt.from.dataset.phraseId);
+                const toIdx = parseInt(evt.to.dataset.phraseId);
+                const draggedClipId = evt.dragged.dataset.clipId;
+                // Rule: Internal reordering is allowed
+                if (toIdx === fromIdx) return true;
+
+                const currentMap = timelineMapRef.current;
+                if (!currentMap[fromIdx]) return false;
+                const phraseLength = currentMap[fromIdx].clips.length;
+
+                // Rule: Edge-to-Edge Surgery Only for adjacent phrases
+                if (toIdx === fromIdx - 1) {
+                    // Moving UP: Must include the start of the phrase (Word 1)
+                    const draggedIds = selectionRef.current.includes(draggedClipId) ? selectionRef.current : [draggedClipId];
+                    const indices = draggedIds.map(id => parseInt(id.split('-')[1]));
+                    return Math.min(...indices) === 0;
+                }
+                if (toIdx === fromIdx + 1) {
+                    // Moving DOWN: Must include the end of the phrase (Last Word)
+                    const draggedIds = selectionRef.current.includes(draggedClipId) ? selectionRef.current : [draggedClipId];
+                    const indices = draggedIds.map(id => parseInt(id.split('-')[1]));
+                    return Math.max(...indices) === phraseLength - 1;
+                }
+                
+                return false; 
+            },
+            onStart: () => {
+                document.body.classList.add('cc-dragging-active');
+                document.querySelectorAll('.cc-phrase-card').forEach(c => c.classList.add('is-dragging-active'));
+            },
+            onEnd: (evt) => {
+                document.body.classList.remove('cc-dragging-active');
+                document.querySelectorAll('.cc-phrase-card').forEach(c => c.classList.remove('is-dragging-active', 'is-drop-target'));
+                
+                // Trigger surgery logic (this will be passed down from App)
+                window.dispatchEvent(new CustomEvent('wordTransfer', { detail: evt }));
+            },
+            onDragOver: (evt) => {
+                const card = evt.to.closest('.cc-phrase-card');
+                document.querySelectorAll('.cc-phrase-card').forEach(c => {
+                    if (c !== card) c.classList.remove('is-drop-target');
+                });
+                if (card) card.classList.add('is-drop-target');
+            }
+        });
+
+        return () => sortable.destroy();
+    }, []);
+
+    return (
+        <motion.div 
+            layout
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`cc-phrase-card ${hasActiveClip ? 'is-active' : ''} ${phrase.isLocked ? 'is-locked' : ''} ${isPhraseSelected ? 'is-phrase-selected' : ''}`}
+            data-phrase-id={pIdx}
+            onClick={(e) => onPhraseSelect(pIdx, e)}
+        >
+            <div className="cc-phrase-header">
+                <span className="cc-phrase-index">PHRASE {pIdx + 1}</span>
+                <span className="cc-phrase-time">{formatTime(phrase.start)} → {formatTime(phrase.end)}</span>
+                <button 
+                    className={`cc-lock-btn ${phrase.isLocked ? 'is-locked' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); onLock(pIdx, !phrase.isLocked); }}
+                >
+                    {phrase.isLocked ? '🔒' : '🔓'}
+                </button>
+            </div>
+            <div className="cc-bubble-zone" ref={bubbleZoneRef} data-phrase-id={pIdx}>
+                {phrase.clips.map((clip, cIdx) => (
+                    <React.Fragment key={`${pIdx}-${cIdx}`}>
+                        <WordBubble 
+                            clip={clip}
+                            pIdx={pIdx}
+                            cIdx={cIdx}
+                            isActive={activeClipId === `${pIdx}-${cIdx}`}
+                            isSelected={selection.includes(`${pIdx}-${cIdx}`)}
+                            isSyncing={isSyncing && (selection.includes(`${pIdx}-${cIdx}`) || activeClipId === `${pIdx}-${cIdx}`)}
+                            onClick={onBubbleClick}
+                            onDoubleClick={(e) => onBubbleEdit(clip, pIdx, cIdx, phrase)}
+                        />
+                        {cIdx < phrase.clips.length - 1 && (
+                            <SplitTrigger onClick={(e) => { e.stopPropagation(); onSplit(pIdx, cIdx); }} />
+                        )}
+                    </React.Fragment>
+                ))}
+            </div>
+        </motion.div>
+    );
+};
+
+const PropertyControl = ({ prop, onUpdate, isSyncEnabled }) => {
+    let control;
+    let typeClass = 'type-slider';
+
+    if (prop.type === 'color') {
+        typeClass = 'type-color';
+        control = (
+            <div 
+                className="cc-color-swatch" 
+                style={{ background: prop.value }} 
+                onClick={() => {/* Color Picker logic would go here */}}
+            ></div>
+        );
+    } else if (prop.type === 'text') {
+        typeClass = 'type-text';
+        control = <div className="cc-text-value">{prop.value}</div>;
+    } else if (prop.type === 'readonly') {
+        typeClass = 'type-text';
+        control = <div className="cc-text-value muted">{prop.value}</div>;
+    } else {
+        control = (
+            <div className="cc-slider-control">
+                <input 
+                    type="range" 
+                    className="cc-slider-input" 
+                    value={prop.value} 
+                    min="0" max="100" 
+                    onChange={(e) => onUpdate(prop.displayName, e.target.value)}
+                />
+                <span className="cc-slider-value">{Math.round(prop.value)}</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="cc-property-card">
+            <span className={`cc-prop-type-icon ${typeClass}`}>●</span>
+            <span className="cc-prop-label">{prop.displayName.replace('Ⓣ ', '').replace('Ⓢ ', '')}</span>
+            {control}
+            <div className={`cc-sync-toggle ${isSyncEnabled ? 'is-active' : ''}`} title="Broadcast this change">⟳</div>
+        </div>
+    );
+};
+
+const App = () => {
+    const [timelineMap, setTimelineMap] = useState([]);
+    const timelineMapRef = useRef([]); // Critical for SortableJS closures
+    useEffect(() => { timelineMapRef.current = timelineMap; }, [timelineMap]);
+
+    const [activeClip, setActiveClip] = useState(null);
+    const [activeClipId, setActiveClipId] = useState(null);
+    const [inspectorProps, setInspectorProps] = useState([]);
+    const [searchFilter, setSearchFilter] = useState('');
+    const [selection, setSelection] = useState([]); // List of "pIdx-cIdx" strings
+    const selectionRef = useRef([]);
+    useEffect(() => { selectionRef.current = selection; }, [selection]);
+    
+    const [selectedPhrases, setSelectedPhrases] = useState([]); // List of pIdx
+    const [isBusy, setIsBusy] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isSyncEnabled, setIsSyncEnabled] = useState(false); // Was missing!
+    const [statusText, setStatusText] = useState('Ready');
+    const [editingWord, setEditingWord] = useState(null); // { clip, pIdx, cIdx }
+
+    const isContiguous = (indices) => {
+        if (indices.length < 2) return true;
+        const sorted = [...indices].sort((a, b) => a - b);
+        for (let i = 0; i < sorted.length - 1; i++) {
+            if (sorted[i + 1] - sorted[i] !== 1) return false;
+        }
+        return true;
+    };
+
+    // --- Actions ---
+
+    const handleSplit = async (pIdx, cIdx) => {
+        try {
+            setIsBusy(true);
+            setStatusText('Splitting phrase...');
+            const phrase = timelineMap[pIdx];
+            const clipToSplit = phrase.clips[cIdx];
+            
+            const result = await callJSX('sm_tools_split_v28', {
+                trackIndex: clipToSplit.track,
+                clipIndex: clipToSplit.index,
+                splitAtWordIdx: cIdx
+            });
+
+            if (result.status === 'Complete') {
+                await refreshTimeline();
+            } else {
+                alert('Split failed: ' + (result.message || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('Split error:', e);
+        } finally {
+            setIsBusy(false);
+            setStatusText('Ready');
+        }
+    };
+
+    const refreshTimeline = async () => {
+        try {
+            setIsBusy(true);
+            setStatusText('Scanning timeline...');
+            const response = await callJSX('getTimelinePhraseMap', {});
+            setTimelineMap(Array.isArray(response) ? response : []);
+            setSelection([]);
+            setActiveClip(null);
+            setActiveClipId(null);
+            setInspectorProps([]);
+            setIsBusy(false);
+            setStatusText('Ready');
+        } catch (e) {
+            console.error('Refresh failed:', e);
+            setIsBusy(false);
+            setStatusText('Scan Failed');
+        }
+    };
+
+    const handleBubbleClick = async (clip, id, event) => {
+        event.stopPropagation();
+        callJSX('setPlayheadTime', { seconds: clip.start + 0.01 });
+
+        if (event.shiftKey) {
+            setSelection(prev => prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]);
+        } else {
+            setSelection([id]);
+            setSelectedPhrases([]); // Clear phrase selection
+            setActiveClip(clip);
+            setActiveClipId(id);
+
+            // Fetch Properties
+            try {
+                setIsBusy(true);
+                const props = await callJSX('inspectMogrtProperties', { trackIndex: clip.track, clipIndex: clip.index });
+                setInspectorProps(props);
+                setIsBusy(false);
+            } catch (e) {
+                console.error('Props fetch failed:', e);
+                setIsBusy(false);
+            }
+        }
+    };
+
+    const handlePropertyUpdate = (name, value) => {
+        if (isSyncEnabled && selection.length > 1) {
+            setIsSyncing(true);
+            callJSX('broadcastPropertyUpdate', {
+                propName: name,
+                value: value,
+                targetIDs: selection
+            }).then(() => setTimeout(() => setIsSyncing(false), 800));
+        } else if (activeClip) {
+            callJSX('updateMogrtProperty', {
+                propName: name,
+                value: value,
+                trackIndex: activeClip.track,
+                clipIndex: activeClip.index
+            });
+        }
+        
+        // Optimistic UI update
+        setInspectorProps(prev => prev.map(p => p.displayName === name ? { ...p, value } : p));
+    };
+
+    const handleLock = (pIdx, isLocked) => {
+        setTimelineMap(prev => {
+            const newMap = [...prev];
+            newMap[pIdx].isLocked = isLocked;
+            return newMap;
+        });
+    };
+
+    const handlePhraseSelect = (pIdx, event) => {
+        if (event) event.stopPropagation();
+        
+        if (event && event.shiftKey) {
+            setSelectedPhrases(prev => {
+                const newList = prev.includes(pIdx) ? prev.filter(idx => idx !== pIdx) : [...prev, pIdx];
+                return newList.sort((a, b) => a - b);
+            });
+        } else {
+            setSelectedPhrases([pIdx]);
+            setSelection([]); // Clear bubble selection
+            setActiveClip(null);
+            setActiveClipId(null);
+        }
+    };
+
+    const handleMergePhrases = async () => {
+        if (selectedPhrases.length < 2) return;
+        try {
+            setIsBusy(true);
+            setStatusText('Merging phrases...');
+            const selectedClips = [];
+            selectedPhrases.forEach(pIdx => {
+                timelineMap[pIdx].clips.forEach(clip => {
+                    selectedClips.push({ trackIndex: clip.track, clipIndex: clip.index });
+                });
+            });
+            const result = await callJSX('sm_tools_join_v28', { selectedClips });
+            if (result.status === 'Complete') {
+                await refreshTimeline();
+                setSelectedPhrases([]);
+            } else {
+                alert('Merge failed: ' + (result.message || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('Merge error:', e);
+        } finally {
+            setIsBusy(false);
+            setStatusText('Ready');
+        }
+    };
+
+    const handleBatchAction = async (actionType) => {
+        if (selectedPhrases.length < 2) return;
+        try {
+            setIsBusy(true);
+            setStatusText(`Executing ${actionType}...`);
+            
+            if (actionType === 'syncStyle') {
+                const sourcePhrase = timelineMap[selectedPhrases[0]];
+                const firstClip = sourcePhrase.clips[0];
+                const props = await callJSX('inspectMogrtProperties', { trackIndex: firstClip.track, clipIndex: firstClip.index });
+                
+                const targetIDs = [];
+                selectedPhrases.forEach(pIdx => {
+                    timelineMap[pIdx].clips.forEach(clip => {
+                        targetIDs.push(`${pIdx}-${timelineMap[pIdx].clips.indexOf(clip)}`);
+                    });
+                });
+
+                for (const p of props) {
+                    if (p.displayName.startsWith('\u24e2') || p.displayName.startsWith('\u24e3')) { 
+                        await callJSX('broadcastPropertyUpdate', {
+                            propName: p.displayName,
+                            value: p.value,
+                            targetIDs: targetIDs
+                        });
+                    }
+                }
+            }
+
+            setStatusText('Batch Update Complete');
+            setTimeout(() => setStatusText('Ready'), 2000);
+        } catch (e) {
+            console.error('Batch error:', e);
+            setStatusText('Batch Failed');
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
+    const handleWordEditSubmit = async (newText) => {
+        if (!editingWord) return;
+        try {
+            setIsBusy(true);
+            setStatusText('Updating word...');
+            await callJSX('updateMogrtProperty', {
+                propName: '\u24c9 Text Input',
+                value: newText,
+                trackIndex: editingWord.clip.track,
+                clipIndex: editingWord.clip.index
+            });
+            await refreshTimeline();
+            setEditingWord(null);
+        } catch (e) {
+            console.error('Edit failed:', e);
+        } finally {
+            setIsBusy(false);
+            setStatusText('Ready');
+        }
+    };
+
+    const handleWordTransfer = async (evt) => {
+        const { item, from, to, oldIndex, newIndex } = evt;
+        const sourcePhraseIdx = parseInt(from.dataset.phraseId);
+        const targetPhraseIdx = parseInt(to.dataset.phraseId);
+
+        // Rule: Only adjacent phrases allowed
+        if (Math.abs(sourcePhraseIdx - targetPhraseIdx) !== 1) {
+            await refreshTimeline(); // Forces Sortable to revert visually
+            return;
+        }
+
+        try {
+            setIsBusy(true);
+            setStatusText('Performing word surgery...');
+
+            // Collect selected clips for the surgery
+            // Rule: We use the current 'selection' state (which contains pIdx-cIdx strings)
+            const selectedClips = [];
+            
+            // If the dragged item is part of the selection, move the whole selection
+            // Otherwise, just move the single item
+            const draggedId = item.dataset.clipId;
+            const surgeryIds = selection.includes(draggedId) ? selection : [draggedId];
+
+            // Rule: Selection must be contiguous (adjacent) within the same phrase
+            const indices = surgeryIds.map(id => parseInt(id.split('-')[1])).sort((a, b) => a - b);
+            for (let i = 0; i < indices.length - 1; i++) {
+                if (indices[i + 1] - indices[i] !== 1) {
+                    alert('Surgery restricted: Only adjacent words can be moved as a group.');
+                    await refreshTimeline();
+                    return;
+                }
+            }
+
+            // Rule: Auto-inject the TARGET phrase clips to satisfy legacy surgery rules
+            // The backend requires ONE phrase fully selected and the OTHER partially.
+            const targetPhrase = timelineMap[targetPhraseIdx];
+            targetPhrase.clips.forEach(clip => {
+                selectedClips.push({ trackIndex: clip.track, clipIndex: clip.index });
+            });
+
+            // Add the DRAGGED (Source) clips
+            surgeryIds.forEach(id => {
+                const [pIdx, cIdx] = id.split('-').map(Number);
+                // Only add if it's not already in the target (though it shouldn't be)
+                if (pIdx !== targetPhraseIdx) {
+                    const clip = timelineMap[pIdx].clips[cIdx];
+                    selectedClips.push({ trackIndex: clip.track, clipIndex: clip.index });
+                }
+            });
+
+            // Trigger the professional Split & Join backend
+            const result = await callJSX('sm_tools_split_join_v28', { selectedClips });
+            
+            if (result.status === 'Complete') {
+                await refreshTimeline();
+            } else {
+                alert('Surgery failed: ' + (result.message || 'Unknown error'));
+                await refreshTimeline();
+            }
+        } catch (e) {
+            console.error('Surgery error:', e);
+            await refreshTimeline();
+        } finally {
+            setIsBusy(false);
+            setStatusText('Ready');
+        }
+    };
+
+    // Listen for SortableJS wordTransfer events
+    useEffect(() => {
+        const listener = (e) => handleWordTransfer(e.detail);
+        window.addEventListener('wordTransfer', listener);
+        return () => window.removeEventListener('wordTransfer', listener);
+    }, [timelineMap]);
+
+    // Initial Load
+    useEffect(() => {
+        refreshTimeline();
+    }, []);
+
+    const filteredProps = useMemo(() => {
+        return inspectorProps.filter(p => p.displayName.toLowerCase().includes(searchFilter.toLowerCase()));
+    }, [inspectorProps, searchFilter]);
+
+    return (
+        <div id="cc-app-container" onClick={() => { setSelection([]); setSelectedPhrases([]); setActiveClip(null); setActiveClipId(null); }}>
+            {/* Toolbar */}
+            <div id="cc-toolbar" onClick={e => e.stopPropagation()}>
+                <span className="cc-toolbar-title">⚛️ Command Center (React)</span>
+                <button className="cc-btn" onClick={refreshTimeline} disabled={isBusy}>↻ Refresh</button>
+                <button 
+                    className={`cc-btn ${isSyncEnabled ? 'cc-btn-primary' : ''}`} 
+                    onClick={() => setIsSyncEnabled(!isSyncEnabled)}
+                >
+                    ⟳ Sync {isSyncEnabled ? 'ON' : 'OFF'}
+                </button>
+                <button 
+                    className="cc-btn" 
+                    onClick={handleMergePhrases}
+                    disabled={selectedPhrases.length < 2 || isBusy}
+                >
+                    ⊕ Merge {selectedPhrases.length > 0 ? `(${selectedPhrases.length})` : ''}
+                </button>
+            </div>
+
+            {/* Navigator */}
+            <div id="cc-navigator" onClick={e => e.stopPropagation()}>
+                {timelineMap.length === 0 ? (
+                    <div className="cc-inspector-empty">
+                        <span className="cc-empty-icon">📋</span>
+                        <span>No phrases found.<br/>Click <strong>↻ Refresh</strong> to scan.</span>
+                    </div>
+                ) : (
+                    timelineMap.map((phrase, pIdx) => (
+                        <PhraseCard 
+                            key={pIdx}
+                            phrase={phrase}
+                            pIdx={pIdx}
+                            activeClipId={activeClipId}
+                            selection={selection}
+                            isSyncing={isSyncing}
+                            onBubbleClick={handleBubbleClick}
+                            onBubbleEdit={(clip, pIdx, cIdx) => setEditingWord({ clip, pIdx, cIdx, text: clip.text })}
+                            onLock={handleLock}
+                            onPhraseSelect={handlePhraseSelect}
+                            onSplit={handleSplit}
+                            isPhraseSelected={selectedPhrases.includes(pIdx)}
+                            selectionRef={selectionRef}
+                            timelineMapRef={timelineMapRef}
+                        />
+                    ))
+                )}
+            </div>
+
+            {/* Floating Context Toolbar */}
+            <AnimatePresence>
+                {selectedPhrases.length > 1 && (
+                    <motion.div 
+                        initial={{ y: 100, opacity: 0, x: '-50%' }}
+                        animate={{ y: 0, opacity: 1, x: '-50%' }}
+                        exit={{ y: 100, opacity: 0, x: '-50%' }}
+                        id="cc-floating-toolbar"
+                    >
+                        <div className="cc-floating-count">{selectedPhrases.length} PHRASES</div>
+                        {isContiguous(selectedPhrases) && (
+                            <button className="cc-floating-btn" onClick={handleMergePhrases}>
+                                <span>⊕</span> Merge
+                            </button>
+                        )}
+                        <button className="cc-floating-btn" onClick={() => handleBatchAction('syncStyle')}>
+                            <span>⟳</span> Sync Style
+                        </button>
+                        <button className="cc-floating-btn danger" onClick={() => setSelectedPhrases([])}>
+                            <span>✕</span> Clear
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Word Edit Overlay */}
+            <AnimatePresence>
+                {editingWord && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        id="cc-edit-overlay"
+                        onClick={() => setEditingWord(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="cc-edit-modal"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="cc-edit-header">Edit Word</div>
+                            <input 
+                                id="cc-word-edit-input"
+                                autoFocus
+                                type="text" 
+                                defaultValue={editingWord.text}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') handleWordEditSubmit(e.target.value);
+                                    if (e.key === 'Escape') setEditingWord(null);
+                                }}
+                            />
+                            <div className="cc-edit-actions">
+                                <button onClick={() => setEditingWord(null)}>Cancel</button>
+                                <button className="primary" onClick={() => handleWordEditSubmit(document.getElementById('cc-word-edit-input').value)}>Save</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Inspector */}
+            <div id="cc-inspector">
+                <div className="cc-inspector-header">
+                    <div className="cc-inspector-title">{activeClip ? `Edit: "${activeClip.text}"` : 'No Selection'}</div>
+                    <div className="cc-inspector-subtitle">
+                        {activeClipId ? `Phrase ${parseInt(activeClipId.split('-')[0]) + 1} | Time: ${formatTime(activeClip.start)}` : 'Click a word bubble to inspect'}
+                    </div>
+                </div>
+
+                <div className="cc-search-bar">
+                    <span className="cc-search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        placeholder="Filter properties..." 
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                    />
+                </div>
+
+                <div id="cc-property-list">
+                    {!activeClip ? (
+                        <div className="cc-inspector-empty">
+                            <span className="cc-empty-icon">🎛️</span>
+                            <span>Select a word bubble to<br/>view its properties</span>
+                        </div>
+                    ) : (
+                        filteredProps.map((prop, idx) => (
+                            <PropertyControl 
+                                key={idx} 
+                                prop={prop} 
+                                onUpdate={handlePropertyUpdate}
+                                isSyncEnabled={isSyncEnabled}
+                            />
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Status Bar */}
+            <div className="cc-status-bar">
+                <span className={`cc-status-dot ${isBusy ? 'is-busy' : ''}`}></span>
+                <span>{statusText}</span>
+                <span style={{ marginLeft: 'auto' }}>{selection.length} selected</span>
+            </div>
+        </div>
+    );
+};
+
+</script>
+-->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        (function ($, document) {
+
+            // get tallest tab__content element
+            let height = -1;
+
+            $('.tab__content').each(function () {
+                height = height > $(this).outerHeight() ? height : $(this).outerHeight();
+                $(this).css('position', 'absolute');
+            });
+
+            // set height of tabs + top offset
+            $('[data-tabs]').css('min-height', height + 40 + 'px');
+
+        }(jQuery, document));
+
+    });
+
+    /*     (function () {
+                // Get all elements with the class 'tab__content'
+                let tabContents = document.querySelectorAll('.tab__content');
+    
+                // Initialize the maximum height
+                let maxHeight = -1;
+    
+                // Loop through each tab content element
+                tabContents.forEach(function (element) {
+                    // Calculate the outer height of the element
+                    let elementHeight = element.getBoundingClientRect().height;
+    
+                    // Update maxHeight if the current element's height is greater
+                    maxHeight = elementHeight > maxHeight ? elementHeight : maxHeight;
+    
+                    // Set the position style to 'absolute'
+                    element.style.position = 'absolute';
+                });
+    
+                // Set the minimum height of elements with the attribute 'data-tabs'
+                let tabs = document.querySelectorAll('[data-tabs]');
+                tabs.forEach(function (tab) {
+                    tab.style.minHeight = maxHeight + 40 + 'px';
+                });
+            })(); */
+
+</script>
+
+
+<script>
+
+    function dodrop(event) {
+
+        /*       var myTeaxtValue = document.getElementById("longCSV").value;
+              console.log(myTeaxtValue); */
+
+
+
+        console.log(event);
+        console.log(event.srcElement.id);
+        var dt = event.dataTransfer;
+        console.log(dt);
+        var files = dt.files;
+        console.log(files);
+
+        var count = files.length;
+
+        var myFile = files[0];
+        var myObj = {
+            sourceID: event.srcElement.id,
+            fileData: myFile,
+        }
+
+        console.log(myObj);
+
+        output(myObj);
+
+    }
+
+    function output(myData) {
+        console.log(myData);
+        //var parseData = JSON.parse(myData);
+        var myFileData = myData.fileData;
+        var myFilePath = myFileData.path;
+        console.log(myFilePath);
+        var mySourceID = myData.sourceID;
+        console.log(mySourceID);
+        document.getElementById(mySourceID).value = myFilePath;
+    }
+
+</script>
+
+
+<script>
+    var slider = document.getElementById("range-slider__range");
+    var rangeSliderValue = document.getElementById("range-slider__value");
+
+    var rangeAspectRatio = document.getElementById("rangeAspectRatio");
+
+    rangeSliderValue.innerHTML = "20 (9x16)";
+
+
+    // This function input current value in span and add progress colour in range
+    slider.oninput = function () {
+
+        var aspectRatio;
+        if (this.value <= 25) {
+            aspectRatio = " (9x16)";
+        }
+        if (this.value > 25 && this.value <= 50) {
+            aspectRatio = " (1x1)";
+        }
+        if (this.value > 50) {
+            aspectRatio = " (16x9)";
+        }
+
+        rangeSliderValue.innerHTML = this.value + aspectRatio;
+        //var value = (this.value - this.min) / (this.max - this.min) * 100;
+        //this.style.background = 'linear-gradient(to right, #29BFBE 0%, #29BFBE ' + value + '%, #d7dcdf ' + value + '%, #d7dcdf 100%)'
+        /* if(this.value <= 25){
+          rangeAspectRatio.innerHTML = "9x16";
+        }
+        if(this.value > 25 && this.value <= 50){
+          rangeAspectRatio.innerHTML = "1x1";
+        }
+        if(this.value > 50){
+          rangeAspectRatio.innerHTML = "16x9";
+        } */
+    }
+
+
+</script>

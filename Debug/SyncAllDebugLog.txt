@@ -1,0 +1,61 @@
+=== SYNC OPERATION LOG (TEXT) ===
+Date: 6/30/2026, 12:38:24 PM
+
+--- RAW EXTRACTED MASTER DATA ---
+[
+  {
+    "index": 0,
+    "displayName": "Ⓣ Word Progression",
+    "value": 5
+  },
+  {
+    "index": 1,
+    "displayName": "Ⓣ Text Input",
+    "value": "{\"capPropFontEdit\":true,\"capPropFontFauxStyleEdit\":true,\"capPropFontSizeEdit\":true,\"capPropTextRunCount\":1,\"fontEditValue\":[\"ITCAvantGardeGothicPro-Book\"],\"fontFSAllCapsValue\":[false],\"fontFSBoldValue\":[true],\"fontFSItalicValue\":[false],\"fontFSSmallCapsValue\":[false],\"fontSizeEditValue\":[68],\"fontTextRunLength\":[28],\"textEditValue\":\"Waste of Time samajhte hain.\"}"
+  },
+  {
+    "index": 2,
+    "displayName": "🔲 -  LOCAL TEXT SETTINGS  Ⓣ",
+    "value": "862c19fe-9a69-48bd-82b0-814c5f7292b4;c5540778-d6d1-49a8-8a36-638542857522;177732dc-4d30-4eef-ad40-a5a369ba3aa8;27660f49-e349-4249-9921-6280130ac4f8;d05cad08-d795-4dc9-a3d9-fb1c8b31cf3d;"
+  },
+  {
+    "index": 3,
+    "displayName": "Ⓣ Emphasized Word 1",
+    "value": 3
+  },
+  {
+    "index": 4,
+    "displayName": "Ⓣ Emphasized Word 2",
+    "value": 1
+  },
+  {
+    "index": 5,
+    "displayName": "Ⓣ Emphasis Tracking",
+    "value": 0.1
+  },
+  {
+    "index": 6,
+    "displayName": "Ⓣ Italicised Word",
+    "value": 0
+  },
+  {
+    "index": 7,
+    "displayName": "Ⓣ Italicised Range",
+    "value": 0
+  }
+]
+
+--- FILTERED DATA SENT TO PREMIERE ---
+[
+  {
+    "index": 1,
+    "displayName": "Ⓣ Text Input",
+    "value": "{\"capPropFontEdit\":true,\"capPropFontFauxStyleEdit\":true,\"capPropFontSizeEdit\":true,\"capPropTextRunCount\":1,\"fontEditValue\":[\"ITCAvantGardeGothicPro-Book\"],\"fontFSAllCapsValue\":[false],\"fontFSBoldValue\":[true],\"fontFSItalicValue\":[false],\"fontFSSmallCapsValue\":[false],\"fontSizeEditValue\":[68],\"fontTextRunLength\":[28],\"textEditValue\":\"Waste of Time samajhte hain.\"}"
+  }
+]
+
+--- EXTENDSCRIPT BATCH RESULT ---
+{
+  "status": "Complete",
+  "count": 5
+}

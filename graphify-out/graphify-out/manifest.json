@@ -1,0 +1,297 @@
+{
+  "C:\\Swastik Development\\FreeXan Development\\.claude\\settings.local.json": {
+    "mtime": 1779691841.7095191,
+    "ast_hash": "cc5b62282d02cabcb825a76dcd64f5de",
+    "semantic_hash": "cc5b62282d02cabcb825a76dcd64f5de"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\add_column.ps1": {
+    "mtime": 1780393172.9884424,
+    "ast_hash": "6085017dd228a95dbd6a68d08a11a51f",
+    "semantic_hash": "6085017dd228a95dbd6a68d08a11a51f"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\audioDb.js": {
+    "mtime": 1780486096.0069091,
+    "ast_hash": "6c715d73c7c30f79d7b69cf53a3b9ad5",
+    "semantic_hash": "6c715d73c7c30f79d7b69cf53a3b9ad5"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\audioWatcher.js": {
+    "mtime": 1780486109.9560068,
+    "ast_hash": "5342e77121c8d8ecc640f280b3e58a9d",
+    "semantic_hash": "5342e77121c8d8ecc640f280b3e58a9d"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\cep-extension\\CSInterface.js": {
+    "mtime": 1779361137.1272252,
+    "ast_hash": "111f3e3437ac67cb23aea3c46aed43ac",
+    "semantic_hash": "111f3e3437ac67cb23aea3c46aed43ac"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\cep-extension\\audio.js": {
+    "mtime": 1780488452.0312014,
+    "ast_hash": "bbee6bd61fbc7502812ec60d3cff5a2c",
+    "semantic_hash": "bbee6bd61fbc7502812ec60d3cff5a2c"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\cep-extension\\ext.js": {
+    "mtime": 1780488527.2751765,
+    "ast_hash": "e991ef8e800e2a1f149f604f0e8386bf",
+    "semantic_hash": "e991ef8e800e2a1f149f604f0e8386bf"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\cep-extension\\hostscript.jsx": {
+    "mtime": 1779793792.9225857,
+    "ast_hash": "b5f9404d0a5c30a7223ef54023c4094a",
+    "semantic_hash": "b5f9404d0a5c30a7223ef54023c4094a"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\db.js": {
+    "mtime": 1780398871.956267,
+    "ast_hash": "be6bf935f0433c1d233481700bde8c10",
+    "semantic_hash": "be6bf935f0433c1d233481700bde8c10"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\main.js": {
+    "mtime": 1780486142.8944309,
+    "ast_hash": "28ec8bd37b9f6419be93f87bf3bad4d8",
+    "semantic_hash": "28ec8bd37b9f6419be93f87bf3bad4d8"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\nodemon.json": {
+    "mtime": 1779706271.7593563,
+    "ast_hash": "d896d3f24d2eb26d3b1e616a84952124",
+    "semantic_hash": "d896d3f24d2eb26d3b1e616a84952124"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\package.json": {
+    "mtime": 1780398998.7686517,
+    "ast_hash": "8c16a8051dbd2dd84b5b9966d441e2b9",
+    "semantic_hash": "8c16a8051dbd2dd84b5b9966d441e2b9"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\preload.js": {
+    "mtime": 1780487153.0499856,
+    "ast_hash": "4b34735304e23454bdfc14b5580733e6",
+    "semantic_hash": "4b34735304e23454bdfc14b5580733e6"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\renderer\\app.js": {
+    "mtime": 1780487138.6104822,
+    "ast_hash": "380376ea7ef1617ddfa785f3c0b16392",
+    "semantic_hash": "380376ea7ef1617ddfa785f3c0b16392"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\renderer\\overlay.js": {
+    "mtime": 1780054282.8566291,
+    "ast_hash": "aaa9535d61cc0227ec224b3a4db1bcaa",
+    "semantic_hash": "aaa9535d61cc0227ec224b3a4db1bcaa"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\scripts\\add-suggestion-columns.js": {
+    "mtime": 1780395512.369459,
+    "ast_hash": "ec69abf415f992aebaad6cebdc9834c9",
+    "semantic_hash": "ec69abf415f992aebaad6cebdc9834c9"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\scripts\\find-suggestions.js": {
+    "mtime": 1780397142.072963,
+    "ast_hash": "e1923502d4a50c747b2f52993b0cf7ce",
+    "semantic_hash": "e1923502d4a50c747b2f52993b0cf7ce"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\scripts\\seed-db.js": {
+    "mtime": 1779526091.3780959,
+    "ast_hash": "9f8f4e8c1721e5b661876117ca6f243a",
+    "semantic_hash": "9f8f4e8c1721e5b661876117ca6f243a"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Audio FreeXan Feature List.md": {
+    "mtime": 1780551652.2111328,
+    "ast_hash": "7ae1be6db3897c1549cc693a5c556ccc",
+    "semantic_hash": "7ae1be6db3897c1549cc693a5c556ccc"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Brand Guidelines\\Freexan Logo Master.svg.md": {
+    "mtime": 1779518910.601413,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Brand Guidelines\\free_xan_complete_brand_guidelines.md": {
+    "mtime": 1779517113.543878,
+    "ast_hash": "8ff77571035ac0e44558f8c22ab870b9",
+    "semantic_hash": "8ff77571035ac0e44558f8c22ab870b9"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\CLAUDE.md": {
+    "mtime": 1779690114.923593,
+    "ast_hash": "6b79b38b0513e5e43afcd83ac21554c7",
+    "semantic_hash": "6b79b38b0513e5e43afcd83ac21554c7"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\CODEBASE.md": {
+    "mtime": 1780485778.9970498,
+    "ast_hash": "559295f793effe55d2409593376e012a",
+    "semantic_hash": "559295f793effe55d2409593376e012a"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\cep-extension\\audio.html": {
+    "mtime": 1780488443.331715,
+    "ast_hash": "7ce621a897fe48a55c558b846242b088",
+    "semantic_hash": "7ce621a897fe48a55c558b846242b088"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\cep-extension\\panel.html": {
+    "mtime": 1780488618.8681774,
+    "ast_hash": "20b63396fd5d9fec21cc9d65efeb5e25",
+    "semantic_hash": "20b63396fd5d9fec21cc9d65efeb5e25"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\dev_out.txt": {
+    "mtime": 1779891287.1039796,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\AUDIO_UX_SPEC.md": {
+    "mtime": 1780554173.2273433,
+    "ast_hash": "413728c975ed731468399c0687028ccc",
+    "semantic_hash": "413728c975ed731468399c0687028ccc"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\FEATURE_GUIDE.md": {
+    "mtime": 1780405787.5902803,
+    "ast_hash": "c3a51c97de2b05a2617e807c22e47b48",
+    "semantic_hash": "c3a51c97de2b05a2617e807c22e47b48"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\FUTURE_UPDATES.md": {
+    "mtime": 1779691933.4456353,
+    "ast_hash": "164cbf63262a5033b82c8aef4735675b",
+    "semantic_hash": "164cbf63262a5033b82c8aef4735675b"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\RULEBOOK.md": {
+    "mtime": 1779701842.931716,
+    "ast_hash": "785e263c7946bc1313007fe3951884b6",
+    "semantic_hash": "785e263c7946bc1313007fe3951884b6"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\logs\\CHANGELOG.md": {
+    "mtime": 1780489049.6525626,
+    "ast_hash": "83defcdaf5df96cc26795c95f10f9fa7",
+    "semantic_hash": "83defcdaf5df96cc26795c95f10f9fa7"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\logs\\DEV_LOG.md": {
+    "mtime": 1780491513.0931647,
+    "ast_hash": "b7446a505aa5ac68a07da65260c0dc74",
+    "semantic_hash": "b7446a505aa5ac68a07da65260c0dc74"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\logs\\NAVIGATION_LOG.md": {
+    "mtime": 1780297577.0010004,
+    "ast_hash": "974736798116346bbedae1b4c05e4636",
+    "semantic_hash": "974736798116346bbedae1b4c05e4636"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\docs\\project_visualizer.html": {
+    "mtime": 1780553695.3356698,
+    "ast_hash": "7e073a74dab6b9979775019cccad6af6",
+    "semantic_hash": "7e073a74dab6b9979775019cccad6af6"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\electron-builder.yml": {
+    "mtime": 1780060496.4571223,
+    "ast_hash": "626c005d4ab9481dea4ff613cbdb85c1",
+    "semantic_hash": "626c005d4ab9481dea4ff613cbdb85c1"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\freexan_err.txt": {
+    "mtime": 1779890688.8040214,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\freexan_out.txt": {
+    "mtime": 1779890688.8040214,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\renderer\\index.html": {
+    "mtime": 1780486830.15503,
+    "ast_hash": "8d40a81bd290eff2267568aa25060327",
+    "semantic_hash": "8d40a81bd290eff2267568aa25060327"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\renderer\\overlay.html": {
+    "mtime": 1779366038.5615737,
+    "ast_hash": "9a38e6b46feedb84e8a7766d99b2b89b",
+    "semantic_hash": "9a38e6b46feedb84e8a7766d99b2b89b"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Brand Guidelines\\Freexan Logo Master.svg": {
+    "mtime": 1779519333.6472065,
+    "ast_hash": "393ce48603636fc199a5fced19532ff9",
+    "semantic_hash": "393ce48603636fc199a5fced19532ff9"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Brand Guidelines\\Icon.png": {
+    "mtime": 1779522701.3567293,
+    "ast_hash": "d9d804d7e75f898904edf06ddea640dc",
+    "semantic_hash": "d9d804d7e75f898904edf06ddea640dc"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Brand Guidelines\\Logo.png": {
+    "mtime": 1779517170.3753781,
+    "ast_hash": "34a0faff22543cbb6ebe49dd01ed518e",
+    "semantic_hash": "34a0faff22543cbb6ebe49dd01ed518e"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\Brand Guidelines\\Taskbar.png": {
+    "mtime": 1779522698.6188638,
+    "ast_hash": "fdb07be6db2cb4514fa5fb162ec174c3",
+    "semantic_hash": "fdb07be6db2cb4514fa5fb162ec174c3"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\3RD FAIL 2.png": {
+    "mtime": 1779777253.6777234,
+    "ast_hash": "676a6eba661e2dec43ecf0d96330f325",
+    "semantic_hash": "676a6eba661e2dec43ecf0d96330f325"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\3RD FAIL.png": {
+    "mtime": 1779777223.1528635,
+    "ast_hash": "fb992f5fdb98450350cb9f1db62d0b78",
+    "semantic_hash": "fb992f5fdb98450350cb9f1db62d0b78"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Idle Layout on startup.png": {
+    "mtime": 1779692211.9843242,
+    "ast_hash": "654ee34544b2906312b63fcbe71d765d",
+    "semantic_hash": "654ee34544b2906312b63fcbe71d765d"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-25 122349.png": {
+    "mtime": 1779692070.2712944,
+    "ast_hash": "185604104e569f1505a33a19941b7c54",
+    "semantic_hash": "185604104e569f1505a33a19941b7c54"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-25 180205.png": {
+    "mtime": 1779712345.531873,
+    "ast_hash": "c9abddf2d73a0b37f828b2dc95bc879b",
+    "semantic_hash": "c9abddf2d73a0b37f828b2dc95bc879b"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-25 180236.png": {
+    "mtime": 1779712365.4177277,
+    "ast_hash": "1c9f45723547f4e1c4524e2ca2a210b6",
+    "semantic_hash": "1c9f45723547f4e1c4524e2ca2a210b6"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-26 114330.png": {
+    "mtime": 1779776021.9640942,
+    "ast_hash": "a9bab8d8038b84438e703e3306d9c10b",
+    "semantic_hash": "a9bab8d8038b84438e703e3306d9c10b"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-26 115023.png": {
+    "mtime": 1779776502.3155673,
+    "ast_hash": "dd56c09f579f52b24f43db15f699598e",
+    "semantic_hash": "dd56c09f579f52b24f43db15f699598e"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-26 124835.png": {
+    "mtime": 1779779923.6117005,
+    "ast_hash": "b97d1c22341b7f11abfc69470b762fe4",
+    "semantic_hash": "b97d1c22341b7f11abfc69470b762fe4"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-26 161912.png": {
+    "mtime": 1779792595.3743272,
+    "ast_hash": "ceff4afc65e08e3c80bf048fd702edbd",
+    "semantic_hash": "ceff4afc65e08e3c80bf048fd702edbd"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-27 144209.png": {
+    "mtime": 1779873146.6712232,
+    "ast_hash": "6b955f240b3924520f4a358fd38e667f",
+    "semantic_hash": "6b955f240b3924520f4a358fd38e667f"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Screenshot 2026-05-27 183510.png": {
+    "mtime": 1779887131.2189486,
+    "ast_hash": "0a594070f1b5c1a9743662f7d015488a",
+    "semantic_hash": "0a594070f1b5c1a9743662f7d015488a"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\See Its not working.png": {
+    "mtime": 1779778415.180133,
+    "ast_hash": "3bd878440484bb484124b333814cfe8a",
+    "semantic_hash": "3bd878440484bb484124b333814cfe8a"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\Startup Error.webp": {
+    "mtime": 1779706379.9992537,
+    "ast_hash": "e055f944834a89d3b9f9ec36c4dc7332",
+    "semantic_hash": "e055f944834a89d3b9f9ec36c4dc7332"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\screenshots\\fail 4.png": {
+    "mtime": 1779777942.974007,
+    "ast_hash": "7560e6bea289d2f4e9dab70ae54176fa",
+    "semantic_hash": "7560e6bea289d2f4e9dab70ae54176fa"
+  },
+  "C:\\Swastik Development\\FreeXan Development\\tray_icon.png": {
+    "mtime": 1779522801.4559984,
+    "ast_hash": "06d9371fdce13194db02ea71ca92bdf7",
+    "semantic_hash": "06d9371fdce13194db02ea71ca92bdf7"
+  }
+}

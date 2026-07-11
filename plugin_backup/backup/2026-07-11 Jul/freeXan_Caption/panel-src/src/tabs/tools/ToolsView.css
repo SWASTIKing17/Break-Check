@@ -1,0 +1,111 @@
+/* ── Tools Tab Layout ───────────────────────────────────────────────────── */
+
+.fx-tools-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fx-space-xl);
+  padding-bottom: var(--fx-space-2xl);
+}
+
+.fx-tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fx-space-md);
+  background: var(--fx-bg-elev);
+  border: 1px solid var(--fx-border);
+  border-radius: var(--fx-radius-lg);
+  padding: var(--fx-space-lg);
+}
+
+.fx-tool-group__title {
+  font-family: var(--fx-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fx-text);
+  margin: 0;
+}
+
+.fx-tool-group__desc {
+  font-size: 12px;
+  color: var(--fx-text-dim);
+  margin: 0 0 var(--fx-space-xs) 0;
+  line-height: 1.4;
+}
+
+.fx-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--fx-space-sm);
+}
+
+.fx-tool-row {
+  display: flex;
+  gap: var(--fx-space-sm);
+}
+
+.fx-tool-row--input {
+  align-items: stretch;
+}
+
+/* ── Generic UI Components (will be extracted later if needed) ──────────── */
+
+.fx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--fx-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all var(--fx-duration) var(--fx-ease);
+  cursor: pointer;
+}
+
+.fx-btn i {
+  font-size: 11px;
+}
+
+.fx-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.fx-btn--primary {
+  background: var(--fx-accent);
+  color: #fff;
+}
+
+.fx-btn--primary:hover {
+  background: var(--fx-accent-glow);
+}
+
+.fx-btn--secondary {
+  background: var(--fx-bg-hot);
+  color: var(--fx-text);
+  border: 1px solid var(--fx-border);
+}
+
+.fx-btn--secondary:hover {
+  background: var(--fx-hairline-hot);
+  color: #fff;
+  border-color: var(--fx-hairline-lit);
+}
+
+.fx-input {
+  flex: 1;
+  height: 32px;
+  background: var(--fx-bg-deep);
+  border: 1px solid var(--fx-border);
+  border-radius: var(--fx-radius-sm);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--fx-text);
+  transition: border-color var(--fx-duration) var(--fx-ease);
+}
+
+.fx-input:focus {
+  border-color: var(--fx-accent);
+}

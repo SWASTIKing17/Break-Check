@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>freeXan Project Architecture Visualizer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Vis.js Network CDN -->
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #121214;
+      --card-bg: rgba(30, 30, 35, 0.6);
+      --card-border: rgba(153, 125, 255, 0.2);
+      --accent: #997DFF;
+      --accent-glow: rgba(153, 125, 255, 0.4);
+      --text: #f3f3f5;
+      --text-muted: #8a8a93;
+      --success: #10b981;
+      --error: #ef4444;
+      --main-proc: #3b82f6;
+      --renderer-proc: #f59e0b;
+      --db-color: #10b981;
+      --cep-color: #ec4899;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Background patterns */
+    .bg-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(var(--accent-glow) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px, 80px 80px, 80px 80px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    header {
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      background: rgba(18, 18, 20, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      box-shadow: 0 0 15px var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #121214;
+    }
+
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .brand h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-left: 10px;
+      border-left: 1px solid var(--text-muted);
+      padding-left: 10px;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      position: relative;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    #network-container {
+      flex: 1;
+      height: 100%;
+      cursor: grab;
+    }
+
+    #network-container:active {
+      cursor: grabbing;
+    }
+
+    /* Floating Panel / Sidebar */
+    .sidebar {
+      width: 420px;
+      background: rgba(22, 22, 26, 0.85);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+    }
+
+    .badge-main { background: rgba(59, 130, 246, 0.2); color: var(--main-proc); border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-renderer { background: rgba(245, 158, 11, 0.2); color: var(--renderer-proc); border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-db { background: rgba(16, 185, 129, 0.2); color: var(--db-color); border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-cep { background: rgba(236, 72, 153, 0.2); color: var(--cep-color); border: 1px solid rgba(236, 72, 153, 0.4); }
+    .badge-config { background: rgba(153, 125, 255, 0.2); color: var(--accent); border: 1px solid rgba(153, 125, 255, 0.4); }
+
+    .section-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .detail-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .detail-card p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #e3e3e6;
+    }
+
+    .flow-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .flow-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .flow-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    /* Floating Legend */
+    .legend {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      background: rgba(22, 22, 26, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 8;
+    }
+
+    .legend-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .quick-stats {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 15px;
+    }
+
+    .interactive-hint {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: rgba(153, 125, 255, 0.1);
+      border: 1px solid rgba(153, 125, 255, 0.3);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.8; }
+      50% { opacity: 0.4; }
+      100% { opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">f</div>
+      <h1>freeXan <span>Link</span></h1>
+      <span class="subtitle">Invisible Premiere Pro Infrastructure</span>
+    </div>
+    <div class="quick-stats">
+      <div>Nodes: <strong style="color: var(--accent)">14</strong></div>
+      <div>Connections: <strong style="color: var(--accent)">16</strong></div>
+      <div>App Version: <strong style="color: var(--text)">2.6.0</strong></div>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <div class="interactive-hint">💡 Drag nodes to rearrange. Click a node to inspect architecture.</div>
+    <div id="network-container"></div>
+    <div class="legend">
+      <div class="legend-title">System Architecture Map</div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--main-proc)"></div>
+        <span>Electron Main Process</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--renderer-proc)"></div>
+        <span>Renderer Process (HTML/JS/CSS)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--db-color)"></div>
+        <span>Database & Storage</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--cep-color)"></div>
+        <span>Adobe CEP & ExtendScript</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--accent)"></div>
+        <span>Bridge / Preload Layer</span>
+      </div>
+    </div>
+
+    <!-- Sidebar Detail Inspector -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title" id="side-title">Select a node</div>
+        <div class="sidebar-subtitle" id="side-file-path">Click any module on the left map</div>
+        <span class="badge" id="side-badge" style="display: none;">Process</span>
+      </div>
+      <div class="sidebar-content" id="side-content">
+        <div class="section-title">Overview</div>
+        <div class="detail-card">
+          <p>This interactive diagram maps the connection channels, message protocols, and components within <strong>freeXan</strong>.</p>
+        </div>
+        <div class="section-title">Key Inter-process flows</div>
+        <ul class="flow-list">
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span><strong>WebSocket protocol (Port 4554)</strong>: Syncs Premiere's project path to main.js, and passes imported files back to CEP.</span>
+          </li>
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span><strong>IPC bridge</strong>: Protects app safety by isolating renderer files while allowing controlled file drops, sizing, and configuration.</span>
+          </li>
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span><strong>PowerShell monitor</strong>: Polls Premiere's window title as a native fallback to read the active project folder structure.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Node details mapping
+    const nodeDetails = {
+      'main.js': {
+        title: 'main.js',
+        path: '/main.js',
+        badge: 'Electron Main Process',
+        badgeClass: 'badge-main',
+        overview: 'The central orchestrator of freeXan. Manages window lifecycles (Main & Overlay), hosts the WebSocket server on port 4554, handles registry edits for Adobe CEP debug permissions, and runs the background PowerShell window title poller.',
+        details: [
+          'Creates background server on ws://localhost:4554',
+          'Monitors active windows every 2.5s using shell processes',
+          'Handles CEP auto-installation upon launching',
+          'Listens to IPC requests for directory parsing, folder structures, and settings edits'
+        ]
+      },
+      'preload.js': {
+        title: 'preload.js',
+        path: '/preload.js',
+        badge: 'IPC Bridge',
+        badgeClass: 'badge-config',
+        overview: 'Acts as the ContextIsolated bridge between unsafe web pages (renderer) and the Electron Main process. Exposes safe wrappers under `window.api` for drag-drop events, system files, window controls, and overlay movement.',
+        details: [
+          'Uses webUtils.getPathForFile() to extract secure file system paths on drops',
+          'Translates browser mouse actions into mouse-passthrough controls for Adobe integration',
+          'Restricts renderer access to native Electron internals for security'
+        ]
+      },
+      'db.js': {
+        title: 'db.js',
+        path: '/db.js',
+        badge: 'Database Layer',
+        badgeClass: 'badge-db',
+        overview: 'SQLite abstraction layer using `better-sqlite3`. Contains the database access methods, client mappings, and asset sync parameters. Ensures main process functions do not run raw SQL.',
+        details: [
+          'Saves configuration and structure templates directly in user AppData folder',
+          'Provides transactional integrity for project metadata and active import logs',
+          'Used by main.js and scripts/seed-db.js'
+        ]
+      },
+      'index.html': {
+        title: 'renderer/index.html',
+        path: '/renderer/index.html',
+        badge: 'Main Window UI',
+        badgeClass: 'badge-renderer',
+        overview: 'The main user-facing control panel (800x600 layout). Implements a clean, visual-rich dark UI with tabs for project creation ("Builder") and template/path settings ("Settings").',
+        details: [
+          'Styled with index.css for deep dark theme colors (#121214)',
+          'Glassmorphic backdrop-filters for modern, premium appearance',
+          'Allows custom templates selection and custom directory roots definition'
+        ]
+      },
+      'app.js': {
+        title: 'renderer/app.js',
+        path: '/renderer/app.js',
+        badge: 'Main UI Logic',
+        badgeClass: 'badge-renderer',
+        overview: 'Controls the main window client logic. Gathers settings data, updates live directory previews, validates names, and sends project scaffold parameters to main.js.',
+        details: [
+          'Loads settings via `get-config` on init',
+          'Listens for Builder form submissions to trigger project creation',
+          'Maintains local state for target folders structure visual previews'
+        ]
+      },
+      'overlay.html': {
+        title: 'renderer/overlay.html',
+        path: '/renderer/overlay.html',
+        badge: 'Floating Overlay',
+        badgeClass: 'badge-renderer',
+        overview: 'The frameless, always-on-top micro-window representing the draggable pill UI. Expands dynamically when hovering files, inviting immediate drag-drop media imports.',
+        details: [
+          'Idle state: 56x56px pill; Drag state: 244x84px file drop zone',
+          'Dynamically indicates active project status (green connection dot)',
+          'Utilizes mouse-passthrough toggles to permit clicking underlying Premiere windows'
+        ]
+      },
+      'overlay.js': {
+        title: 'renderer/overlay.js',
+        path: '/renderer/overlay.js',
+        badge: 'Overlay Logic',
+        badgeClass: 'badge-renderer',
+        overview: 'Manages the state transitions of the overlay window. Listens for drag events, issues resize instructions to main process, handles drop events, and flashes import completion status.',
+        details: [
+          'Increments sizes on dragEnter, shrinks back on dragLeave/drop',
+          'Notifies main process when files are dropped to initiate imports',
+          'Shows user feedback toast animations ("Imported N Files")'
+        ]
+      },
+      'ext.js': {
+        title: 'cep-extension/ext.js',
+        path: '/cep-extension/ext.js',
+        badge: 'CEP Extension Logic',
+        badgeClass: 'badge-cep',
+        overview: 'Runs as the client inside the Premiere Pro CEP environment. Establishes the WebSocket connection to main.js, broadcasts the active project path, and handles incoming file import messages.',
+        details: [
+          'Polls app.project.path every 1.5 seconds via JSX execution',
+          'Receives WebSocket import calls from main.js containing media file destinations',
+          'Invokes hostscript.jsx functions with local disk parameters'
+        ]
+      },
+      'hostscript.jsx': {
+        title: 'cep-extension/hostscript.jsx',
+        path: '/cep-extension/hostscript.jsx',
+        badge: 'Adobe ExtendScript',
+        badgeClass: 'badge-cep',
+        overview: 'Communicates directly with the Premiere Pro internal ExtendScript API. Performs the actual file insertion into bins, folder mapping, and active project state inspection.',
+        details: [
+          'Uses app.project.importFiles() to trigger native imports',
+          'Scaffolds folders inside the Premiere Pro Bin (e.g. 02_Footage, 03_Audio)',
+          'Executes silently without opening Premiere file pickers'
+        ]
+      },
+      'config.json': {
+        title: 'config.json',
+        path: '%APPDATA%/Roaming/project-builder-link/config.json',
+        badge: 'Configuration file',
+        badgeClass: 'badge-config',
+        overview: 'System storage containing user path variables, templates, custom folder layout, and auto-popup configurations.',
+        details: [
+          'Saved and loaded dynamically by db.js / main.js',
+          'Contains default arrays like ["01_Project_Files", "02_Footage", "03_Audio", "04_Assets", "05_Exports"]'
+        ]
+      },
+      'project-builder.db': {
+        title: 'project-builder.db',
+        path: '%APPDATA%/freeXan/project-builder.db',
+        badge: 'Database Storage',
+        badgeClass: 'badge-db',
+        overview: 'SQLite database binary storing project histories, clients details, folders structures templates, and metadata.',
+        details: [
+          'Enables prompt builder suggestions and custom client abbreviations mappings'
+        ]
+      },
+      'seed-db.js': {
+        title: 'scripts/seed-db.js',
+        path: '/scripts/seed-db.js',
+        badge: 'Seeder Script',
+        badgeClass: 'badge-db',
+        overview: 'Development script to seed database with sample clients, structures, and preferences.',
+        details: [
+          'Run manually with npm command `npm run seed`',
+          'Initializes database tables and fills default clients'
+        ]
+      }
+    };
+
+    // Define Network Graph
+    const nodes = new vis.DataSet([
+      { id: 1, label: 'main.js', title: 'Main Process Orchestrator', color: { background: '#1e3a8a', border: '#3b82f6', hover: '#3b82f6', highlight: '#3b82f6' }, shape: 'box', margin: 12, font: { color: '#f3f3f5', face: 'Outfit', size: 14 } },
+      { id: 2, label: 'preload.js', title: 'IPC Bridge Layer', color: { background: '#581c87', border: '#997DFF', hover: '#997DFF', highlight: '#997DFF' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      { id: 3, label: 'db.js', title: 'SQLite Database Controller', color: { background: '#064e3b', border: '#10b981', hover: '#10b981', highlight: '#10b981' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      
+      // Renderer Main
+      { id: 4, label: 'index.html', title: 'Main Window UI', color: { background: '#78350f', border: '#f59e0b', hover: '#f59e0b', highlight: '#f59e0b' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      { id: 5, label: 'app.js', title: 'Main Window Logic', color: { background: '#78350f', border: '#d97706', hover: '#d97706', highlight: '#d97706' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      
+      // Renderer Overlay
+      { id: 6, label: 'overlay.html', title: 'Overlay Drag-Drop Window', color: { background: '#78350f', border: '#f59e0b', hover: '#f59e0b', highlight: '#f59e0b' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      { id: 7, label: 'overlay.js', title: 'Overlay Logic State Machine', color: { background: '#78350f', border: '#d97706', hover: '#d97706', highlight: '#d97706' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      
+      // CEP / ExtendScript
+      { id: 8, label: 'ext.js', title: 'Premiere Panel WS Client', color: { background: '#701a75', border: '#ec4899', hover: '#ec4899', highlight: '#ec4899' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      { id: 9, label: 'hostscript.jsx', title: 'Premiere ExtendScript API', color: { background: '#701a75', border: '#d946ef', hover: '#d946ef', highlight: '#d946ef' }, shape: 'box', margin: 10, font: { color: '#f3f3f5', face: 'Outfit', size: 13 } },
+      
+      // Storage files
+      { id: 10, label: 'config.json', title: 'Settings Storage', color: { background: '#2e1065', border: '#997DFF', hover: '#997DFF', highlight: '#997DFF' }, shape: 'ellipse', font: { color: '#f3f3f5', face: 'Outfit', size: 11 } },
+      { id: 11, label: 'project-builder.db', title: 'SQLite File', color: { background: '#022c22', border: '#10b981', hover: '#10b981', highlight: '#10b981' }, shape: 'database', font: { color: '#f3f3f5', face: 'Outfit', size: 11 } },
+      { id: 12, label: 'seed-db.js', title: 'Seed Script', color: { background: '#064e3b', border: '#059669', hover: '#059669', highlight: '#059669' }, shape: 'box', margin: 8, font: { color: '#f3f3f5', face: 'Outfit', size: 12 } }
+    ]);
+
+    const edges = new vis.DataSet([
+      // Main process flows
+      { from: 1, to: 2, label: 'loads', arrows: 'to', color: { color: '#3b82f6', highlight: '#3b82f6' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      { from: 1, to: 3, label: 'imports', arrows: 'to', color: { color: '#3b82f6', highlight: '#3b82f6' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      { from: 1, to: 10, label: 'reads/writes', arrows: 'to-from', color: { color: '#997DFF', highlight: '#997DFF' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      
+      // WebSocket
+      { from: 1, to: 8, label: 'WS (port 4554)', arrows: 'to-from', dashes: true, color: { color: '#ec4899', highlight: '#ec4899' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      
+      // Preload exposes APIs
+      { from: 2, to: 5, label: 'exposes IPC', arrows: 'to', color: { color: '#997DFF', highlight: '#997DFF' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      { from: 2, to: 7, label: 'exposes IPC', arrows: 'to', color: { color: '#997DFF', highlight: '#997DFF' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      
+      // UI dependencies
+      { from: 4, to: 5, label: 'loads', arrows: 'to', color: { color: '#f59e0b', highlight: '#f59e0b' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      { from: 6, to: 7, label: 'loads', arrows: 'to', color: { color: '#f59e0b', highlight: '#f59e0b' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      
+      // DB connections
+      { from: 3, to: 11, label: 'SQLite driver', arrows: 'to-from', color: { color: '#10b981', highlight: '#10b981' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      { from: 12, to: 3, label: 'seeds data', arrows: 'to', color: { color: '#10b981', highlight: '#10b981' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } },
+      
+      // CEP connections
+      { from: 8, to: 9, label: 'evalScript()', arrows: 'to', color: { color: '#ec4899', highlight: '#ec4899' }, font: { color: '#f3f3f5', face: 'JetBrains Mono', size: 10 } }
+    ]);
+
+    const container = document.getElementById('network-container');
+    const data = { nodes: nodes, edges: edges };
+    const options = {
+      nodes: {
+        borderWidth: 2,
+        shadow: true,
+        font: {
+          color: '#f3f3f5',
+          size: 14,
+          face: 'Outfit'
+        }
+      },
+      edges: {
+        width: 2,
+        shadow: true,
+        smooth: {
+          type: 'cubicBezier',
+          forceDirection: 'horizontal',
+          roundness: 0.4
+        }
+      },
+      interaction: {
+        hover: true,
+        selectable: true,
+        selectConnectedEdges: true
+      },
+      physics: {
+        enabled: true,
+        solver: 'forceAtlas2Based',
+        forceAtlas2Based: {
+          gravitationalConstant: -50,
+          centralGravity: 0.01,
+          springLength: 100,
+          springConstant: 0.08
+        }
+      }
+    };
+
+    const network = new vis.Network(container, data, options);
+
+    // Sidebar Update Logic
+    network.on("selectNode", function (params) {
+      if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        const label = nodes.get(nodeId).label;
+        updateSidebar(label);
+      }
+    });
+
+    network.on("deselectNode", function () {
+      resetSidebar();
+    });
+
+    function updateSidebar(nodeLabel) {
+      const data = nodeDetails[nodeLabel];
+      if (!data) return;
+
+      document.getElementById('side-title').innerText = data.title;
+      document.getElementById('side-file-path').innerText = data.path;
+      
+      const badge = document.getElementById('side-badge');
+      badge.innerText = data.badge;
+      badge.className = 'badge ' + data.badgeClass;
+      badge.style.display = 'inline-block';
+
+      let detailsHtml = `
+        <div class="section-title">Overview</div>
+        <div class="detail-card" style="margin-bottom: 20px;">
+          <p>${data.overview}</p>
+        </div>
+        <div class="section-title">Key Responsibilities</div>
+        <ul class="flow-list">
+      `;
+
+      data.details.forEach(item => {
+        detailsHtml += `
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span>${item}</span>
+          </li>
+        `;
+      });
+
+      detailsHtml += '</ul>';
+      document.getElementById('side-content').innerHTML = detailsHtml;
+    }
+
+    function resetSidebar() {
+      document.getElementById('side-title').innerText = 'Select a node';
+      document.getElementById('side-file-path').innerText = 'Click any module on the left map';
+      document.getElementById('side-badge').style.display = 'none';
+      document.getElementById('side-content').innerHTML = `
+        <div class="section-title">Overview</div>
+        <div class="detail-card">
+          <p>This interactive diagram maps the connection channels, message protocols, and components within <strong>freeXan</strong>.</p>
+        </div>
+        <div class="section-title">Key Inter-process flows</div>
+        <ul class="flow-list">
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span><strong>WebSocket protocol (Port 4554)</strong>: Syncs Premiere's project path to main.js, and passes imported files back to CEP.</span>
+          </li>
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span><strong>IPC bridge</strong>: Protects app safety by isolating renderer files while allowing controlled file drops, sizing, and configuration.</span>
+          </li>
+          <li class="flow-item">
+            <div class="flow-dot"></div>
+            <span><strong>PowerShell monitor</strong>: Polls Premiere's window title as a native fallback to read the active project folder structure.</span>
+          </li>
+        </ul>
+      `;
+    }
+  </script>
+</body>
+</html>

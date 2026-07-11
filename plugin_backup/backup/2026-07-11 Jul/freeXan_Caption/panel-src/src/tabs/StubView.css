@@ -1,0 +1,32 @@
+/* ── Stub Tab Views ─────────────────────────────────────────────────────── */
+/* Shared styling for placeholder tab content during M1-M2 development.  */
+
+.fx-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--fx-space-md);
+  text-align: center;
+}
+
+.fx-stub__icon {
+  font-size: 28px;
+  color: var(--fx-text-deep);
+}
+
+.fx-stub__label {
+  font-family: var(--fx-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fx-text-dim);
+}
+
+.fx-stub__hint {
+  font-size: 11px;
+  color: var(--fx-text-deep);
+  max-width: 200px;
+}

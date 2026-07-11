@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubMachine | High-Density Architecture Nodes</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: rgba(22, 27, 34, 0.95);
+            --accent: #29bfbe;
+            --frontend: #00bcd4;
+            --backend: #f44336;
+            --logic: #ff9800;
+            --helper: #9c27b0;
+            --success: #4caf50;
+            --text: #c9d1d9;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            width: 100%;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .logo {
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        #dashboard {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: radial-gradient(circle at center, #161b22 0%, #0d1117 100%);
+            overflow: auto;
+        }
+
+        .mermaid-container {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            min-width: fit-content;
+        }
+
+        footer {
+            padding: 15px;
+            font-size: 11px;
+            opacity: 0.4;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+        }
+
+        /* Mermaid Styles */
+        .node rect { fill: #161b22 !important; stroke-width: 2px !important; rx: 8; ry: 8; }
+        .edgePath path { stroke-width: 2px !important; }
+        .cluster rect { fill: rgba(255,255,255,0.01) !important; stroke: rgba(255,255,255,0.1) !important; stroke-dasharray: 5,5; }
+        .label { color: #fff !important; font-size: 12px; font-family: 'Inter', sans-serif !important; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">SubMachine High-Density Nodes</div>
+        <div style="display: flex; gap: 20px; font-size: 11px;">
+            <span style="color: var(--frontend)">● Frontend</span>
+            <span style="color: var(--backend)">● Main Tool</span>
+            <span style="color: var(--helper)">● Helper Function</span>
+            <span style="color: var(--success)">● Surgical Action</span>
+        </div>
+    </header>
+
+    <div id="dashboard">
+        <div class="mermaid-container">
+            <div class="mermaid">
+                graph TD
+                    %% START
+                    User([User Performs Action])
+
+                    subgraph UI_Listeners ["Entry Points"]
+                        L1[Split Click]
+                        L2[Join Click]
+                        L3[Sync Click]
+                        L4[CC: Word Drag]
+                    end
+
+                    subgraph TOOLS_REF ["tools_refactor.js"]
+                        H_Split[handleSplitPhrase]
+                        H_Join[handleJoinPhrases]
+                        H_Sync[handleSyncGeneric]
+                    end
+
+                    subgraph CC_REACT ["command_center_react.js"]
+                        H_CC_Merge[handleMerge]
+                        H_CC_Transfer[handleWordTransfer]
+                    end
+
+                    subgraph TIMELINE_JSX ["timeline.jsx (Core)"]
+                        direction TB
+                        B_Split{sm_tools_split_v28}
+                        B_Join{sm_tools_join_v28}
+                        B_SJ{sm_tools_split_join_v28}
+                        
+                        subgraph HELPERS ["Internal Logic Workers"]
+                            W_Phrase[getPhraseClips]
+                            W_Style[extractMasterStyle]
+                            W_Move[moveClipToTrack]
+                            W_Color[getSafeAlternatingColor]
+                            W_Sliders[_setSpecificWordSliderSlots]
+                            W_Text[buildTextObj]
+                        end
+                    end
+
+                    subgraph SYNC_JSX ["sync.jsx (Core)"]
+                        B_SyncData[syncAllGetData]
+                        B_SyncApply[syncAll]
+                    end
+
+                    %% Connections
+                    User --> UI_Listeners
+                    L1 --> H_Split
+                    L2 --> H_Join
+                    L3 --> H_Sync
+                    L4 --> H_CC_Transfer
+
+                    H_Split -- "evalScript" --> B_Split
+                    H_Join -- "evalScript" --> B_Join
+                    H_CC_Merge -- "evalScript" --> B_Join
+                    H_CC_Transfer -- "evalScript" --> B_SJ
+
+                    %% Granular Logic for Word Surgery
+                    B_SJ --> W_Phrase
+                    B_SJ --> W_Style
+                    B_SJ --> W_Text
+                    B_SJ --> W_Move
+                    B_SJ --> W_Sliders
+                    B_SJ --> W_Color
+
+                    %% Granular Logic for Split
+                    B_Split --> W_Phrase
+                    B_Split --> W_Style
+                    B_Split --> W_Move
+
+                    %% Sync Flow
+                    H_Sync -- "1. Capture" --> B_SyncData
+                    H_Sync -- "2. Apply" --> B_SyncApply
+
+                    %% Styling
+                    classDef frontend stroke:var(--frontend),stroke-width:2px;
+                    classDef backend stroke:var(--backend),stroke-width:3px;
+                    classDef helper stroke:var(--helper),stroke-width:2px;
+                    classDef action stroke:var(--success),stroke-width:2px;
+
+                    class H_Split,H_Join,H_Sync,H_CC_Merge,H_CC_Transfer frontend;
+                    class B_Split,B_Join,B_SJ,B_SyncApply backend;
+                    class W_Phrase,W_Style,W_Text,W_Color helper;
+                    class W_Move,W_Sliders action;
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2026 SubMachine Development | High-Density Architecture Map | Deep Logic Trace
+    </footer>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'dark',
+            flowchart: { 
+                curve: 'basis',
+                nodeSpacing: 50,
+                rankSpacing: 80
+            },
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>

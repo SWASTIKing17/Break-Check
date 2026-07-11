@@ -1,0 +1,21 @@
+{
+  "name": "freexan-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing freeXan ecosystem to Claude Code and other AI tools",
+  "type": "module",
+  "main": "server.js",
+  "bin": {
+    "freexan-mcp": "server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "license": "ISC",
+  "private": true
+}

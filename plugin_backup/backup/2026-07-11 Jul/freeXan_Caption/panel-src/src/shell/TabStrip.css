@@ -1,0 +1,42 @@
+/* ── Tab Strip ──────────────────────────────────────────────────────────── */
+
+.fx-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fx-text-dim);
+  border-radius: var(--fx-radius-md);
+  transition: color var(--fx-duration) var(--fx-ease),
+              background var(--fx-duration) var(--fx-ease);
+}
+
+.fx-tab i {
+  font-size: 11px;
+}
+
+.fx-tab:hover {
+  color: var(--fx-text-mute);
+  background: var(--fx-bg-hot);
+}
+
+.fx-tab--active {
+  color: var(--fx-text);
+}
+
+.fx-tab--active:hover {
+  color: var(--fx-text);
+}
+
+.fx-tab__indicator {
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--fx-accent);
+  border-radius: 1px;
+}

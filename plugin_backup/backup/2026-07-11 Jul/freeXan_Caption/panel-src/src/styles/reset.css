@@ -1,0 +1,78 @@
+/* ════════════════════════════════════════════════════════════════════════════
+ *  freeXan Caption — CSS Reset
+ *  Minimal reset for CEP panel environment.
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--fx-bg);
+  color: var(--fx-text);
+  font-family: var(--fx-font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--fx-accent);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  outline: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--fx-bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fx-hairline-hot);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fx-text-dim);
+}
+
+/* Disable text selection on UI chrome — allow in content areas via override */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}

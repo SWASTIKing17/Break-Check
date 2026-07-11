@@ -1,0 +1,42 @@
+/* ── Progress Bar ───────────────────────────────────────────────────────── */
+
+.fx-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--fx-space-md);
+  overflow: hidden;
+}
+
+.fx-progress-track {
+  height: 4px;
+  background: var(--fx-bg-hot);
+  border-radius: var(--fx-radius-pill);
+  overflow: hidden;
+}
+
+.fx-progress-fill {
+  height: 100%;
+  border-radius: var(--fx-radius-pill);
+}
+
+.fx-progress-fill--running {
+  background: var(--fx-accent);
+}
+
+.fx-progress-fill--success {
+  background: var(--fx-success);
+}
+
+.fx-progress-fill--error {
+  background: var(--fx-error);
+}
+
+.fx-progress-label {
+  font-family: var(--fx-font-mono);
+  font-size: 10px;
+  color: var(--fx-text-dim);
+  text-align: right;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}

@@ -1,0 +1,668 @@
+=== REPLACE OPERATION LOG ===
+Date: 6/20/2026, 12:11:06 PM
+
+--- RAW VARIATION DATA FROM MISTER BLOOMX ---
+[
+  {
+    "index": 0,
+    "displayName": "Ⓣ Word Progression",
+    "value": 1
+  },
+  {
+    "index": 1,
+    "displayName": "Ⓣ Text Input",
+    "value": "{\"capPropFontEdit\":true,\"capPropFontFauxStyleEdit\":true,\"capPropFontSizeEdit\":true,\"capPropTextRunCount\":1,\"fontEditValue\":[\"ChillaxVariable-Semibold\"],\"fontFSAllCapsValue\":[false],\"fontFSBoldValue\":[false],\"fontFSItalicValue\":[false],\"fontFSSmallCapsValue\":[false],\"fontSizeEditValue\":[100],\"fontTextRunLength\":[15],\"textEditValue\":\"Life Mein Aapki\"}"
+  },
+  {
+    "index": 2,
+    "displayName": "Master Transform",
+    "value": "199df3e6-5386-42ee-8120-aa8014f58037;4b603c65-349f-4101-8122-8f8aa907467f;90f933d9-8d9d-4982-b38f-13edc4e401e1;"
+  },
+  {
+    "index": 3,
+    "displayName": "Position",
+    "value": [
+      0.5,
+      0.85416668653488
+    ]
+  },
+  {
+    "index": 4,
+    "displayName": "Scale",
+    "value": [
+      0.03125,
+      0.03125
+    ]
+  },
+  {
+    "index": 5,
+    "displayName": "Rotation",
+    "value": 0
+  },
+  {
+    "index": 6,
+    "displayName": "Color & Style",
+    "value": "6085dc3c-e43c-4ed1-9361-7e613e8eb121;3b1cb8cc-f225-4a62-b9ae-b4a885fa2ca8;91be7113-0249-41cf-abde-1d9ef5f0ebd5;5560a893-c610-4192-a1cf-cf3516376af5;0984f09f-e7df-4126-9ec4-fd856da2e849;78207443-9d84-4a22-8fb1-70376e5a42e9;"
+  },
+  {
+    "index": 7,
+    "displayName": "Fill Color",
+    "value": [
+      1,
+      254,
+      254,
+      255
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 8,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      3,
+      4,
+      94
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 9,
+    "displayName": "Stroke Width",
+    "value": 0
+  },
+  {
+    "index": 10,
+    "displayName": "Drop Shadow",
+    "value": "faac683f-1c2f-43a9-86e8-91695b6e0b9e;756cbcf5-286e-44e1-8df6-5c284b91f24b;f9a3855b-2e5c-47fb-b6fb-1bea7567ab93;c6f60709-c385-4161-a9b3-0ae650c8eea5;23ca0c9d-02da-4f52-a562-b222e265d089;"
+  },
+  {
+    "index": 11,
+    "displayName": "Shadow Color",
+    "value": [
+      1,
+      3,
+      4,
+      94
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 12,
+    "displayName": "Opacity",
+    "value": 69.7
+  },
+  {
+    "index": 13,
+    "displayName": "Direction",
+    "value": 135
+  },
+  {
+    "index": 14,
+    "displayName": "Distance",
+    "value": 8
+  },
+  {
+    "index": 15,
+    "displayName": "Softness",
+    "value": 12
+  },
+  {
+    "index": 16,
+    "displayName": "Tracking",
+    "value": 0
+  },
+  {
+    "index": 17,
+    "displayName": "Unspoken Word Opacity",
+    "value": 100
+  },
+  {
+    "index": 18,
+    "displayName": "Current Word",
+    "value": "19f3b8cd-d0f5-45f1-82db-0be2e1cb1fc3;d41b6a2f-dff9-458b-8a9b-0686037a8090;612bef62-999a-41a3-96f8-0b590c89f8b2;eecb3c6a-1bed-4678-a3fa-70b9ecf57f59;545ae2ba-a840-4420-8dd6-e678053ad5e4;"
+  },
+  {
+    "index": 19,
+    "displayName": "Current Word Highlight",
+    "value": true
+  },
+  {
+    "index": 20,
+    "displayName": "Fill",
+    "value": [
+      1,
+      171,
+      255,
+      197
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 21,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      202,
+      241,
+      248
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 22,
+    "displayName": "Stroke Width",
+    "value": 0
+  },
+  {
+    "index": 23,
+    "displayName": "Scale",
+    "value": 0
+  },
+  {
+    "index": 24,
+    "displayName": "Unspoken Word",
+    "value": "0d752119-a1f6-4962-b71d-c21a079662ab;82fb1166-50bf-47ae-9593-3217e5f9d350;24d8d255-7c69-4810-8d20-4e2f1fbb5bf2;6a05cb53-a931-4bd1-aece-95ae7c95b255;384a98ad-eea5-48ae-b7b4-304779d34149;09880d61-36c5-4e75-bede-471a82403a8f;"
+  },
+  {
+    "index": 25,
+    "displayName": "Unspoken Word Highlight",
+    "value": false
+  },
+  {
+    "index": 26,
+    "displayName": "Opacity",
+    "value": 100
+  },
+  {
+    "index": 27,
+    "displayName": "Fill",
+    "value": [
+      1,
+      255,
+      84,
+      84
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 28,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 29,
+    "displayName": "Stroke Width",
+    "value": 100
+  },
+  {
+    "index": 30,
+    "displayName": "Scale",
+    "value": 0
+  },
+  {
+    "index": 31,
+    "displayName": "Background",
+    "value": "abbeda12-6f31-4478-a412-0c3c401b96aa;f8cbb436-499d-487b-a39c-1bc69d47dbad;0789c789-9915-41d8-8bb3-40ffd8a32b9c;284b40ab-12fa-49ef-994c-71b13623a0c8;905dfeaa-a5ec-4586-9ede-237340977623;448cc0ae-a868-4c84-b296-3bf34fe12fdb;16bfc63a-c34c-4c02-86fb-31d040af8afe;5576ca80-2ff7-451f-a5e0-bd473e375022;f5867738-8d5f-48f0-8ee6-436edc819439;"
+  },
+  {
+    "index": 32,
+    "displayName": "Enable Background",
+    "value": true
+  },
+  {
+    "index": 33,
+    "displayName": "Padding",
+    "value": [
+      0.02604166666667,
+      0.02604166666667
+    ]
+  },
+  {
+    "index": 34,
+    "displayName": "Roundness",
+    "value": 20.4
+  },
+  {
+    "index": 35,
+    "displayName": "Fill",
+    "value": [
+      1,
+      255,
+      0,
+      0
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 36,
+    "displayName": "Fill Opacity",
+    "value": 24.9
+  },
+  {
+    "index": 37,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      255,
+      0,
+      0
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 38,
+    "displayName": "Stroke Width",
+    "value": 9.3
+  },
+  {
+    "index": 39,
+    "displayName": "Stroke Opacity",
+    "value": 100
+  },
+  {
+    "index": 40,
+    "displayName": "Position",
+    "value": [
+      0,
+      -0.00885416666667
+    ]
+  }
+]
+
+--- FILTERED DATA SENT TO PREMIERE ---
+[
+  {
+    "index": 1,
+    "displayName": "Ⓣ Text Input",
+    "value": "{\"capPropFontEdit\":true,\"capPropFontFauxStyleEdit\":true,\"capPropFontSizeEdit\":true,\"capPropTextRunCount\":1,\"fontEditValue\":[\"ChillaxVariable-Semibold\"],\"fontFSAllCapsValue\":[false],\"fontFSBoldValue\":[false],\"fontFSItalicValue\":[false],\"fontFSSmallCapsValue\":[false],\"fontSizeEditValue\":[100],\"fontTextRunLength\":[15],\"textEditValue\":\"Life Mein Aapki\"}"
+  },
+  {
+    "index": 2,
+    "displayName": "Master Transform",
+    "value": "199df3e6-5386-42ee-8120-aa8014f58037;4b603c65-349f-4101-8122-8f8aa907467f;90f933d9-8d9d-4982-b38f-13edc4e401e1;"
+  },
+  {
+    "index": 6,
+    "displayName": "Color & Style",
+    "value": "6085dc3c-e43c-4ed1-9361-7e613e8eb121;3b1cb8cc-f225-4a62-b9ae-b4a885fa2ca8;91be7113-0249-41cf-abde-1d9ef5f0ebd5;5560a893-c610-4192-a1cf-cf3516376af5;0984f09f-e7df-4126-9ec4-fd856da2e849;78207443-9d84-4a22-8fb1-70376e5a42e9;"
+  },
+  {
+    "index": 7,
+    "displayName": "Fill Color",
+    "value": [
+      1,
+      254,
+      254,
+      255
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 8,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      3,
+      4,
+      94
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 9,
+    "displayName": "Stroke Width",
+    "value": 0
+  },
+  {
+    "index": 10,
+    "displayName": "Drop Shadow",
+    "value": "faac683f-1c2f-43a9-86e8-91695b6e0b9e;756cbcf5-286e-44e1-8df6-5c284b91f24b;f9a3855b-2e5c-47fb-b6fb-1bea7567ab93;c6f60709-c385-4161-a9b3-0ae650c8eea5;23ca0c9d-02da-4f52-a562-b222e265d089;"
+  },
+  {
+    "index": 11,
+    "displayName": "Shadow Color",
+    "value": [
+      1,
+      3,
+      4,
+      94
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 13,
+    "displayName": "Direction",
+    "value": 135
+  },
+  {
+    "index": 14,
+    "displayName": "Distance",
+    "value": 8
+  },
+  {
+    "index": 15,
+    "displayName": "Softness",
+    "value": 12
+  },
+  {
+    "index": 16,
+    "displayName": "Tracking",
+    "value": 0
+  },
+  {
+    "index": 17,
+    "displayName": "Unspoken Word Opacity",
+    "value": 100
+  },
+  {
+    "index": 18,
+    "displayName": "Current Word",
+    "value": "19f3b8cd-d0f5-45f1-82db-0be2e1cb1fc3;d41b6a2f-dff9-458b-8a9b-0686037a8090;612bef62-999a-41a3-96f8-0b590c89f8b2;eecb3c6a-1bed-4678-a3fa-70b9ecf57f59;545ae2ba-a840-4420-8dd6-e678053ad5e4;"
+  },
+  {
+    "index": 19,
+    "displayName": "Current Word Highlight",
+    "value": true
+  },
+  {
+    "index": 20,
+    "displayName": "Fill",
+    "value": [
+      1,
+      171,
+      255,
+      197
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 21,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      202,
+      241,
+      248
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 22,
+    "displayName": "Stroke Width",
+    "value": 0
+  },
+  {
+    "index": 24,
+    "displayName": "Unspoken Word",
+    "value": "0d752119-a1f6-4962-b71d-c21a079662ab;82fb1166-50bf-47ae-9593-3217e5f9d350;24d8d255-7c69-4810-8d20-4e2f1fbb5bf2;6a05cb53-a931-4bd1-aece-95ae7c95b255;384a98ad-eea5-48ae-b7b4-304779d34149;09880d61-36c5-4e75-bede-471a82403a8f;"
+  },
+  {
+    "index": 25,
+    "displayName": "Unspoken Word Highlight",
+    "value": false
+  },
+  {
+    "index": 27,
+    "displayName": "Fill",
+    "value": [
+      1,
+      255,
+      84,
+      84
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 28,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 29,
+    "displayName": "Stroke Width",
+    "value": 100
+  },
+  {
+    "index": 31,
+    "displayName": "Background",
+    "value": "abbeda12-6f31-4478-a412-0c3c401b96aa;f8cbb436-499d-487b-a39c-1bc69d47dbad;0789c789-9915-41d8-8bb3-40ffd8a32b9c;284b40ab-12fa-49ef-994c-71b13623a0c8;905dfeaa-a5ec-4586-9ede-237340977623;448cc0ae-a868-4c84-b296-3bf34fe12fdb;16bfc63a-c34c-4c02-86fb-31d040af8afe;5576ca80-2ff7-451f-a5e0-bd473e375022;f5867738-8d5f-48f0-8ee6-436edc819439;"
+  },
+  {
+    "index": 32,
+    "displayName": "Enable Background",
+    "value": true
+  },
+  {
+    "index": 33,
+    "displayName": "Padding",
+    "value": [
+      0.02604166666667,
+      0.02604166666667
+    ]
+  },
+  {
+    "index": 34,
+    "displayName": "Roundness",
+    "value": 20.4
+  },
+  {
+    "index": 35,
+    "displayName": "Fill",
+    "value": [
+      1,
+      255,
+      0,
+      0
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 36,
+    "displayName": "Fill Opacity",
+    "value": 24.9
+  },
+  {
+    "index": 37,
+    "displayName": "Stroke",
+    "value": [
+      1,
+      255,
+      0,
+      0
+    ],
+    "valueType": 6
+  },
+  {
+    "index": 38,
+    "displayName": "Stroke Width",
+    "value": 9.3
+  },
+  {
+    "index": 39,
+    "displayName": "Stroke Opacity",
+    "value": 100
+  }
+]
+
+--- EXTENDSCRIPT ENGINE EXECUTION LOGS ---
+--- Clip 0 ---
+FOUND: Ⓣ Text Input = {"capPropFontEdit":true,"capPropFontFauxStyleEdit":true,"capPropFontSizeEdit":true,"capPropTextRunCount":1,"fontEditValue":["ChillaxVariable-Semibold"],"fontFSAllCapsValue":[false],"fontFSBoldValue":[false],"fontFSItalicValue":[false],"fontFSSmallCapsValue":[false],"fontSizeEditValue":[100],"fontTextRunLength":[15],"textEditValue":"Life Mein Aapki"}
+FOUND: Master Transform = 199df3e6-5386-42ee-8120-aa8014f58037;4b603c65-349f-4101-8122-8f8aa907467f;90f933d9-8d9d-4982-b38f-13edc4e401e1;
+FOUND: Color & Style = 6085dc3c-e43c-4ed1-9361-7e613e8eb121;3b1cb8cc-f225-4a62-b9ae-b4a885fa2ca8;91be7113-0249-41cf-abde-1d9ef5f0ebd5;5560a893-c610-4192-a1cf-cf3516376af5;0984f09f-e7df-4126-9ec4-fd856da2e849;78207443-9d84-4a22-8fb1-70376e5a42e9;
+FOUND: Fill Color = 1,254,254,255
+ERROR applying Fill Color: Illegal Parameter type
+FOUND: Stroke = 1,3,4,94
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Drop Shadow = faac683f-1c2f-43a9-86e8-91695b6e0b9e;756cbcf5-286e-44e1-8df6-5c284b91f24b;f9a3855b-2e5c-47fb-b6fb-1bea7567ab93;c6f60709-c385-4161-a9b3-0ae650c8eea5;23ca0c9d-02da-4f52-a562-b222e265d089;
+FOUND: Shadow Color = 1,3,4,94
+ERROR applying Shadow Color: Illegal Parameter type
+FOUND: Direction = 135
+FOUND: Distance = 8
+FOUND: Softness = 12
+FOUND: Tracking = 0
+FOUND: Unspoken Word Opacity = 100
+FOUND: Current Word = 19f3b8cd-d0f5-45f1-82db-0be2e1cb1fc3;d41b6a2f-dff9-458b-8a9b-0686037a8090;612bef62-999a-41a3-96f8-0b590c89f8b2;eecb3c6a-1bed-4678-a3fa-70b9ecf57f59;545ae2ba-a840-4420-8dd6-e678053ad5e4;
+FOUND: Current Word Highlight = true
+FOUND: Fill = 1,171,255,197
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,202,241,248
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Unspoken Word = 0d752119-a1f6-4962-b71d-c21a079662ab;82fb1166-50bf-47ae-9593-3217e5f9d350;24d8d255-7c69-4810-8d20-4e2f1fbb5bf2;6a05cb53-a931-4bd1-aece-95ae7c95b255;384a98ad-eea5-48ae-b7b4-304779d34149;09880d61-36c5-4e75-bede-471a82403a8f;
+FOUND: Unspoken Word Highlight = false
+FOUND: Fill = 1,255,84,84
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,0,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 100
+FOUND: Background = abbeda12-6f31-4478-a412-0c3c401b96aa;f8cbb436-499d-487b-a39c-1bc69d47dbad;0789c789-9915-41d8-8bb3-40ffd8a32b9c;284b40ab-12fa-49ef-994c-71b13623a0c8;905dfeaa-a5ec-4586-9ede-237340977623;448cc0ae-a868-4c84-b296-3bf34fe12fdb;16bfc63a-c34c-4c02-86fb-31d040af8afe;5576ca80-2ff7-451f-a5e0-bd473e375022;f5867738-8d5f-48f0-8ee6-436edc819439;
+FOUND: Enable Background = true
+FOUND: Padding = 0.02604166666667,0.02604166666667
+FOUND: Roundness = 20.4
+FOUND: Fill = 1,255,0,0
+ERROR applying Fill: Illegal Parameter type
+FOUND: Fill Opacity = 24.9
+FOUND: Stroke = 1,255,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 9.3
+FOUND: Stroke Opacity = 100
+--- Clip 1 ---
+FOUND: Ⓣ Text Input = {"capPropFontEdit":true,"capPropFontFauxStyleEdit":true,"capPropFontSizeEdit":true,"capPropTextRunCount":1,"fontEditValue":["ChillaxVariable-Semibold"],"fontFSAllCapsValue":[false],"fontFSBoldValue":[false],"fontFSItalicValue":[false],"fontFSSmallCapsValue":[false],"fontSizeEditValue":[100],"fontTextRunLength":[15],"textEditValue":"Life Mein Aapki"}
+FOUND: Master Transform = 199df3e6-5386-42ee-8120-aa8014f58037;4b603c65-349f-4101-8122-8f8aa907467f;90f933d9-8d9d-4982-b38f-13edc4e401e1;
+FOUND: Color & Style = 6085dc3c-e43c-4ed1-9361-7e613e8eb121;3b1cb8cc-f225-4a62-b9ae-b4a885fa2ca8;91be7113-0249-41cf-abde-1d9ef5f0ebd5;5560a893-c610-4192-a1cf-cf3516376af5;0984f09f-e7df-4126-9ec4-fd856da2e849;78207443-9d84-4a22-8fb1-70376e5a42e9;
+FOUND: Fill Color = 1,254,254,255
+ERROR applying Fill Color: Illegal Parameter type
+FOUND: Stroke = 1,3,4,94
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Drop Shadow = faac683f-1c2f-43a9-86e8-91695b6e0b9e;756cbcf5-286e-44e1-8df6-5c284b91f24b;f9a3855b-2e5c-47fb-b6fb-1bea7567ab93;c6f60709-c385-4161-a9b3-0ae650c8eea5;23ca0c9d-02da-4f52-a562-b222e265d089;
+FOUND: Shadow Color = 1,3,4,94
+ERROR applying Shadow Color: Illegal Parameter type
+FOUND: Direction = 135
+FOUND: Distance = 8
+FOUND: Softness = 12
+FOUND: Tracking = 0
+FOUND: Unspoken Word Opacity = 100
+FOUND: Current Word = 19f3b8cd-d0f5-45f1-82db-0be2e1cb1fc3;d41b6a2f-dff9-458b-8a9b-0686037a8090;612bef62-999a-41a3-96f8-0b590c89f8b2;eecb3c6a-1bed-4678-a3fa-70b9ecf57f59;545ae2ba-a840-4420-8dd6-e678053ad5e4;
+FOUND: Current Word Highlight = true
+FOUND: Fill = 1,171,255,197
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,202,241,248
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Unspoken Word = 0d752119-a1f6-4962-b71d-c21a079662ab;82fb1166-50bf-47ae-9593-3217e5f9d350;24d8d255-7c69-4810-8d20-4e2f1fbb5bf2;6a05cb53-a931-4bd1-aece-95ae7c95b255;384a98ad-eea5-48ae-b7b4-304779d34149;09880d61-36c5-4e75-bede-471a82403a8f;
+FOUND: Unspoken Word Highlight = false
+FOUND: Fill = 1,255,84,84
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,0,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 100
+FOUND: Background = abbeda12-6f31-4478-a412-0c3c401b96aa;f8cbb436-499d-487b-a39c-1bc69d47dbad;0789c789-9915-41d8-8bb3-40ffd8a32b9c;284b40ab-12fa-49ef-994c-71b13623a0c8;905dfeaa-a5ec-4586-9ede-237340977623;448cc0ae-a868-4c84-b296-3bf34fe12fdb;16bfc63a-c34c-4c02-86fb-31d040af8afe;5576ca80-2ff7-451f-a5e0-bd473e375022;f5867738-8d5f-48f0-8ee6-436edc819439;
+FOUND: Enable Background = true
+FOUND: Padding = 0.02604166666667,0.02604166666667
+FOUND: Roundness = 20.4
+FOUND: Fill = 1,255,0,0
+ERROR applying Fill: Illegal Parameter type
+FOUND: Fill Opacity = 24.9
+FOUND: Stroke = 1,255,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 9.3
+FOUND: Stroke Opacity = 100
+--- Clip 2 ---
+FOUND: Ⓣ Text Input = {"capPropFontEdit":true,"capPropFontFauxStyleEdit":true,"capPropFontSizeEdit":true,"capPropTextRunCount":1,"fontEditValue":["ChillaxVariable-Semibold"],"fontFSAllCapsValue":[false],"fontFSBoldValue":[false],"fontFSItalicValue":[false],"fontFSSmallCapsValue":[false],"fontSizeEditValue":[100],"fontTextRunLength":[15],"textEditValue":"Life Mein Aapki"}
+FOUND: Master Transform = 199df3e6-5386-42ee-8120-aa8014f58037;4b603c65-349f-4101-8122-8f8aa907467f;90f933d9-8d9d-4982-b38f-13edc4e401e1;
+FOUND: Color & Style = 6085dc3c-e43c-4ed1-9361-7e613e8eb121;3b1cb8cc-f225-4a62-b9ae-b4a885fa2ca8;91be7113-0249-41cf-abde-1d9ef5f0ebd5;5560a893-c610-4192-a1cf-cf3516376af5;0984f09f-e7df-4126-9ec4-fd856da2e849;78207443-9d84-4a22-8fb1-70376e5a42e9;
+FOUND: Fill Color = 1,254,254,255
+ERROR applying Fill Color: Illegal Parameter type
+FOUND: Stroke = 1,3,4,94
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Drop Shadow = faac683f-1c2f-43a9-86e8-91695b6e0b9e;756cbcf5-286e-44e1-8df6-5c284b91f24b;f9a3855b-2e5c-47fb-b6fb-1bea7567ab93;c6f60709-c385-4161-a9b3-0ae650c8eea5;23ca0c9d-02da-4f52-a562-b222e265d089;
+FOUND: Shadow Color = 1,3,4,94
+ERROR applying Shadow Color: Illegal Parameter type
+FOUND: Direction = 135
+FOUND: Distance = 8
+FOUND: Softness = 12
+FOUND: Tracking = 0
+FOUND: Unspoken Word Opacity = 100
+FOUND: Current Word = 19f3b8cd-d0f5-45f1-82db-0be2e1cb1fc3;d41b6a2f-dff9-458b-8a9b-0686037a8090;612bef62-999a-41a3-96f8-0b590c89f8b2;eecb3c6a-1bed-4678-a3fa-70b9ecf57f59;545ae2ba-a840-4420-8dd6-e678053ad5e4;
+FOUND: Current Word Highlight = true
+FOUND: Fill = 1,171,255,197
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,202,241,248
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Unspoken Word = 0d752119-a1f6-4962-b71d-c21a079662ab;82fb1166-50bf-47ae-9593-3217e5f9d350;24d8d255-7c69-4810-8d20-4e2f1fbb5bf2;6a05cb53-a931-4bd1-aece-95ae7c95b255;384a98ad-eea5-48ae-b7b4-304779d34149;09880d61-36c5-4e75-bede-471a82403a8f;
+FOUND: Unspoken Word Highlight = false
+FOUND: Fill = 1,255,84,84
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,0,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 100
+FOUND: Background = abbeda12-6f31-4478-a412-0c3c401b96aa;f8cbb436-499d-487b-a39c-1bc69d47dbad;0789c789-9915-41d8-8bb3-40ffd8a32b9c;284b40ab-12fa-49ef-994c-71b13623a0c8;905dfeaa-a5ec-4586-9ede-237340977623;448cc0ae-a868-4c84-b296-3bf34fe12fdb;16bfc63a-c34c-4c02-86fb-31d040af8afe;5576ca80-2ff7-451f-a5e0-bd473e375022;f5867738-8d5f-48f0-8ee6-436edc819439;
+FOUND: Enable Background = true
+FOUND: Padding = 0.02604166666667,0.02604166666667
+FOUND: Roundness = 20.4
+FOUND: Fill = 1,255,0,0
+ERROR applying Fill: Illegal Parameter type
+FOUND: Fill Opacity = 24.9
+FOUND: Stroke = 1,255,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 9.3
+FOUND: Stroke Opacity = 100
+--- Clip 3 ---
+FOUND: Ⓣ Text Input = {"capPropFontEdit":true,"capPropFontFauxStyleEdit":true,"capPropFontSizeEdit":true,"capPropTextRunCount":1,"fontEditValue":["ChillaxVariable-Semibold"],"fontFSAllCapsValue":[false],"fontFSBoldValue":[false],"fontFSItalicValue":[false],"fontFSSmallCapsValue":[false],"fontSizeEditValue":[100],"fontTextRunLength":[15],"textEditValue":"Life Mein Aapki"}
+FOUND: Master Transform = 199df3e6-5386-42ee-8120-aa8014f58037;4b603c65-349f-4101-8122-8f8aa907467f;90f933d9-8d9d-4982-b38f-13edc4e401e1;
+FOUND: Color & Style = 6085dc3c-e43c-4ed1-9361-7e613e8eb121;3b1cb8cc-f225-4a62-b9ae-b4a885fa2ca8;91be7113-0249-41cf-abde-1d9ef5f0ebd5;5560a893-c610-4192-a1cf-cf3516376af5;0984f09f-e7df-4126-9ec4-fd856da2e849;78207443-9d84-4a22-8fb1-70376e5a42e9;
+FOUND: Fill Color = 1,254,254,255
+ERROR applying Fill Color: Illegal Parameter type
+FOUND: Stroke = 1,3,4,94
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Drop Shadow = faac683f-1c2f-43a9-86e8-91695b6e0b9e;756cbcf5-286e-44e1-8df6-5c284b91f24b;f9a3855b-2e5c-47fb-b6fb-1bea7567ab93;c6f60709-c385-4161-a9b3-0ae650c8eea5;23ca0c9d-02da-4f52-a562-b222e265d089;
+FOUND: Shadow Color = 1,3,4,94
+ERROR applying Shadow Color: Illegal Parameter type
+FOUND: Direction = 135
+FOUND: Distance = 8
+FOUND: Softness = 12
+FOUND: Tracking = 0
+FOUND: Unspoken Word Opacity = 100
+FOUND: Current Word = 19f3b8cd-d0f5-45f1-82db-0be2e1cb1fc3;d41b6a2f-dff9-458b-8a9b-0686037a8090;612bef62-999a-41a3-96f8-0b590c89f8b2;eecb3c6a-1bed-4678-a3fa-70b9ecf57f59;545ae2ba-a840-4420-8dd6-e678053ad5e4;
+FOUND: Current Word Highlight = true
+FOUND: Fill = 1,171,255,197
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,202,241,248
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 0
+FOUND: Unspoken Word = 0d752119-a1f6-4962-b71d-c21a079662ab;82fb1166-50bf-47ae-9593-3217e5f9d350;24d8d255-7c69-4810-8d20-4e2f1fbb5bf2;6a05cb53-a931-4bd1-aece-95ae7c95b255;384a98ad-eea5-48ae-b7b4-304779d34149;09880d61-36c5-4e75-bede-471a82403a8f;
+FOUND: Unspoken Word Highlight = false
+FOUND: Fill = 1,255,84,84
+ERROR applying Fill: Illegal Parameter type
+FOUND: Stroke = 1,0,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 100
+FOUND: Background = abbeda12-6f31-4478-a412-0c3c401b96aa;f8cbb436-499d-487b-a39c-1bc69d47dbad;0789c789-9915-41d8-8bb3-40ffd8a32b9c;284b40ab-12fa-49ef-994c-71b13623a0c8;905dfeaa-a5ec-4586-9ede-237340977623;448cc0ae-a868-4c84-b296-3bf34fe12fdb;16bfc63a-c34c-4c02-86fb-31d040af8afe;5576ca80-2ff7-451f-a5e0-bd473e375022;f5867738-8d5f-48f0-8ee6-436edc819439;
+FOUND: Enable Background = true
+FOUND: Padding = 0.02604166666667,0.02604166666667
+FOUND: Roundness = 20.4
+FOUND: Fill = 1,255,0,0
+ERROR applying Fill: Illegal Parameter type
+FOUND: Fill Opacity = 24.9
+FOUND: Stroke = 1,255,0,0
+ERROR applying Stroke: Illegal Parameter type
+FOUND: Stroke Width = 9.3
+FOUND: Stroke Opacity = 100

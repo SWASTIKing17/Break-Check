@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+        integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+        crossorigin="anonymous" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    </head>
+
+    <style>
+        body {
+            background: #121214;
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: #f3f3f5;
+            margin-left: 15px;
+            padding-bottom: 40px;
+        }
+
+        .brand-banner {
+            margin: 16px 0 22px 0;
+            padding: 18px 22px;
+            border: 1px solid rgba(153, 125, 255, 0.25);
+            background:
+                radial-gradient(80% 120% at 0% 0%, rgba(153, 125, 255, 0.12) 0%, rgba(153, 125, 255, 0) 60%),
+                #161618;
+            border-radius: 4px;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            max-width: 720px;
+        }
+
+        .brand-banner .mark {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #997DFF;
+            padding: 4px 9px;
+            border: 1px solid rgba(153, 125, 255, 0.45);
+            border-radius: 2px;
+            background: rgba(153, 125, 255, 0.07);
+            line-height: 1;
+        }
+
+        .brand-banner .title {
+            font-weight: 600;
+            font-size: 22px;
+            letter-spacing: -0.01em;
+            color: #f3f3f5;
+        }
+
+        .brand-banner .by {
+            font-size: 11px;
+            color: #5e5e66;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            margin-left: 4px;
+        }
+
+        .btn-outline-default {
+            border-color: #997DFF !important;
+            background-color: #161618 !important;
+            color: #f3f3f5 !important;
+            font-family: 'IBM Plex Sans', sans-serif !important;
+            font-weight: 500 !important;
+        }
+
+        .btn-outline-default:hover {
+            background-color: rgba(153, 125, 255, 0.12) !important;
+            color: #997DFF !important;
+        }
+
+        .fa-caret-right {
+            color: #997DFF !important;
+            font-size: 15px;
+            margin-left: 10px;
+        }
+
+        p {
+            color: #f3f3f5;
+            font-size: 13px;
+            line-height: 1.55;
+            max-width: 720px;
+        }
+
+        a {
+            cursor: pointer;
+            color: #f3f3f5;
+            text-decoration: none;
+        }
+
+        a:hover {
+            cursor: pointer;
+            color: #997DFF !important;
+        }
+
+        h2, h3, h4 {
+            color: #f3f3f5;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            margin-top: 28px;
+            font-size: 18px;
+        }
+
+        .section-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #997DFF;
+            margin: 32px 0 10px 0;
+            display: block;
+        }
+    </style>
+
+    <body>
+       <div>
+        <div class="brand-banner">
+            <span class="mark">freeXan</span>
+            <span class="title">Caption</span>
+            <span class="by">by BloomX</span>
+        </div>
+
+        <h3 style="margin-top: 4px;">The engaging, customisable caption solution<br>for Adobe Premiere Pro.</h3>
+
+        <br>
+
+        <p>freeXan Caption helps streamline the creation of dynamic, word-by-word captions and subtitles inside Adobe
+            Premiere Pro.</p>
+
+        <p>We would love to see your sub creations! Use #createdWithFreeXanCaption to get featured on our
+            social pages.</p>
+
+        <br>
+
+        <span class="section-title">Resources</span>
+        <div>
+            <button id="community" class="btn btn-outline-default btn-sm"
+                style="width: 200px; margin-bottom: 15px; margin-top: 10px; border-radius: 4px; font-size: 13px;"><a
+                    href="https://discord.gg/MrYsAsWV3Q">Support</a><i class="fas fa-caret-right"
+                    style="margin-left: 20px"></i></button>
+            <button id="youtubeChannel" class="btn btn-outline-default btn-sm"
+                style="width: 200px; margin-bottom: 15px; margin-top: 10px; border-radius: 4px; font-size: 13px;"><a
+                    href="https://www.youtube.com/@CreativeWorkflowSolutions/videos">Youtube Channel</a><i
+                    class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+            <button id="userGuide" class="btn btn-outline-default btn-sm"
+                style="width: 200px; margin-bottom: 15px; margin-top: 10px; border-radius: 4px; font-size: 13px;"><a
+                    href="https://drive.google.com/file/d/1zWlYRxuXMyCWdA10tNJzUl2bR8qeohAE/view?usp=drive_link">User
+                    Guide</a><i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+            <button id="faq" class="btn btn-outline-default btn-sm"
+                style="width: 200px; margin-bottom: 15px; margin-top: 10px; border-radius: 4px; font-size: 13px;"><a
+                    href="https://drive.google.com/file/d/1CPfEFLaYfGYuCg3Bae8Z72IO2pIqhiSW/view?usp=drive_link">FAQs</a><i
+                    class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+            <button id="mogrtLibrary" class="btn btn-outline-default btn-sm"
+                style="width: 200px; margin-bottom: 15px; margin-top: 10px; border-radius: 4px; font-size: 13px;"><a
+                    href="https://docs.google.com/presentation/d/17AKlQ_xnQbKgvYUvmyMxSP29MdV0J51nb0IS4kM8w2Y/edit?usp=sharing">Mogrt
+                    Library</a><i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+            <button id="bugReport" class="btn btn-outline-default btn-sm"
+                style="width: 200px; margin-bottom: 15px; margin-top: 10px; border-radius: 4px; font-size: 13px;"><a
+                    href="mailto:contentai@bloomxsolutions.com?subject=freeXan%20Caption%20Bug%20Report">Bug
+                    Report</a><i class="fas fa-caret-right" style="margin-left: 20px"></i></button>
+        </div>
+
+        <br>
+
+        <div>
+            <span class="section-title">Full Walkthroughs</span>
+            <a href="https://youtu.be/xYidiPvc_LY?si=JbR5QEYcpB9BSMYX"><img id="tutorial1"
+                    src="../panel/images/Walkthrough.png" alt="" style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://www.youtube.com/watch?v=M2vdZc3hG_Q"><img id="tutorial2" src="../panel/images/PG-1.png"
+                    alt="" style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://www.youtube.com/watch?v=3acU9PtwF9E"><img id="tutorial3" src="../panel/images/PG-2.png"
+                    alt="" style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://www.youtube.com/watch?v=G4kg0XXqbhM"><img id="tutorial3" src="../panel/images/VR-1.png"
+                    alt="" style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+        </div>
+
+        <br>
+
+        <div>
+            <span class="section-title">Quick Tutorials</span>
+            <a href="https://youtu.be/DBM6-iO3X_A?si=-XwuZIrtOuBkGmlb"><img id="tutorial1"
+                    src="../panel/images/SubMachine Create SRT.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/ecTnrWUijyo?si=iQtfGGm_45JawBcW"><img id="tutorial2"
+                    src="../panel/images/SubMachine Create Subs.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/kKW-gMM_nNg?si=VATrzNcqccyrFNb9"><img id="tutorial3"
+                    src="../panel/images/SubMachine Sync All.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/juBWVkpuY78?si=GomR9VjRiAzS0dtf"><img id="tutorial4"
+                    src="../panel/images/SubMachine Sync Text and Typeface.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/LgqMiAvbjOw?si=1u-dHAJlQ03sMqv-"><img id="tutorial5"
+                    src="../panel/images/SubMachine Sync Style and Animation.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/J4Fpd_ONhTk?si=auu7KOvDShmPA54u"><img id="tutorial6"
+                    src="../panel/images/SubMachine Sync Position, Scale & Rotation.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/WP9Y07Zosps?si=WHoolhUDVRk7Dvk-"><img id="tutorial7"
+                    src="../panel/images/SubMachine Reset Word Progression.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/WmeC6dmFnZU?si=0Y_6NkpqKwwFPW3p"><img id="tutorial8"
+                    src="../panel/images/SubMachine Split & Join Selection.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/lF2GddXBrE4?si=axUpDgTHBWSpebuC"><img id="tutorial9"
+                    src="../panel/images/SubMachine Split 1 Entire Phrase.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/h_mRXSU29Ts?si=YL_R1iE1x3sNtW2a"><img id="tutorial10"
+                    src="../panel/images/SubMachine Join 2 Entire Phrases.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/oj-WvilSWF4?si=kjVAe3NA9K0ygH8a"><img id="tutorial11"
+                    src="../panel/images/SubMachine Reset All and Reset Reset Specific.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+            <a href="https://youtu.be/Q_dF-3Maq3k?si=6ZiXDSyzgBPsyf4v"><img id="tutorial11"
+                    src="../panel/images/SubMachine Editing Mogrts.png" alt=""
+                    style="width:200px; margin: 10px; cursor: pointer; border-radius: 4px;"></a>
+        </div>
+
+        <br>
+
+        <div>
+
+            <h3>Mogrts</h3>
+            <p>These gifs show just a fraction of the potential design variations that are possible using freeXan Caption.</p>
+
+            <br>
+
+            <span class="section-title">Animator Mogrt</span>
+
+            <div style="margin-right: 25px">
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px" onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Animator_A-65 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Animator_A.gif" alt="" />
+
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px" onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Animator_B-65 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Animator_B.gif" alt="" />
+
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px;"onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Animator_C-65 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Animator_C.gif" alt="" />
+
+            </div>
+
+            <br>
+            <br>
+
+            <span class="section-title">Dynamo Mogrt</span>
+
+            <div>
+                <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px" onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Dynamo_A-17 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Dynamo_A.gif" alt="" />
+
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px" onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Dynamo_B-63 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Dynamo_B.gif" alt="" />
+
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px"onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Dynamo_C-9 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Dynamo_C.gif" alt="" />
+
+            </div>
+
+            <br>
+            <br>
+
+            <span class="section-title">Karaoke Mogrt</span>
+
+            <div>
+                <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px" onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Karaoke_A-65 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Karaoke_A.gif" alt="" />
+
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px" onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Karaoke_B-65 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Karaoke_B.gif" alt="" />
+
+                    <img class="static" style="width: 292px; position: absolute; background: #161618; margin-right: 25px"onmouseover="this.style.opacity=0" onmouseout="this.style.opacity=100" src="../panel/images/Karaoke_C-65 (dragged).png" alt="" />
+                    <img class="active" style="width: 292px; margin-right: 25px" src="../panel/images/Karaoke_C.gif" alt="" />
+
+            </div>
+
+
+        </div>
+
+
+
+        <br>
+
+        <p>freeXan Caption is part of the <strong>freeXan</strong> workflow suite by <a href="https://bloomxsolutions.com/">BloomX</a> &mdash; invisible infrastructure for Adobe Premiere Pro.</p>
+
+        <p><a href="https://discord.gg/MrYsAsWV3Q">Community Discord</a></p>
+    </div>
+    </body>
+</html>

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FreeXan Cloud AI Studio — 4-Track Synchronized Aligner & Subtitle Studio</title>
+  <style>
+    body { font-family: Consolas, monospace; background: #121212; color: #e0e0e0; margin: 20px; max-width: 1180px; }
+    h2 { color: #00bcd4; border-bottom: 1px solid #333; padding-bottom: 8px; margin-top: 0; }
+    .box { background: #1e1e1e; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #333; }
+    label { display: block; margin: 10px 0 4px; font-weight: bold; color: #b0bec5; }
+    input, select, button { background: #2c2c2c; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px; font-family: inherit; width: 100%; box-sizing: border-box; }
+    button { background: #0097a7; font-weight: bold; cursor: pointer; margin-top: 14px; font-size: 14px; padding: 12px; }
+    button:hover { background: #00838f; }
+    button:disabled { background: #455a64; cursor: not-allowed; }
+    .btn-dl { background: #388e3c; margin-top: 8px; }
+    .btn-dl:hover { background: #2e7d32; }
+    pre { background: #0a0a0a; padding: 12px; border-radius: 4px; overflow-x: auto; border: 1px solid #222; max-height: 380px; }
+    .log { color: #ffca28; }
+    .err { color: #ef5350; font-weight: bold; }
+    .ok { color: #66bb6a; font-weight: bold; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .radio-group { display: flex; flex-direction: column; gap: 12px; background: #252525; padding: 12px; border-radius: 4px; border: 1px solid #444; }
+    .radio-group label { margin: 0; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: normal; color: #fff; }
+    .radio-group input { width: auto; }
+    .hybrid-badge { background: #ffd600; color: #000; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+    .modal-badge { background: #b388ff; color: #000; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+    .tab-btn { background: #252525; color: #ccc; border: 1px solid #444; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 0; flex: 1; }
+    .tab-btn:hover { background: #333; color: #fff; }
+    .tab-btn.active { background: #0097a7; color: #fff; font-weight: bold; border-color: #00e5ff; }
+  </style>
+</head>
+<body>
+
+  <h2>🔬 FreeXan Cloud AI Studio — 4-Track Synchronized Subtitle Suite</h2>
+  
+  <div class="box">
+    <label>Select Cloud AI Architecture Mode:</label>
+    <div class="radio-group">
+      <label><input type="radio" name="provider" value="sarvam" checked /> 🟢 1. Sarvam AI Solo (Saaras v3 — ₹0.60/min — 99.8% Flawless Indic Spelling, Phrase Timestamps)</label>
+      <label><input type="radio" name="provider" value="groq" /> ⚡ 2. Groq Cloud Solo (Whisper Turbo — ₹0.04/min — 100% Exact Frame Timestamps, Poor Indic Spelling)</label>
+      <label><input type="radio" name="provider" value="hybrid" /> <span class="hybrid-badge">👑 DUAL CLOUD JS</span> 3. FreeXan JS Warper (Sarvam Spelling + Groq Timestamps Warped 1-to-1 in JS)</label>
+      <label><input type="radio" name="provider" value="modal" /> <span class="modal-badge">☁️ MODAL GPU</span> 4. True Physics Holy Grail (Sarvam AI Perfect Text ──► Modal Serverless GPU Wav2Vec2 Aligner)</label>
+    </div>
+
+    <!-- Solo Key Input -->
+    <div id="soloKeyArea">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin:12px 0 4px;">
+        <label id="keyLabel" style="margin:0;">API Subscription / Bearer Key:</label>
+        <a href="https://console.groq.com/keys" target="_blank" id="freeKeyLink" style="color:#00e5ff; font-size:13px; text-decoration:none;">👉 Get Free Key</a>
+      </div>
+      <input type="password" id="apiKey" placeholder="Paste your API Key..." />
+    </div>
+
+    <!-- Hybrid Keys Input -->
+    <div id="hybridKeyArea" style="display:none; background:#181c1f; padding:12px; border-radius:4px; border:1px solid #ffd600; margin-top:10px;">
+      <span style="color:#ffd600; font-weight:bold; font-size:13px;">👑 JS Hybrid Mode requires both Cloud keys (Runs simultaneously in Promise.all):</span>
+      <label style="margin-top:8px;">1. Sarvam AI Subscription Key:</label>
+      <input type="password" id="hybridSarvamKey" placeholder="Paste Sarvam key..." />
+      <label style="margin-top:8px;">2. Groq Cloud API Key (gsk_...): <a href="https://console.groq.com/keys" target="_blank" style="color:#00e5ff; font-size:12px; font-weight:normal;">(Get Free Key)</a></label>
+      <input type="password" id="hybridGroqKey" placeholder="gsk_..." />
+    </div>
+
+    <!-- Modal Area -->
+    <div id="modalKeyArea" style="display:none; background:#1a1528; padding:12px; border-radius:4px; border:1px solid #b388ff; margin-top:10px;">
+      <span style="color:#b388ff; font-weight:bold; font-size:13px;">☁️ Modal GPU Aligner requires Sarvam Key + Deployed Modal Endpoint URL:</span>
+      <label style="margin-top:8px;">1. Sarvam AI Subscription Key:</label>
+      <input type="password" id="modalSarvamKey" placeholder="Paste Sarvam key..." />
+      <label style="margin-top:8px;">2. Modal REST Endpoint URL (Deploy modal_aligner.py first):</label>
+      <input type="text" id="modalEndpointUrl" placeholder="https://your-name--freexan-caption-aligner-forced-align-endpoint.modal.run" />
+    </div>
+
+    <!-- Stage 3 Refiner Area -->
+    <div style="background:#0a1a10; padding:12px; border-radius:4px; border:1px solid #00e676; margin-top:10px;">
+      <label style="margin:0; cursor:pointer; display:flex; align-items:center; gap:10px; color:#00e676; font-weight:bold;">
+        <input type="checkbox" id="chkStage3" style="width:auto;" checked /> ✨ Enable Stage 3: AI Smart Phrasing & Roman Hinglish Conversion (Groq Llama-3.3)
+      </label>
+      <div id="stage3GroqArea" style="margin-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+          <span style="font-size:12px; color:#b0bec5;">Groq Cloud API Key (gsk_...) for Stage 3 LLM:</span>
+          <a href="https://console.groq.com/keys" target="_blank" style="color:#00e5ff; font-size:12px; text-decoration:none;">👉 Get Free Key</a>
+        </div>
+        <input type="password" id="stage3GroqKey" placeholder="gsk_..." />
+      </div>
+    </div>
+
+    <div style="margin-top: 8px;"><input type="checkbox" id="saveKey" style="width:auto;" checked /><label for="saveKey" style="display:inline;font-weight:normal;"> Remember all API Keys & URLs in localStorage</label></div>
+
+    <label for="audioFile">Select Audio/Video File (.wav, .mp3, .m4a, .mp4):</label>
+    <input type="file" id="audioFile" accept="audio/*,video/*" />
+
+    <div id="sarvamOpts">
+      <label for="modelSelect">Sarvam AI Model:</label>
+      <select id="modelSelect">
+        <option value="saaras:v3" selected>saaras:v3 — ₹0.60/min (~$0.007) [Flagship Indic & Hinglish King]</option>
+        <option value="saaras:v3-realtime">saaras:v3-realtime — ₹0.60/min (~$0.007) [Low Latency Realtime]</option>
+        <option value="saarika:v2.5">saarika:v2.5 — ₹0.30/min (~$0.0036) [High Accuracy v2.5]</option>
+        <option value="saarika:flash">saarika:flash — ₹0.15/min (~$0.0018) [Ultra Fast Budget Flash]</option>
+      </select>
+
+      <label for="langCode">Spoken Indic Language:</label>
+      <select id="langCode">
+        <option value="unknown">✨ Auto-Detect (Let Sarvam AI Detect Spoken Indic Language)</option>
+        <option value="hi-IN" selected>hi-IN (Hindi / Hinglish Code-Mixed)</option>
+        <option value="bn-IN">bn-IN (Bengali)</option>
+        <option value="ta-IN">ta-IN (Tamil)</option>
+        <option value="te-IN">te-IN (Telugu)</option>
+        <option value="mr-IN">mr-IN (Marathi)</option>
+        <option value="gu-IN">gu-IN (Gujarati)</option>
+        <option value="kn-IN">kn-IN (Kannada)</option>
+        <option value="ml-IN">ml-IN (Malayalam)</option>
+        <option value="pa-IN">pa-IN (Punjabi)</option>
+        <option value="en-IN">en-IN (Indian English)</option>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button id="btnRun" style="flex:3;">🚀 Execute Architecture Benchmark & Generate SRT</button>
+      <button id="btnClear" style="flex:1; background:#c62828;">🗑️ Clear Output</button>
+    </div>
+  </div>
+
+  <div class="box" id="statusBox">
+    <strong>Status:</strong> <span id="statusTxt" class="log">Idle — ready.</span>
+  </div>
+
+  <div class="grid">
+    <div class="box">
+      <h3>1️⃣ Formatted FreeXan Timeline Contract</h3>
+      <pre id="contractOut">{ "info": "Word-level JSON will appear here..." }</pre>
+    </div>
+    
+    <div class="box">
+      <h3>3️⃣ Live Stage-by-Stage API Inspector (Zero Waste Memory)</h3>
+      <div style="display:flex; gap:6px; margin-bottom:8px;">
+        <button id="rawTab1" class="tab-btn active">🟢 Stage 1 (Sarvam AI)</button>
+        <button id="rawTab2" class="tab-btn">🟣 Stage 2 (Acoustic Timing)</button>
+        <button id="rawTab3" class="tab-btn">⚡ Stage 3 (Groq Llama LLM)</button>
+      </div>
+      <pre id="rawOut">Execute benchmark to view live API payloads stage by stage...</pre>
+    </div>
+  </div>
+
+  <!-- 4-Track Synchronized Subtitle Studio -->
+  <div class="box">
+    <h3>2️⃣ 4-Track Synchronized Subtitle Studio (Identical Frame-Locked Timestamps)</h3>
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <button id="btnDlAll" class="btn-dl" style="margin:0; flex:100%; background:#00c853; font-size:14px; padding:12px;" disabled>📦 Download All 4 Synchronized SRT Files (Simultaneous)</button>
+      <button id="btnDl1" class="btn-dl" style="margin:0; flex:1; font-size:12px; padding:8px;" disabled>💾 DL Track 1 (Native Word)</button>
+      <button id="btnDl2" class="btn-dl" style="margin:0; flex:1; font-size:12px; padding:8px;" disabled>💾 DL Track 2 (Roman Word)</button>
+      <button id="btnDl3" class="btn-dl" style="margin:0; flex:1; font-size:12px; padding:8px;" disabled>💾 DL Track 3 (Native Phrase)</button>
+      <button id="btnDl4" class="btn-dl" style="margin:0; flex:1; font-size:12px; padding:8px;" disabled>💾 DL Track 4 (Roman Phrase)</button>
+    </div>
+    <div style="display:flex; gap:6px; margin-bottom:8px;">
+      <button id="tab1" class="tab-btn active">📄 1. Native Word</button>
+      <button id="tab2" class="tab-btn">📄 2. Roman Word</button>
+      <button id="tab3" class="tab-btn">📄 3. Native Phrase</button>
+      <button id="tab4" class="tab-btn">📄 4. Roman Phrase</button>
+    </div>
+    <pre id="srtOut">Select audio and execute benchmark to generate all 4 subtitle tracks...</pre>
+  </div>
+
+  <script>
+    const providerRadios = document.getElementsByName('provider');
+    const soloKeyArea = document.getElementById('soloKeyArea');
+    const hybridKeyArea = document.getElementById('hybridKeyArea');
+    const modalKeyArea = document.getElementById('modalKeyArea');
+    const apiKeyInput = document.getElementById('apiKey');
+    const hybridSarvamKeyInput = document.getElementById('hybridSarvamKey');
+    const hybridGroqKeyInput = document.getElementById('hybridGroqKey');
+    const modalSarvamKeyInput = document.getElementById('modalSarvamKey');
+    const modalEndpointUrlInput = document.getElementById('modalEndpointUrl');
+    
+    const chkStage3 = document.getElementById('chkStage3');
+    const stage3GroqArea = document.getElementById('stage3GroqArea');
+    const stage3GroqKeyInput = document.getElementById('stage3GroqKey');
+
+    const keyLabel = document.getElementById('keyLabel');
+    const freeKeyLink = document.getElementById('freeKeyLink');
+    const saveKeyCheck = document.getElementById('saveKey');
+    const audioFileInput = document.getElementById('audioFile');
+    const sarvamOpts = document.getElementById('sarvamOpts');
+    const modelSelect = document.getElementById('modelSelect');
+    const langCodeSelect = document.getElementById('langCode');
+    const btnRun = document.getElementById('btnRun');
+    const btnClear = document.getElementById('btnClear');
+    const statusTxt = document.getElementById('statusTxt');
+    const rawOut = document.getElementById('rawOut');
+    const contractOut = document.getElementById('contractOut');
+    const srtOut = document.getElementById('srtOut');
+
+    const rawTab1 = document.getElementById('rawTab1');
+    const rawTab2 = document.getElementById('rawTab2');
+    const rawTab3 = document.getElementById('rawTab3');
+
+    const btnDlAll = document.getElementById('btnDlAll');
+    const btnDl1 = document.getElementById('btnDl1');
+    const btnDl2 = document.getElementById('btnDl2');
+    const btnDl3 = document.getElementById('btnDl3');
+    const btnDl4 = document.getElementById('btnDl4');
+
+    const tab1 = document.getElementById('tab1');
+    const tab2 = document.getElementById('tab2');
+    const tab3 = document.getElementById('tab3');
+    const tab4 = document.getElementById('tab4');
+
+    let srtTracks = { nativeWord: "", romanWord: "", nativePhrase: "", romanPhrase: "" };
+    let activeTab = 'nativeWord';
+    let rawLogs = { stage1: "", stage2: "", stage3: "" };
+    let activeRawTab = 'stage1';
+
+    // Restore cached output on load
+    if (localStorage.getItem('freexan_last_raw_logs')) {
+      try { rawLogs = JSON.parse(localStorage.getItem('freexan_last_raw_logs')); renderRawTab(); } catch(e){}
+    }
+    if (localStorage.getItem('freexan_last_contract')) contractOut.textContent = localStorage.getItem('freexan_last_contract');
+    if (localStorage.getItem('freexan_last_tracks')) {
+      try { srtTracks = JSON.parse(localStorage.getItem('freexan_last_tracks')); [btnDlAll, btnDl1, btnDl2, btnDl3, btnDl4].forEach(b => b.disabled = false); renderActiveTab(); } catch(e){}
+    }
+    if (localStorage.getItem('freexan_last_status')) { statusTxt.textContent = localStorage.getItem('freexan_last_status'); statusTxt.className = localStorage.getItem('freexan_last_status_class') || 'log'; }
+
+    function getSelectedProvider() {
+      const el = Array.from(providerRadios).find(r => r.checked);
+      return el ? el.value : 'sarvam';
+    }
+
+    function cleanStr(s) {
+      return (s || "").replace(/[\u2018\u2019\u201C\u201D]/g, '').replace(/[^\x20-\x7E]/g, '').trim();
+    }
+
+    function updateProviderUI() {
+      const provider = getSelectedProvider();
+      sarvamOpts.style.display = (provider === 'sarvam' || provider === 'hybrid' || provider === 'modal') ? 'block' : 'none';
+      
+      soloKeyArea.style.display = (provider === 'sarvam' || provider === 'groq') ? 'block' : 'none';
+      hybridKeyArea.style.display = (provider === 'hybrid') ? 'block' : 'none';
+      modalKeyArea.style.display = (provider === 'modal') ? 'block' : 'none';
+
+      if (provider === 'sarvam') {
+        keyLabel.textContent = "Sarvam AI Subscription Key:";
+        freeKeyLink.href = "https://dashboard.sarvam.ai"; freeKeyLink.textContent = "👉 Get Trial Key";
+      } else if (provider === 'groq') {
+        keyLabel.textContent = "Groq Cloud API Key (gsk_...):";
+        freeKeyLink.href = "https://console.groq.com/keys"; freeKeyLink.textContent = "👉 Get Free Key";
+      }
+
+      // Load saved keys
+      apiKeyInput.value = localStorage.getItem(provider === 'sarvam' ? 'freexan_sarvam_key' : 'freexan_groq_key') || "";
+      hybridSarvamKeyInput.value = localStorage.getItem('freexan_sarvam_key') || "";
+      hybridGroqKeyInput.value = localStorage.getItem('freexan_groq_key') || "";
+      modalSarvamKeyInput.value = localStorage.getItem('freexan_sarvam_key') || "";
+      modalEndpointUrlInput.value = localStorage.getItem('freexan_modal_url') || "";
+      stage3GroqKeyInput.value = localStorage.getItem('freexan_groq_key') || "";
+    }
+    Array.from(providerRadios).forEach(r => r.addEventListener('change', updateProviderUI));
+
+    chkStage3.addEventListener('change', () => {
+      stage3GroqArea.style.display = chkStage3.checked ? 'block' : 'none';
+      saveKeysToStorage();
+    });
+    chkStage3.checked = localStorage.getItem('freexan_stage3_enabled') !== 'false';
+    stage3GroqArea.style.display = chkStage3.checked ? 'block' : 'none';
+
+    updateProviderUI();
+
+    function saveKeysToStorage() {
+      if (!saveKeyCheck.checked) return;
+      const provider = getSelectedProvider();
+      if (provider === 'hybrid') {
+        if (hybridSarvamKeyInput.value) localStorage.setItem('freexan_sarvam_key', cleanStr(hybridSarvamKeyInput.value));
+        if (hybridGroqKeyInput.value) localStorage.setItem('freexan_groq_key', cleanStr(hybridGroqKeyInput.value));
+      } else if (provider === 'modal') {
+        if (modalSarvamKeyInput.value) localStorage.setItem('freexan_sarvam_key', cleanStr(modalSarvamKeyInput.value));
+        if (modalEndpointUrlInput.value) localStorage.setItem('freexan_modal_url', modalEndpointUrlInput.value.trim());
+      } else {
+        const kName = provider === 'sarvam' ? 'freexan_sarvam_key' : 'freexan_groq_key';
+        if (apiKeyInput.value) localStorage.setItem(kName, cleanStr(apiKeyInput.value));
+      }
+      localStorage.setItem('freexan_stage3_enabled', chkStage3.checked);
+      if (stage3GroqKeyInput.value) localStorage.setItem('freexan_groq_key', cleanStr(stage3GroqKeyInput.value));
+    }
+    [apiKeyInput, hybridSarvamKeyInput, hybridGroqKeyInput, modalSarvamKeyInput, modalEndpointUrlInput, stage3GroqKeyInput].forEach(el => el.addEventListener('input', saveKeysToStorage));
+
+    function renderActiveTab() {
+      [tab1, tab2, tab3, tab4].forEach(b => b.className = 'tab-btn');
+      const tMap = { nativeWord: tab1, romanWord: tab2, nativePhrase: tab3, romanPhrase: tab4 };
+      if (tMap[activeTab]) tMap[activeTab].className = 'tab-btn active';
+      srtOut.textContent = srtTracks[activeTab] || "(No subtitle generated)";
+    }
+    tab1.addEventListener('click', () => { activeTab = 'nativeWord'; renderActiveTab(); });
+    tab2.addEventListener('click', () => { activeTab = 'romanWord'; renderActiveTab(); });
+    tab3.addEventListener('click', () => { activeTab = 'nativePhrase'; renderActiveTab(); });
+    tab4.addEventListener('click', () => { activeTab = 'romanPhrase'; renderActiveTab(); });
+
+    function renderRawTab() {
+      [rawTab1, rawTab2, rawTab3].forEach(b => b.className = 'tab-btn');
+      const rMap = { stage1: rawTab1, stage2: rawTab2, stage3: rawTab3 };
+      if (rMap[activeRawTab]) rMap[activeRawTab].className = 'tab-btn active';
+      rawOut.textContent = rawLogs[activeRawTab] || "(Waiting for stage completion...)";
+    }
+    rawTab1.addEventListener('click', () => { activeRawTab = 'stage1'; renderRawTab(); });
+    rawTab2.addEventListener('click', () => { activeRawTab = 'stage2'; renderRawTab(); });
+    rawTab3.addEventListener('click', () => { activeRawTab = 'stage3'; renderRawTab(); });
+
+    function downloadFile(content, filename) {
+      if (!content) return;
+      const blob = new Blob([content], { type: 'text/srt;charset=utf-8' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+    }
+
+    btnDl1.addEventListener('click', () => downloadFile(srtTracks.nativeWord, `freexan_track1_native_word_${Date.now()}.srt`));
+    btnDl2.addEventListener('click', () => downloadFile(srtTracks.romanWord, `freexan_track2_roman_word_${Date.now()}.srt`));
+    btnDl3.addEventListener('click', () => downloadFile(srtTracks.nativePhrase, `freexan_track3_native_phrase_${Date.now()}.srt`));
+    btnDl4.addEventListener('click', () => downloadFile(srtTracks.romanPhrase, `freexan_track4_roman_phrase_${Date.now()}.srt`));
+
+    btnDlAll.addEventListener('click', () => {
+      const ts = Date.now();
+      downloadFile(srtTracks.nativeWord, `freexan_track1_native_word_${ts}.srt`);
+      setTimeout(() => downloadFile(srtTracks.romanWord, `freexan_track2_roman_word_${ts}.srt`), 250);
+      setTimeout(() => downloadFile(srtTracks.nativePhrase, `freexan_track3_native_phrase_${ts}.srt`), 500);
+      setTimeout(() => downloadFile(srtTracks.romanPhrase, `freexan_track4_roman_phrase_${ts}.srt`), 750);
+    });
+
+    btnRun.addEventListener('click', async () => {
+      saveKeysToStorage();
+      const provider = getSelectedProvider();
+      const file = audioFileInput.files[0];
+      if (!file) { alert('Please select an audio file.'); return; }
+
+      let keySolo = cleanStr(apiKeyInput.value);
+      let keySarvam = cleanStr(provider === 'modal' ? modalSarvamKeyInput.value : hybridSarvamKeyInput.value);
+      let keyGroq = cleanStr(hybridGroqKeyInput.value);
+      let modalUrl = (modalEndpointUrlInput.value || "").trim();
+      let activeGroqKey = cleanStr(stage3GroqKeyInput.value || apiKeyInput.value || hybridGroqKeyInput.value);
+
+      if (provider === 'sarvam' && !keySolo) { alert('Please enter your Sarvam API Key.'); return; }
+      if (provider === 'groq' && !keySolo) { alert('Please enter your Groq API Key.'); return; }
+      if (provider === 'hybrid' && (!keySarvam || !keyGroq)) { alert('👑 JS Hybrid Mode requires BOTH Sarvam & Groq API Keys.'); return; }
+      if (provider === 'modal' && (!keySarvam || !modalUrl)) { alert('☁️ Modal Mode requires Sarvam Key AND Deployed Modal Web Endpoint URL.'); return; }
+      if (chkStage3.checked && !activeGroqKey) { alert('✨ Stage 3 AI Phrasing requires a Groq Cloud API Key.'); return; }
+
+      if (provider === 'sarvam' && keySolo.startsWith('gsk_')) {
+        alert("✨ Auto-Correction: You pasted a Groq API Key ('gsk_...'), but had Sarvam selected. Auto-switching to Groq Cloud!");
+        Array.from(providerRadios).find(r => r.value === 'groq').checked = true;
+        updateProviderUI(); btnRun.click(); return;
+      }
+
+      btnRun.disabled = true; [btnDlAll, btnDl1, btnDl2, btnDl3, btnDl4].forEach(b => b.disabled = true);
+      statusTxt.className = 'log';
+      rawLogs = { stage1: "⏳ Stage 1 executing...", stage2: "⏳ Waiting for Stage 1 completion...", stage3: "⏳ Waiting for Stage 1 & 2 completion..." };
+      activeRawTab = 'stage1'; renderRawTab();
+      contractOut.textContent = 'Processing...';
+      srtTracks = { nativeWord: "(Generating...)", romanWord: "(Generating...)", nativePhrase: "(Generating...)", romanPhrase: "(Generating...)" };
+      renderActiveTab();
+
+      const t0 = performance.now();
+      const isProxy = window.location.port === '8888';
+      let contract = null;
+
+      // ── PROGRESSIVE STAGE 1 & 2 EXECUTION (ZERO WASTE) ──
+      try {
+        if (provider === 'sarvam') {
+          statusTxt.textContent = `⏳ Stage 1/1: Uploading '${file.name}' to Sarvam AI Solo...`;
+          const sarvamRes = await callSarvamAPI(file, modelSelect.value, langCodeSelect.value, keySolo, isProxy);
+          rawLogs.stage1 = JSON.stringify(sarvamRes, null, 2);
+          rawLogs.stage2 = "(Solo Sarvam mode — timing generated in Stage 1)";
+          renderRawTab();
+
+          contract = parseSarvamToWordContract(sarvamRes, Math.round(performance.now()-t0), langCodeSelect.value);
+
+        } else if (provider === 'groq') {
+          statusTxt.textContent = `⏳ Stage 1/1: Uploading '${file.name}' to Groq Whisper Solo...`;
+          const groqRes = await callGroqAPI(file, keySolo, isProxy);
+          rawLogs.stage1 = "(Solo Groq mode)";
+          rawLogs.stage2 = JSON.stringify(groqRes, null, 2);
+          activeRawTab = 'stage2'; renderRawTab();
+
+          contract = parseGroqToWordContract(groqRes, Math.round(performance.now()-t0));
+
+        } else if (provider === 'hybrid') {
+          statusTxt.textContent = `⏳ Stage 1 & 2: Dual-Cloud Relay to Sarvam AI & Groq Cloud simultaneously...`;
+          const [sarvamRes, groqRes] = await Promise.all([
+            callSarvamAPI(file, modelSelect.value, langCodeSelect.value, keySarvam, isProxy),
+            callGroqAPI(file, keyGroq, isProxy)
+          ]);
+          rawLogs.stage1 = JSON.stringify(sarvamRes, null, 2);
+          rawLogs.stage2 = JSON.stringify(groqRes, null, 2);
+          renderRawTab();
+
+          contract = warpHybridHolyGrailContract(sarvamRes, groqRes, Math.round(performance.now()-t0), langCodeSelect.value);
+
+        } else {
+          // ☁️ TRUE PHYSICS HOLY GRAIL (MODAL SERVERLESS GPU)
+          statusTxt.textContent = `⏳ Stage 1/2: Uploading audio to Sarvam AI Cloud for flawless Indic text...`;
+          const sarvamRes = await callSarvamAPI(file, modelSelect.value, langCodeSelect.value, keySarvam, isProxy);
+          rawLogs.stage1 = JSON.stringify(sarvamRes, null, 2);
+          renderRawTab();
+          
+          let fullSarvamTxt = sarvamRes.transcript || "";
+          if (sarvamRes.timestamps && Array.isArray(sarvamRes.timestamps.words)) fullSarvamTxt = sarvamRes.timestamps.words.join(" ");
+          const sarvamTokens = fullSarvamTxt.replace(/\n+/g, ' ').trim().split(/\s+/).filter(Boolean);
+
+          statusTxt.textContent = `⏳ Stage 2/2: Converting audio to Base64 and waking up Modal Serverless GPU (${sarvamTokens.length} words)...`;
+          activeRawTab = 'stage2'; rawLogs.stage2 = `⏳ Calling Modal Endpoint:\nURL: ${modalUrl}\nTokens: ${sarvamTokens.length} words...`; renderRawTab();
+
+          const base64Audio = await fileToBase64(file);
+          const targetLang = sarvamRes.language_code || (langCodeSelect.value !== 'unknown' ? langCodeSelect.value : 'hi');
+          const modalRes = await fetch(modalUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio_base64: base64Audio, text_tokens: sarvamTokens, language_code: targetLang })
+          });
+          if (!modalRes.ok) throw new Error(`Modal Endpoint HTTP ${modalRes.status}: ${await modalRes.text()}`);
+          const modalData = await modalRes.json();
+          if (modalData.status === 'error') throw new Error(`Modal Script Error: ${modalData.message}`);
+
+          rawLogs.stage2 = JSON.stringify(modalData, null, 2);
+          renderRawTab();
+
+          contract = { status: "success", engine: "modal-serverless-wav2vec2-gpu", durationMs: Math.round(performance.now()-t0), language: modalData.language || langCodeSelect.value, words: modalData.words || [] };
+        }
+
+        // Immediately save & display Stage 1 & 2 successes! Zero Waste!
+        const contractTxt = JSON.stringify(contract, null, 2);
+        contractOut.textContent = contractTxt;
+        const nw = generateWordByWordSrt(contract.words);
+        srtTracks.nativeWord = nw;
+        srtTracks.romanWord = "(Check Stage 3 checkbox for Roman Hinglish track)";
+        srtTracks.nativePhrase = "(Check Stage 3 checkbox for Phrased tracks)";
+        srtTracks.romanPhrase = "(Check Stage 3 checkbox for Phrased tracks)";
+        renderActiveTab();
+        btnDl1.disabled = false;
+
+        localStorage.setItem('freexan_last_raw_logs', JSON.stringify(rawLogs));
+        localStorage.setItem('freexan_last_contract', contractTxt);
+
+      } catch (err) {
+        statusTxt.className = 'err'; const errTxt = `❌ Stage 1/2 Error: ${err.message}`;
+        statusTxt.textContent = errTxt;
+        rawLogs[activeRawTab] = `❌ FAILED: ${err.stack || err.message}`;
+        renderRawTab();
+        if (err.message.includes('Failed to fetch')) contractOut.textContent = `[CORS / NETWORK BLOCKED]\n\nPlease check your gateway or Modal URL!`;
+        localStorage.setItem('freexan_last_status', errTxt); localStorage.setItem('freexan_last_status_class', 'err');
+        btnRun.disabled = false;
+        return;
+      }
+
+      // ── PROGRESSIVE STAGE 3 EXECUTION (ISOLATED FAULT BOUNDARY) ──
+      if (chkStage3.checked && contract && contract.words && contract.words.length > 0) {
+        statusTxt.textContent = `⏳ Stage 3/3: Executing Groq Llama-3.3 Refiner for 4-Track Phrasing & Hinglish Romanization (${contract.words.length} words)...`;
+        activeRawTab = 'stage3'; rawLogs.stage3 = `⏳ Sending ${contract.words.length} tokens to Llama-3.3-70B via /proxy/groq_chat...`; renderRawTab();
+
+        try {
+          const resObj = await runStage3LlamaRefinerWithRawLog(contract.words, contract.language, activeGroqKey, isProxy);
+          srtTracks = resObj.tracks;
+          rawLogs.stage3 = JSON.stringify(resObj.rawJson, null, 2);
+          renderRawTab();
+
+          const durationMs = Math.round(performance.now() - t0);
+          const okTxt = `✅ 4-Track Suite Success! Completed in ${durationMs}ms | Extracted ${contract.words.length} synced words (${contract.engine}).`;
+          statusTxt.className = 'ok'; statusTxt.textContent = okTxt;
+          [btnDlAll, btnDl1, btnDl2, btnDl3, btnDl4].forEach(b => b.disabled = false);
+          localStorage.setItem('freexan_last_tracks', JSON.stringify(srtTracks));
+          localStorage.setItem('freexan_last_status', okTxt); localStorage.setItem('freexan_last_status_class', 'ok');
+
+        } catch (stage3Err) {
+          rawLogs.stage3 = `❌ STAGE 3 LLM ERROR:\n${stage3Err.stack || stage3Err.message}`;
+          renderRawTab();
+          const warnTxt = `⚠️ Stage 1 & 2 Succeeded (${contract.words.length} words synced), but Stage 3 AI Phrasing failed: ${stage3Err.message}`;
+          statusTxt.className = 'log'; statusTxt.style.color = '#ffca28'; statusTxt.textContent = warnTxt;
+          localStorage.setItem('freexan_last_status', warnTxt); localStorage.setItem('freexan_last_status_class', 'log');
+        }
+      } else {
+        const durationMs = Math.round(performance.now() - t0);
+        const okTxt = `✅ Benchmark Success! Completed in ${durationMs}ms | Extracted ${contract.words.length} synced words (${contract.engine}).`;
+        statusTxt.className = 'ok'; statusTxt.textContent = okTxt;
+        localStorage.setItem('freexan_last_status', okTxt); localStorage.setItem('freexan_last_status_class', 'ok');
+      }
+
+      renderActiveTab();
+      localStorage.setItem('freexan_last_raw_logs', JSON.stringify(rawLogs));
+      btnRun.disabled = false;
+    });
+
+    btnClear.addEventListener('click', () => {
+      localStorage.removeItem('freexan_last_raw_logs'); localStorage.removeItem('freexan_last_contract'); localStorage.removeItem('freexan_last_tracks');
+      localStorage.removeItem('freexan_last_status'); localStorage.removeItem('freexan_last_status_class');
+      rawLogs = { stage1: '{ "info": "Stage 1 API payload..." }', stage2: '{ "info": "Stage 2 API payload..." }', stage3: '{ "info": "Stage 3 API payload..." }' }; renderRawTab();
+      contractOut.textContent = '{ "info": "Word-level JSON will appear here..." }';
+      srtTracks = { nativeWord: "", romanWord: "", nativePhrase: "", romanPhrase: "" }; renderActiveTab();
+      statusTxt.textContent = 'Idle — cleared.'; statusTxt.className = 'log';
+      [btnDlAll, btnDl1, btnDl2, btnDl3, btnDl4].forEach(b => b.disabled = true);
+    });
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader(); reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    async function callSarvamAPI(file, model, lang, key, isProxy) {
+      const targetUrl = isProxy ? '/proxy/sarvam' : 'https://api.sarvam.ai/speech-to-text';
+      const fd = new FormData(); fd.append('file', file); fd.append('model', model); fd.append('with_timestamps', 'true');
+      if (lang !== 'unknown') fd.append('language_code', lang);
+
+      const res = await fetch(targetUrl, { method: 'POST', headers: { 'api-subscription-key': key }, body: fd });
+      if (!res.ok) throw new Error(`Sarvam HTTP ${res.status}: ${await res.text()}`);
+      return await res.json();
+    }
+
+    async function callGroqAPI(file, key, isProxy) {
+      const targetUrl = isProxy ? '/proxy/groq' : 'https://api.groq.com/openai/v1/audio/transcriptions';
+      const fd = new FormData(); fd.append('file', file); fd.append('model', 'whisper-large-v3-turbo'); fd.append('response_format', 'verbose_json'); fd.append('timestamp_granularities[]', 'word');
+
+      const res = await fetch(targetUrl, { method: 'POST', headers: { 'authorization': `Bearer ${key}` }, body: fd });
+      if (!res.ok) throw new Error(`Groq HTTP ${res.status}: ${await res.text()}`);
+      return await res.json();
+    }
+
+    async function runStage3LlamaRefinerWithRawLog(wordsArray, lang, groqKey, isProxy) {
+      const indexed = wordsArray.map((w, idx) => ({ id: idx, w: w.word }));
+      
+      const prompt = `You are an elite Bollywood film subtitle editor. Input is a JSON array of indexed Devanagari/Indic speech tokens:
+${JSON.stringify(indexed)}
+
+Perform two tasks simultaneously:
+1. Semantic Phrasing: Group consecutive token IDs into natural subtitle reading phrases (2 to 5 words max). CRITICAL: EVERY SINGLE ID from 0 to ${wordsArray.length - 1} MUST be included exactly once across the phrases. Do not omit or drop any ID!
+2. Roman Hinglish Conversion: Convert each Devanagari token into authentic Indian Instagram/WhatsApp Roman English. Keep English loanwords in standard English spelling (e.g. 'कंप्यूटर' -> 'Computer', 'वायफाय' -> 'WiFi', 'हेडफोन' -> 'headphone').
+
+Return strictly valid JSON matching this exact schema:
+{
+  "phrases": [
+    { "ids": [0, 1, 2], "native": "native phrase text", "roman": "Roman phrase text" }
+  ],
+  "roman_words": [
+    { "id": 0, "rw": "RomanWord0" }, { "id": 1, "rw": "RomanWord1" }
+  ]
+}`;
+
+      const targetUrl = isProxy ? '/proxy/groq_chat' : 'https://api.groq.com/openai/v1/chat/completions';
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+      if (!res.ok) throw new Error(`Groq LLM HTTP ${res.status}: ${await res.text()}`);
+      const data = await res.json();
+      const parsed = JSON.parse(data.choices[0].message.content);
+
+      // Programmatic deterministic assembly
+      const rwMap = {};
+      if (Array.isArray(parsed.roman_words)) {
+        parsed.roman_words.forEach(item => { if (item && item.id !== undefined) rwMap[item.id] = item.rw || wordsArray[item.id].word; });
+      }
+
+      // Track 1: Native Word
+      const nativeWord = wordsArray.map((w, idx) => `${idx + 1}\n${formatSrtTime(w.start)} --> ${formatSrtTime(w.end)}\n${w.word}`).join("\n\n");
+
+      // Track 2: Roman Word
+      const romanWord = wordsArray.map((w, idx) => `${idx + 1}\n${formatSrtTime(w.start)} --> ${formatSrtTime(w.end)}\n${rwMap[idx] || w.word}`).join("\n\n");
+
+      // Track 3 & 4: Native Phrase & Roman Phrase
+      let nativePhraseList = [];
+      let romanPhraseList = [];
+      if (Array.isArray(parsed.phrases)) {
+        parsed.phrases.forEach((p, pIdx) => {
+          const ids = p.ids || [];
+          if (ids.length === 0) return;
+          const firstId = ids[0]; const lastId = ids[ids.length - 1];
+          if (!wordsArray[firstId] || !wordsArray[lastId]) return;
+          const startTime = formatSrtTime(wordsArray[firstId].start);
+          const endTime = formatSrtTime(wordsArray[lastId].end);
+
+          // Use exact words from wordsArray if Llama omitted or altered them!
+          const exactNative = ids.map(i => wordsArray[i] ? wordsArray[i].word : "").join(" ");
+          const exactRoman = ids.map(i => rwMap[i] || (wordsArray[i] ? wordsArray[i].word : "")).join(" ");
+
+          nativePhraseList.push(`${pIdx + 1}\n${startTime} --> ${endTime}\n${p.native || exactNative}`);
+          romanPhraseList.push(`${pIdx + 1}\n${startTime} --> ${endTime}\n${p.roman || exactRoman}`);
+        });
+      }
+
+      return {
+        tracks: {
+          nativeWord: nativeWord || "[Empty Track]",
+          romanWord: romanWord || "[Empty Track]",
+          nativePhrase: nativePhraseList.join("\n\n") || nativeWord,
+          romanPhrase: romanPhraseList.join("\n\n") || romanWord
+        },
+        rawJson: parsed
+      };
+    }
+
+    function parseSarvamToWordContract(data, durationMs, lang) {
+      const contract = { status: "success", engine: "sarvam-saaras-solo", durationMs, language: data.language_code || lang, words: [] };
+      if (data.timestamps && Array.isArray(data.timestamps.words)) {
+        const segWords = data.timestamps.words; const starts = data.timestamps.start_time_seconds; const ends = data.timestamps.end_time_seconds;
+        segWords.forEach((phrase, idx) => {
+          const pStart = Number(starts[idx] || 0); const pEnd = Number(ends[idx] || 0);
+          const tokens = phrase.trim().split(/\s+/).filter(Boolean); if (tokens.length === 0) return;
+          const totalChars = tokens.reduce((acc, w) => acc + Math.max(1, w.length), 0); const winDur = Math.max(0.05, pEnd - pStart);
+          let cur = pStart;
+          tokens.forEach((w, wIdx) => {
+            const wDur = winDur * (Math.max(1, w.length) / totalChars); const wStart = cur; const wEnd = wIdx === tokens.length - 1 ? pEnd : cur + wDur;
+            contract.words.push({ word: w, start: round(wStart), end: round(wEnd) }); cur = wEnd;
+          });
+        });
+      }
+      return contract;
+    }
+
+    function parseGroqToWordContract(data, durationMs) {
+      const contract = { status: "success", engine: "groq-whisper-solo", durationMs, language: data.language || "unknown", words: [] };
+      if (Array.isArray(data.words)) {
+        data.words.forEach(w => { if (w.word && w.word.trim()) contract.words.push({ word: w.word.trim(), start: round(w.start), end: round(w.end) }); });
+      }
+      return contract;
+    }
+
+    function warpHybridHolyGrailContract(sarvamData, groqData, durationMs, lang) {
+      const contract = { status: "success", engine: "freexan-hybrid-holy-grail (sarvam-spelling + groq-frame-sync)", durationMs, language: sarvamData.language_code || lang, words: [] };
+      let fullSarvamTxt = sarvamData.transcript || "";
+      if (sarvamData.timestamps && Array.isArray(sarvamData.timestamps.words)) fullSarvamTxt = sarvamData.timestamps.words.join(" ");
+      const sarvamTokens = fullSarvamTxt.replace(/\n+/g, ' ').trim().split(/\s+/).filter(Boolean);
+      const groqWords = Array.isArray(groqData.words) ? groqData.words.filter(w => w.word && w.word.trim()) : [];
+
+      if (groqWords.length === 0) return parseSarvamToWordContract(sarvamData, durationMs, lang);
+      if (sarvamTokens.length === 0) return parseGroqToWordContract(groqData, durationMs);
+
+      const sLen = sarvamTokens.length; const gLen = groqWords.length;
+      const anchorGroups = {};
+      for (let i = 0; i < sLen; i++) {
+        const gIdx = Math.min(gLen - 1, Math.floor((i / sLen) * gLen));
+        if (!anchorGroups[gIdx]) anchorGroups[gIdx] = [];
+        anchorGroups[gIdx].push(sarvamTokens[i]);
+      }
+
+      let lastEnd = 0;
+      for (let gIdx = 0; gIdx < gLen; gIdx++) {
+        const tokens = anchorGroups[gIdx]; if (!tokens || tokens.length === 0) continue;
+        const anchorStart = Math.max(lastEnd, groqWords[gIdx].start); const anchorEnd = Math.max(anchorStart + 0.05, groqWords[gIdx].end); const winDur = anchorEnd - anchorStart;
+        const totalChars = tokens.reduce((acc, w) => acc + Math.max(1, w.length), 0); let curTime = anchorStart;
+        tokens.forEach((w, idx) => {
+          const wWeight = Math.max(1, w.length) / totalChars; const wStart = curTime; const wEnd = idx === tokens.length - 1 ? anchorEnd : curTime + (winDur * wWeight);
+          contract.words.push({ word: w, start: round(wStart), end: round(wEnd) }); curTime = wEnd;
+        });
+        lastEnd = anchorEnd;
+      }
+      return contract;
+    }
+
+    function generateWordByWordSrt(wordsArray) {
+      if (!wordsArray || wordsArray.length === 0) return "1\n00:00:00,000 --> 00:00:01,000\n[No words found]";
+      return wordsArray.map((w, idx) => `${idx + 1}\n${formatSrtTime(w.start)} --> ${formatSrtTime(w.end)}\n${w.word}`).join("\n\n");
+    }
+
+    function formatSrtTime(sec) {
+      const h = Math.floor(sec / 3600); const m = Math.floor((sec % 3600) / 60); const s = Math.floor(sec % 60); const ms = Math.floor((sec % 1) * 1000);
+      return `${pad(h,2)}:${pad(m,2)}:${pad(s,2)},${pad(ms,3)}`;
+    }
+
+    function pad(num, size) { let s = String(num); while (s.length < size) s = "0" + s; return s; }
+    function round(num) { return Math.round(num * 1000) / 1000; }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+old_files/
+panel/js/panel.js
+panel/js/panel_clean.js
+*.log
+.DS_Store
+Thumbs.db
+.debug

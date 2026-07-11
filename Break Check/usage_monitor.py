@@ -85,6 +85,12 @@ def get_ram_usage_gb():
     except Exception:
         return 0.0
 
+def get_ram_total_gb():
+    try:
+        return round(psutil.virtual_memory().total / (1024 ** 3), 3)
+    except Exception:
+        return 16.0
+
 def init_db():
     conn = sqlite3.connect(DATA_FILE)
     c = conn.cursor()
@@ -100,13 +106,15 @@ def init_db():
                   employee_id TEXT,
                   ram_usage_gb REAL,
                   scroll_distance INTEGER,
-                  modifier_keys INTEGER)''')
+                  modifier_keys INTEGER,
+                  ram_total_gb REAL)''')
     # Safe migrations for existing databases
     for col, typedef in [
         ('employee_id',    'TEXT'),
         ('ram_usage_gb',   'REAL'),
         ('scroll_distance','INTEGER'),
         ('modifier_keys',  'INTEGER'),
+        ('ram_total_gb',   'REAL'),
     ]:
         try:
             c.execute(f'ALTER TABLE usage_events ADD COLUMN {col} {typedef}')
@@ -116,18 +124,18 @@ def init_db():
     conn.close()
 
 def save_event(event_type, cursor_x, cursor_y, keystrokes, active_window,
-               ram_usage_gb=0.0, scroll_dist=0, has_modifier=0):
+               ram_usage_gb=0.0, scroll_dist=0, has_modifier=0, ram_total_gb=0.0):
     try:
         conn = sqlite3.connect(DATA_FILE)
         c = conn.cursor()
         c.execute(
             '''INSERT INTO usage_events
                (timestamp, event_type, cursor_x, cursor_y, keystrokes,
-                active_window, employee_id, ram_usage_gb, scroll_distance, modifier_keys)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                active_window, employee_id, ram_usage_gb, scroll_distance, modifier_keys, ram_total_gb)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             (datetime.now().astimezone().isoformat(), event_type,
              cursor_x, cursor_y, keystrokes, active_window,
-             get_current_employee(), ram_usage_gb, scroll_dist, has_modifier)
+             get_current_employee(), ram_usage_gb, scroll_dist, has_modifier, ram_total_gb)
         )
         conn.commit()
         conn.close()
@@ -183,6 +191,7 @@ def is_adobe_running():
 # ── Recording threads ─────────────────────────────────────────────────────────
 
 def record_cursor():
+    ram_total = get_ram_total_gb()
     while True:
         try:
             x, y = get_cursor_position()
@@ -191,7 +200,7 @@ def record_cursor():
             if not is_adobe_running():
                 window_title += " [ADOBE_CLOSED]"
             print(f"[DEBUG] Cursor Event -> X:{x} Y:{y} RAM:{ram}GB Window:{window_title}")
-            save_event("cursor", x, y, 0, window_title, ram_usage_gb=ram)
+            save_event("cursor", x, y, 0, window_title, ram_usage_gb=ram, ram_total_gb=ram_total)
         except Exception as e:
             print(f"Cursor error: {e}")
         time.sleep(CURSOR_INTERVAL)
@@ -216,13 +225,14 @@ def record_keystrokes():
                 scroll         = scroll_distance;     scroll_distance = 0
                 has_modifier   = 1 if mod_count > 0 else 0
                 ram            = get_ram_usage_gb()
+                ram_total      = get_ram_total_gb()
 
                 trigger = 'Window Change' if window_changed else 'Time Limit'
                 print(f"[DEBUG] Keystroke Event -> Count:{count} Modifiers:{mod_count} "
                       f"Scroll:{scroll} RAM:{ram}GB Window:{last_window_title} (Trigger: {trigger})")
 
                 save_event("keystrokes", 0, 0, count, last_window_title,
-                           ram_usage_gb=ram, scroll_dist=scroll, has_modifier=has_modifier)
+                           ram_usage_gb=ram, scroll_dist=scroll, has_modifier=has_modifier, ram_total_gb=ram_total)
 
                 last_window_title = current_window_title
                 last_record_time = time_now

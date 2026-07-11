@@ -385,3 +385,92 @@ tr:hover td { background: rgba(255,255,255,0.03); }
     .cards-row  { grid-template-columns: 1fr; }
     .main-content { padding: 1rem; }
 }
+
+/* ─ Chat Widget ──────────────────────────────────── */
+.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    backdrop-filter: blur(24px);
+    transition: transform 0.3s ease, height 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.chat-widget.closed {
+    height: 50px;
+    cursor: pointer;
+}
+.chat-widget:not(.closed) {
+    height: 450px;
+}
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--glass);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    cursor: pointer;
+}
+.chat-body {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+.chat-message {
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    line-height: 1.4;
+    max-width: 85%;
+}
+.ai-message {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+.user-message {
+    background: var(--primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+}
+.chat-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.5rem;
+}
+.chat-footer input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+}
+.chat-footer input:focus {
+    border-color: var(--primary);
+}
+.chat-footer button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0 1rem;
+    cursor: pointer;
+    font-weight: 600;
+}

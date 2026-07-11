@@ -1,0 +1,267 @@
+/* freeXan Caption Core Styles */
+
+#main {
+    margin: 5px;
+}
+
+a {
+    cursor: pointer;
+}
+
+body {
+    background: #232323 !important; /* Force dark background even with Bootstrap */
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    padding-top: 10px;
+    line-height: 1.4;
+    font-size: 10px;
+    margin-left: 15px;
+}
+
+/* Scrollbar Styles */
+body::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: #1D1D1D;
+}
+
+body::-webkit-scrollbar-track {
+    background: #1D1D1D;
+}
+
+body::-webkit-scrollbar-thumb {
+    background-color: #313131;
+    border-radius: 20px;
+    border: 0px solid #1D1D1D;
+}
+
+::-webkit-scrollbar-corner {
+    background: #1D1D1D;
+}
+
+/* Tab Styles */
+.tabs {
+    margin: 0 auto;
+    clear: both;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #333;
+}
+
+.tab {
+    display: inline-block;
+}
+
+.tab label {
+    font-size: 11px;
+    margin-right: 20px;
+    position: relative;
+    top: 0;
+    cursor: pointer;
+    color: white;
+    padding-bottom: 5px;
+}
+
+.myTab {
+    display: none;
+}
+
+.tab__content {
+    position: relative;
+    top: 40px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transition: opacity .2s cubic-bezier(.42, 0, .34, 1.01);
+    opacity: 0;
+}
+
+.myTab:checked~label {
+    border-bottom: 1px solid #29BFBE;
+    color: white;
+    z-index: 2;
+}
+
+.myTab:checked~label~.tab__content {
+    z-index: 1;
+    opacity: 1;
+}
+
+/* UI Elements */
+.myRadio {
+    margin-top: 5px !important;
+}
+
+.myRadio:active,
+.myRadio:checked {
+    color: #fff;
+    background-color: #29BFBE !important;
+    border-color: #29BFBE !important;
+}
+
+/* freeXan Caption Button System */
+.btn-sm {
+    border-radius: 25px !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 15px !important;
+    color: white !important;
+    margin-right: 5px;
+    border-width: 1px;
+    border-style: solid;
+}
+
+/* Sync Buttons (Teal) */
+.btn-sync-all {
+    background-color: rgba(41, 191, 190, 0.5) !important;
+    border-color: #29BFBE !important;
+}
+
+.btn-sync-sub {
+    background-color: #232323 !important;
+    border-color: #29BFBE !important;
+}
+
+/* Progression Buttons (Blue) */
+.btn-progression {
+    background-color: rgba(34, 135, 214, 0.5) !important;
+    border-color: #2287D6 !important;
+}
+
+.btn-progression-sub {
+    background-color: #232323 !important;
+    border-color: #2287D6 !important;
+}
+
+/* Selection/Phrase Buttons (Purple) */
+.btn-phrase-all {
+    background-color: rgba(28, 44, 158, 0.5) !important;
+    border-color: #1C2C9E !important;
+}
+
+.btn-phrase-sub {
+    background-color: #232323 !important;
+    border-color: #1C2C9E !important;
+}
+
+.btn-outline-default {
+    border-color: #29BFBE !important;
+}
+
+/* Icons & Helpers */
+.fa-caret-right {
+    color: #29BFBE !important;
+    font-size: 15px;
+    margin-left: 10px;
+}
+
+.spinner {
+    position: absolute;
+    cursor: pointer;
+}
+
+p {
+    font-size: 12px;
+    margin-right: 15px;
+    margin-top: 10px;
+}
+
+.dragDrop {
+    height: 50px;
+    width: 90%;
+    border-color: black;
+    background-color: grey;
+}
+
+.docLinks, .tutLinks {
+    cursor: pointer;
+    color: #29BFBE !important;
+}
+
+.docLinks:hover, .tutLinks:hover {
+    color: #29BFBE !important;
+}
+
+.dot {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.form-control-range {
+    accent-color: #29BFBE;
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #232323;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+    border-radius: 20px;
+    font-family: 'Montserrat';
+}
+
+.modalHeader {
+    font-size: 20px;
+    font-weight: bold;
+    color: #29BFBE;
+}
+
+.modalTitle {
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+}
+
+.modalBody {
+    font-size: 12px;
+    color: white;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: #29BFBE;
+    text-decoration: none;
+    cursor: pointer;
+}
+/* --- License Bypass Styles (Framework Hiding) --- */
+.aesp-notification, 
+#aesp-notifications, 
+#aesp-disabled, 
+#aesp-notification-container {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Ensure the body is not dimmed or blocked */
+body {
+    cursor: default !important;
+}

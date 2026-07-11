@@ -111,6 +111,7 @@ async function fetchProfiles() {
 
 /* ── Reset UI state when a profile has no data ── */
 function resetDashboardUI() {
+    destroyAllCharts();
     ['kpi-events-val','kpi-keys-val','kpi-active-val',
      'kpi-modifier-val','kpi-scroll-val','kpi-ram-val'].forEach(id => setEl(id, '—'));
 
@@ -152,7 +153,7 @@ async function refreshDashboard() {
     icon.style.animation = 'spin 0.7s linear infinite';
 
     try {
-        destroyAllCharts();           // clear previous profile's charts first
+        
         const empId = document.getElementById('employeeSelect').value;
         _rawData = await fetchData(empId);
         if (_rawData.length > 0) {
@@ -279,7 +280,7 @@ function renderActivityFlow(data) {
         activityChart.data.datasets[0].data = idleDS;
         activityChart.data.datasets[1].data = keysDS;
         activityChart.data.datasets[2].data = curDS;
-        activityChart.update('none');
+        activityChart.update();
     } else {
         activityChart = new Chart(ctxA, {
             data: { datasets: [
@@ -288,7 +289,7 @@ function renderActivityFlow(data) {
                 { type:'line', label:'Cursor Events', data:curDS, borderColor:'#3b82f6', backgroundColor:grad, fill:true, tension:0.35, borderWidth:2, order:2 },
             ]},
             options: {
-                responsive:true, maintainAspectRatio:false, animation:false,
+                responsive:true, maintainAspectRatio:false, animation:true,
                 plugins: {
                     legend:{ position:'top' },
                     zoom:{ limits:{x:{min:defMin,max:defMax,minRange:60000}}, zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'}, pan:{enabled:true,mode:'x'} }
@@ -314,12 +315,12 @@ function renderActivityFlow(data) {
         appChart.data.labels = sorted.map(s=>s[0]);
         appChart.data.datasets[0].data = sorted.map(s=>s[1]);
         appChart.data.datasets[0].backgroundColor = sorted.map(s=>appColor(s[0]));
-        appChart.update('none');
+        appChart.update();
     } else {
         appChart = new Chart(ctxApp, {
             type:'doughnut',
             data:{ labels:sorted.map(s=>s[0]), datasets:[{ data:sorted.map(s=>s[1]), backgroundColor:sorted.map(s=>appColor(s[0])), borderWidth:0, hoverOffset:6 }] },
-            options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', animation:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:10 } } } }
+            options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', animation:true, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:10 } } } }
         });
     }
 
@@ -336,12 +337,12 @@ function renderActivityFlow(data) {
         scrollAppChart.data.labels = sortedScroll.map(s=>s[0]);
         scrollAppChart.data.datasets[0].data = sortedScroll.map(s=>s[1]);
         scrollAppChart.data.datasets[0].backgroundColor = sortedScroll.map(s=>appColor(s[0]));
-        scrollAppChart.update('none');
+        scrollAppChart.update();
     } else {
         scrollAppChart = new Chart(ctxScroll, {
             type:'bar',
             data:{ labels:sortedScroll.map(s=>s[0]), datasets:[{ data:sortedScroll.map(s=>s[1]), backgroundColor:sortedScroll.map(s=>appColor(s[0])), borderRadius:6, borderSkipped:false }] },
-            options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:false, plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true,title:{display:true,text:'Scroll Ticks'}}, y:{grid:{display:false}} } }
+            options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:true, plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true,title:{display:true,text:'Scroll Ticks'}}, y:{grid:{display:false}} } }
         });
     }
 
@@ -376,12 +377,12 @@ function renderProficiency(data) {
     if (modifierGaugeChart) {
         modifierGaugeChart.data.datasets[0].data = [modRatio, 100 - modRatio];
         modifierGaugeChart.data.datasets[0].backgroundColor[0] = gaugeColor;
-        modifierGaugeChart.update('none');
+        modifierGaugeChart.update();
     } else {
         modifierGaugeChart = new Chart(ctxG, {
             type:'doughnut',
             data:{ datasets:[{ data:[modRatio, 100-modRatio], backgroundColor:[gaugeColor,'rgba(255,255,255,0.05)'], borderWidth:0, circumference:180, rotation:270 }] },
-            options:{ responsive:false, cutout:'78%', animation:false, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+            options:{ responsive:false, cutout:'78%', animation:true, plugins:{legend:{display:false},tooltip:{enabled:false}} }
         });
     }
 
@@ -409,12 +410,12 @@ function renderProficiency(data) {
 
     if (kpmChart) {
         kpmChart.data.datasets[0].data = kpmValues;
-        kpmChart.update('none');
+        kpmChart.update();
     } else {
         kpmChart = new Chart(ctxKPM, {
             type:'line',
             data:{ datasets:[{ label:'KPM', data:kpmValues, borderColor:'#8b5cf6', backgroundColor:kpmGrad, fill:true, tension:0.4, borderWidth:2, pointRadius:0 }] },
-            options:{ responsive:true, maintainAspectRatio:false, animation:false, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'}}, y:{beginAtZero:true} } }
+            options:{ responsive:true, maintainAspectRatio:false, animation:true, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'}}, y:{beginAtZero:true} } }
         });
     }
 
@@ -511,12 +512,12 @@ function renderHardware(data) {
 
     if (ramChart) {
         ramChart.data.datasets[0].data = ramPoints;
-        ramChart.update('none');
+        ramChart.update();
     } else {
         ramChart = new Chart(ctxR, {
             type:'line',
             data:{ datasets:[{ label:'RAM (GB)', data:ramPoints, borderColor:'#ef4444', backgroundColor:ramGrad, fill:true, tension:0.3, borderWidth:2, pointRadius:0 }] },
-            options:{ responsive:true, maintainAspectRatio:false, animation:false, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'},title:{display:true,text:'Time'}}, y:{beginAtZero:true,title:{display:true,text:'RAM (GB)'}} } }
+            options:{ responsive:true, maintainAspectRatio:false, animation:true, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'},title:{display:true,text:'Time'}}, y:{beginAtZero:true,title:{display:true,text:'RAM (GB)'}} } }
         });
     }
 }
@@ -594,12 +595,12 @@ function renderFriction(data) {
     const ctxSC = document.getElementById('scrollCatChart').getContext('2d');
     if (scrollCatChart) {
         scrollCatChart.data.datasets[0].data = Object.values(scrollCat);
-        scrollCatChart.update('none');
+        scrollCatChart.update();
     } else {
         scrollCatChart = new Chart(ctxSC, {
             type:'doughnut',
             data:{ labels:Object.keys(scrollCat), datasets:[{ data:Object.values(scrollCat), backgroundColor:catColors, borderWidth:0, hoverOffset:4 }] },
-            options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', animation:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:8 } } } }
+            options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', animation:true, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:8 } } } }
         });
     }
 
@@ -621,12 +622,12 @@ function renderFriction(data) {
     swGrad.addColorStop(1,'rgba(245,158,11,0)');
     if (switchChart) {
         switchChart.data.datasets[0].data = swLabels.map(t=>({x:t,y:switchByHour[t]}));
-        switchChart.update('none');
+        switchChart.update();
     } else {
         switchChart = new Chart(ctxSW, {
             type:'bar',
             data:{ datasets:[{ label:'Switches/Hr', data:swLabels.map(t=>({x:t,y:switchByHour[t]})), backgroundColor:swGrad, borderColor:'#f59e0b', borderWidth:1, borderRadius:4 }] },
-            options:{ responsive:true, maintainAspectRatio:false, animation:false, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'}}, y:{beginAtZero:true,title:{display:true,text:'Context Switches'}} } }
+            options:{ responsive:true, maintainAspectRatio:false, animation:true, plugins:{legend:{display:false}}, scales:{ x:{type:'time',time:{unit:'hour'}}, y:{beginAtZero:true,title:{display:true,text:'Context Switches'}} } }
         });
     }
 }
