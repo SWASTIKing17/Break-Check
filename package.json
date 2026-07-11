@@ -1,17 +1,38 @@
 {
   "name": "freexan",
-  "version": "3.5.4",
+  "version": "3.8.33",
   "description": "freeXan by BloomX Solutions — invisible workflow infrastructure for Adobe Premiere Pro",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "start:noplugins": "electron . --no-plugins",
+    "start:ceps": "electron . --use-ceps",
     "dev": "nodemon",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "icon": "node build/make-ico.mjs",
     "seed": "node scripts/seed-db.js",
     "dist": "electron-builder --win --x64",
     "dist:dir": "electron-builder --win --x64 --dir"
+  },
+  "build": {
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "usage_monitor.exe"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "native-pill/build/FreeXanPill.exe"
+    ],
+    "nsis": {
+      "include": "build/installer.nsh",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
   },
   "keywords": [],
   "author": "",
@@ -25,10 +46,13 @@
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "adm-zip": "^0.5.17",
     "axios": "^1.16.1",
     "better-sqlite3": "^12.10.0",
     "chokidar": "^5.0.0",
+    "electron-log": "^5.4.4",
     "music-metadata": "^7.14.0",
+    "nodemailer": "^9.0.1",
     "tone": "^15.1.22",
     "wavesurfer.js": "^7.12.7",
     "ws": "^8.20.1"

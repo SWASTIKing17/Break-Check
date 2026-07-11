@@ -93,6 +93,14 @@ function initSchema() {
       client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
       funnel_id INTEGER REFERENCES funnels(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id       INTEGER PRIMARY KEY AUTOINCREMENT,
+      name     TEXT NOT NULL UNIQUE,
+      initials TEXT NOT NULL,
+      hex_color TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // All migration DDL is wrapped in try-catch so a failed migration degrades
@@ -149,7 +157,21 @@ function initSchema() {
   // Migrate folder_template_assignments: add task_id if missing
   const ftaCols = db.prepare("PRAGMA table_info(folder_template_assignments)").all();
   if (!ftaCols.find(c => c.name === 'task_id')) {
-    db.exec('ALTER TABLE folder_template_assignments ADD COLUMN task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL');
+    db.exec('ALTER TABLE folder_template_assignments ADD COLUMN task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE');
+  }
+
+  // Create users table if missing from an older migration
+  const allTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+  if (!allTables.find(t => t.name === 'users')) {
+    db.exec(`
+      CREATE TABLE users (
+        id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        name     TEXT NOT NULL UNIQUE,
+        initials TEXT NOT NULL,
+        hex_color TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
   }
 
   // Migrate folder_template_nodes: add slot_type for asset-routing slots
@@ -562,4 +584,20 @@ const folderTemplatesApi = {
   }
 };
 
-module.exports = { clientsApi, funnelsApi, templatesApi, assetsApi, tasksApi, folderTemplatesApi };
+const usersApi = {
+  getAll() {
+    return getDb().prepare('SELECT * FROM users ORDER BY name').all();
+  },
+  add(name, initials, hex_color) {
+    const stmt = getDb().prepare('INSERT INTO users (name, initials, hex_color) VALUES (?, ?, ?)');
+    return { id: stmt.run(name, initials, hex_color).lastInsertRowid };
+  },
+  update(id, name, initials, hex_color) {
+    getDb().prepare('UPDATE users SET name=?, initials=?, hex_color=? WHERE id=?').run(name, initials, hex_color, id);
+  },
+  delete(id) {
+    getDb().prepare('DELETE FROM users WHERE id=?').run(id);
+  }
+};
+
+module.exports = { clientsApi, funnelsApi, templatesApi, assetsApi, tasksApi, folderTemplatesApi, usersApi };

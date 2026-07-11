@@ -15,7 +15,7 @@ let projectCheckInterval = null;
 let lastProjectPath = '';
 let projectReadySent = false;
 let reconnectAttempts = 0;
-var MAX_RECONNECT = 30; // stop after 30 attempts (~90 s) if server never comes back
+var MAX_RECONNECT = Infinity; // keep retrying indefinitely so panel connects whenever FreeXan app is started
 
 function extLog(msg) {
     console.log('[freeXan] ' + msg);

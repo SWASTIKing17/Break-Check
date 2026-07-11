@@ -6,11 +6,19 @@ Every contributor (human or AI agent) must follow these rules.
 
 ---
 
-## 1. LOG MAINTENANCE (MANDATORY)
+## 1. MEMORY & LOG MAINTENANCE (MANDATORY)
 
-These three log files must be kept up to date at all times. They are living documents.
+These four documents must be kept up to date at all times. They are living documents and authoritative sources of truth.
 
-### 1.1 CHANGELOG.md
+### 1.1 PROJECT_MEMORY.md (SOURCE OF TRUTH)
+
+**Rule:** `docs/PROJECT_MEMORY.md` is the authoritative **Source of Truth** and the primary document from where any new developer or AI agent will start their research.
+- **Mandatory Starting Point:** Always consult `docs/PROJECT_MEMORY.md` first before developing new features or investigating code.
+- **Mandatory Cross-Check & Enrichment:** Whenever any agent develops something new or reads code to understand an existing feature, always cross-check it against `docs/PROJECT_MEMORY.md`. If a reference, architecture, or tool is not found, you MUST add it immediately, keeping the document well-organized and well-researched.
+
+---
+
+### 1.2 CHANGELOG.md
 
 **Rule:** Every code change — no matter how small — must be logged here before the session ends.
 
@@ -43,7 +51,7 @@ These three log files must be kept up to date at all times. They are living docu
 
 ---
 
-### 1.2 DEV_LOG.md
+### 1.3 DEV_LOG.md
 
 **Rule:** Start a new session entry at the beginning of every significant development session.
 
@@ -81,7 +89,7 @@ These three log files must be kept up to date at all times. They are living docu
 
 ---
 
-### 1.3 NAVIGATION_LOG.md
+### 1.4 NAVIGATION_LOG.md
 
 **Rule:** Update NAVIGATION_LOG.md whenever any of the following happen:
 - A new file is added to the project
@@ -96,6 +104,15 @@ These three log files must be kept up to date at all times. They are living docu
 **Purpose:** This file is the map that lets any new person (or AI) understand the full project without reading every file. Keep it accurate.
 
 ---
+
+### 1.5 COMPONENT-SPECIFIC DOCUMENTATION (CEPs, MCP, CLI)
+
+**Rule:** Specialized components have independent documentation requirements that must be maintained separately:
+- **CEP Plugins (`/CEPs/`):** Whenever you change any CEP plugin, you MUST update its respective documentation in its own specific docs directory/file.
+- **MCP Server (`/mcp/`) & CLI (`/cli/`):** Both MCP and CLI MUST have their documentation maintained separately in `/mcp/README.md` and `/cli/README.md`. Whenever you add, modify, or remove any tool or command, update their respective README files immediately.
+
+---
+
 
 ## 2. VERSIONING
 

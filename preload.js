@@ -3,6 +3,12 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 let onDropCallback = null;
 let onUrlDropCallback = null;
 
+ipcRenderer.on('native-pill-files-dropped', (event, data) => {
+  if (onDropCallback && data && Array.isArray(data.filePaths)) {
+    onDropCallback(data.filePaths, data.modKeys || {});
+  }
+});
+
 window.addEventListener('dragover', (e) => {
   e.preventDefault();
 }, true);
@@ -96,6 +102,7 @@ contextBridge.exposeInMainWorld('api', {
   importBrowserImage: (url) => ipcRenderer.invoke('import-browser-image', url),
   moveOverlayWindow: (delta) => ipcRenderer.send('move-overlay-window', delta),
   resizeOverlay: (expanded) => ipcRenderer.send('resize-overlay', expanded),
+  fetchSupabaseProfiles: () => ipcRenderer.invoke('fetch-supabase-profiles'),
 
   // Database API
   db: {
@@ -131,6 +138,11 @@ contextBridge.exposeInMainWorld('api', {
     updateAsset: (id, name, filePath, clientId, funnelId) => ipcRenderer.invoke('db-update-asset', id, name, filePath, clientId, funnelId),
     deleteAsset: (id) => ipcRenderer.invoke('db-delete-asset', id),
 
+    getUsers: () => ipcRenderer.invoke('db-get-users'),
+    addUser: (name, initials, hex) => ipcRenderer.invoke('db-add-user', name, initials, hex),
+    updateUser: (id, name, initials, hex) => ipcRenderer.invoke('db-update-user', id, name, initials, hex),
+    deleteUser: (id) => ipcRenderer.invoke('db-delete-user', id),
+
     getWatchedFolders: () => ipcRenderer.invoke('db-get-watched-folders'),
     addWatchedFolder: (folderPath) => ipcRenderer.invoke('db-add-watched-folder', folderPath),
     deleteWatchedFolder: (id) => ipcRenderer.invoke('db-delete-watched-folder', id),
@@ -159,7 +171,11 @@ contextBridge.exposeInMainWorld('api', {
     getDefault:     ()                                          => ipcRenderer.invoke('ft-get-default'),
     selectAsset:    ()                                          => ipcRenderer.invoke('ft-select-asset'),
     selectPrproj:   ()                                          => ipcRenderer.invoke('select-file'),
-  }
+  },
+  sendBugReport: (reportText) => ipcRenderer.invoke('send-bug-report', reportText),
+  exportDiagnostics: () => ipcRenderer.invoke('export-diagnostics')
 });
 
-
+contextBridge.exposeInMainWorld('freeXanLog', (level, event, correlationId, payload) => {
+  ipcRenderer.send('log', { level: level || 'info', event: event || 'ui:event', source: 'electron-renderer', correlationId: correlationId || null, payload: payload || {} });
+});

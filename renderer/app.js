@@ -177,10 +177,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (el && v) el.textContent = ' v' + v;
   } catch (_) { /* non-fatal */ }
 
+  // Helper for generating correlationId
+  const getCid = () => crypto.randomUUID ? crypto.randomUUID() : 'ui-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+
   // Tab navigation
   navItems.forEach(item => {
     item.addEventListener('click', () => {
       const tabId = item.getAttribute('data-tab');
+      if (!tabId) return;
+      const cid = getCid();
+      if (window.freeXanLog) window.freeXanLog('info', 'ui:tab-click', cid, { tabId, optimistic: true });
       navItems.forEach(n => n.classList.remove('active'));
       tabContents.forEach(t => t.classList.remove('active'));
       item.classList.add('active');
@@ -188,6 +194,79 @@ window.addEventListener('DOMContentLoaded', async () => {
       requestAnimationFrame(updateNavIndicator);
     });
   });
+
+  // Bug Report Modal logic
+  const btnReportBug = document.getElementById('btn-report-bug');
+  const bugModal = document.getElementById('bug-report-modal');
+  const btnCloseBugModal = document.getElementById('btn-close-bug-modal');
+  const btnSubmitBugReport = document.getElementById('btn-submit-bug-report');
+  const bugReportText = document.getElementById('bug-report-text');
+  const bugReportStatus = document.getElementById('bug-report-status');
+
+  function setBugStatus(msg, color) {
+    if (bugReportStatus) {
+      bugReportStatus.textContent = msg;
+      bugReportStatus.style.color = color || '#aaa';
+    }
+  }
+
+  if (btnReportBug) {
+    btnReportBug.addEventListener('click', () => {
+      const cid = getCid();
+      if (window.freeXanLog) window.freeXanLog('info', 'ui:report-bug-open', cid, { modal: 'open' });
+      setBugStatus('', '');
+      if (bugModal) bugModal.style.display = 'flex';
+      if (bugReportText) bugReportText.focus();
+    });
+  }
+
+  if (btnCloseBugModal) {
+    btnCloseBugModal.addEventListener('click', () => {
+      const cid = getCid();
+      if (window.freeXanLog) window.freeXanLog('info', 'ui:report-bug-close', cid, { modal: 'close' });
+      setBugStatus('', '');
+      if (bugModal) bugModal.style.display = 'none';
+    });
+  }
+
+  if (btnSubmitBugReport) {
+    btnSubmitBugReport.addEventListener('click', async () => {
+      const text = bugReportText ? bugReportText.value.trim() : '';
+      const cid = getCid();
+
+      // Guard: ensure preload API bridge is available
+      if (!window.api || typeof window.api.sendBugReport !== 'function') {
+        setBugStatus('⚠ App API not ready. Please restart FreeXan and try again.', '#ffaa00');
+        if (window.freeXanLog) window.freeXanLog('warn', 'ui:report-bug-no-api', cid, {});
+        return;
+      }
+
+      if (window.freeXanLog) window.freeXanLog('info', 'ui:report-bug-submit', cid, { reportLength: text.length });
+
+      btnSubmitBugReport.textContent = '⏳ Sending…';
+      btnSubmitBugReport.disabled = true;
+      setBugStatus('Bundling diagnostic logs…', '#aaa');
+
+      try {
+        const result = await window.api.sendBugReport(text);
+        if (window.freeXanLog) window.freeXanLog('info', 'ui:report-bug-resolve', cid, { status: 'success', result });
+        setBugStatus('✅ Report sent to swastik@bloomxsolutions.com!', '#4caf50');
+        if (bugReportText) bugReportText.value = '';
+        // Auto-close modal after 2.5 s
+        setTimeout(() => {
+          if (bugModal) bugModal.style.display = 'none';
+          setBugStatus('', '');
+        }, 2500);
+      } catch (e) {
+        if (window.freeXanLog) window.freeXanLog('error', 'ui:report-bug-reject', cid, { error: e.message });
+        setBugStatus('❌ Failed: ' + (e.message || 'unknown error'), '#ff5252');
+      } finally {
+        btnSubmitBugReport.textContent = 'Send Report';
+        btnSubmitBugReport.disabled = false;
+      }
+    });
+  }
+
   // Position indicator after layout is ready
   requestAnimationFrame(updateNavIndicator);
 

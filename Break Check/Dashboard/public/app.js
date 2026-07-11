@@ -109,6 +109,42 @@ async function fetchProfiles() {
 }
 
 
+
+/* ── Reset UI state when a profile has no data ── */
+function resetDashboardUI() {
+    ['kpi-events-val','kpi-keys-val','kpi-active-val',
+     'kpi-modifier-val','kpi-scroll-val','kpi-ram-val'].forEach(id => setEl(id, '—'));
+
+    const projWrap = document.getElementById('projectListWrap');
+    if (projWrap) projWrap.innerHTML = '<p class="muted" style="padding:1rem 0">No project data yet.</p>';
+
+    setEl('modifierPct', '—');
+    setEl('modifierInsight', 'No data collected for this profile.');
+
+    const heatmapWrap = document.getElementById('heatmapWrap');
+    if (heatmapWrap) {
+        heatmapWrap.innerHTML = '';
+        const oldLabels = heatmapWrap.nextSibling;
+        if (oldLabels && oldLabels.className === 'heatmap-hours') {
+            oldLabels.remove();
+        }
+    }
+
+    const alertCard = document.getElementById('ramAlertCard');
+    if (alertCard) alertCard.style.borderColor = 'var(--border)';
+    setEl('ramAlertText', 'No RAM data collected yet.');
+    const peakRam = document.getElementById('peakRam');
+    if (peakRam) peakRam.innerHTML = '—<small>GB</small>';
+    const ramByApp = document.getElementById('ramByApp');
+    if (ramByApp) ramByApp.innerHTML = '<p class="muted">No data.</p>';
+
+    const csRate = document.getElementById('contextSwitchRate');
+    if (csRate) csRate.innerHTML = '—';
+    setEl('contextSwitchInsight', 'No data collected for this profile.');
+    const switchPairs = document.getElementById('switchPairsWrap');
+    if (switchPairs) switchPairs.innerHTML = '<p class="muted">No data.</p>';
+}
+
 /* ── Main refresh ─────────────────────────────── */
 async function refreshDashboard() {
     const btn = document.getElementById('refreshBtn');
@@ -127,9 +163,7 @@ async function refreshDashboard() {
             renderHardware(_rawData);
             renderFriction(_rawData);
         } else {
-            // No data for this profile — clear the KPI strip
-            ['kpi-events-val','kpi-keys-val','kpi-active-val',
-             'kpi-modifier-val','kpi-scroll-val','kpi-ram-val'].forEach(id => setEl(id, '—'));
+            resetDashboardUI();
         }
         setEl('lastUpdated', 'Updated ' + new Date().toLocaleTimeString());
     } catch (e) {
@@ -387,6 +421,10 @@ function renderProficiency(data) {
     }
 
     // Hour labels row
+    const oldLabels = grid.nextSibling;
+    if (oldLabels && oldLabels.className === 'heatmap-hours') {
+        oldLabels.remove();
+    }
     const labelRow = document.createElement('div');
     labelRow.className = 'heatmap-hours';
     for (let h = 0; h < 24; h++) {

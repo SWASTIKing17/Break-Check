@@ -11,21 +11,24 @@
 ## Mandatory: Read Before Any Work
 
 Before starting any task, read:
-1. `DEV_LOG.md` — latest session entry to understand current state
-2. `NAVIGATION_LOG.md` — to locate the files and functions relevant to your task
-3. `RULEBOOK.md` — for all coding standards and policies
+1. `docs/PROJECT_MEMORY.md` — authoritative source of truth and complete ecosystem overview
+2. `DEV_LOG.md` — latest session entry to understand current state
+3. `NAVIGATION_LOG.md` — to locate the files and functions relevant to your task
+4. `RULEBOOK.md` — for all coding standards and policies
 
 ---
 
 ## Mandatory: Log Maintenance
 
-After EVERY code change, you MUST:
+After EVERY code change or investigation, you MUST:
 
-1. **Update `CHANGELOG.md`** — log every change (feature, fix, logic, UI, DB, build) with version and timestamp
-2. **Update `DEV_LOG.md`** — write a session entry describing what was done, decisions made, and what's next
-3. **Update `NAVIGATION_LOG.md`** — if you added/changed/removed a file or major function, update its entry in the navigation map
+1. **Update `docs/PROJECT_MEMORY.md`** — if any reference, architecture, or tool is missing or modified, enrich and update this source of truth immediately
+2. **Update `CHANGELOG.md`** — log every change (feature, fix, logic, UI, DB, build) with version and timestamp
+3. **Update `DEV_LOG.md`** — write a session entry describing what was done, decisions made, and what's next
+4. **Update `NAVIGATION_LOG.md`** — if you added/changed/removed a file or major function, update its entry in the navigation map
 
 **These are not optional.** See `RULEBOOK.md` Section 1 for exact format.
+
 
 ---
 
