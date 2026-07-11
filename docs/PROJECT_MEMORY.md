@@ -7,7 +7,7 @@
 > 2. **Mandatory Cross-Check:** Whenever you develop something new or read code to understand an existing mechanism, always cross-check your findings against this document.
 > 3. **Mandatory Enrichment:** If any architecture, mechanism, tool, command, parameter, or reference in the codebase is missing from or outdated in this document, you **MUST** add and enrich it immediately. Keep this document well-organized, comprehensive, and well-researched at all times.
 
-**Established:** 2026-07-06 | **Last Updated:** 2026-07-06
+**Established:** 2026-07-06 | **Last Updated:** 2026-07-11
 **Purpose:** Living knowledge repository and authoritative source of truth recording deep architectural understanding of the freeXan desktop application, CEP plugins ecosystem, HTTP/WebSocket bridges, CLI, and MCP server.
 
 ---
@@ -692,7 +692,41 @@ Isolated AI transcription engine test environment (Phase 1). Not yet integrated 
 
 ---
 
-## 15. Current Implementation Status & Roadmap
+## 15. Break Check Telemetry & Analytics System (`/Break Check/`)
+
+A background user activity/telemetry monitor and Web Dashboard that tracks video editors' productivity (keystrokes, mouse events, RAM pressure, active window switches) to calculate flow states, modifier key usage ratios (shortcut proficiency), and context switches.
+
+### Components:
+- **`usage_monitor.py`** — The Windows background tracking daemon. Automatically compiled into a standalone hidden executable (`usage_monitor.exe`) and registered to Windows Startup via Electron's `main.js`.
+  - *RAM tracking:* Records system-wide RAM usage via `psutil.virtual_memory().percent`.
+  - *Scroll tracking:* Mouse scroll listener accumulates absolute vertical ticks.
+  - *Modifier key tracking:* Detects modifier usage (`Ctrl/Shift/Alt/Cmd`) to calculate shortcut usage ratios.
+  - *Idle Debouncing:* Extends sync interval from 60 seconds to 10 minutes when zero activity is detected.
+  - *App Simplification:* Hashes active window strings into short category enums before local storing or syncing.
+- **`Dashboard/`** — The admin analytics dashboard interface.
+  - *Local Server:* Express-based server (`server.js`) serving static files and local SQLite database (`dashboard.db`) endpoints.
+  - *Netlify Functions:* Serverless functions (`ingest.js`, `data.js`, `employees.js`, `chat.js`, `dashboard-stats.js`) executing server-side via Supabase service key.
+  - *AI Copilot:* Floating chat widget (`chat.js`) powered by Google's `gemini-2.5-flash` API. Injects live dashboard KPIs directly into its system prompt context.
+- **`populate_local_test_data.py`** — SQLite mock database seeder. Wipes and populates the local `dashboard.db` with randomized workday telemetry generated specifically for the current date for complete local testing.
+
+### Database Schema (`admin_events`):
+| Column | Type | Description |
+|---|---|---|
+| `id` | `INTEGER` / `SERIAL` | Primary Key |
+| `timestamp` | `TIMESTAMPTZ` | Timestamp of event log (indexed descending) |
+| `event_type` | `TEXT` | `cursor` or `keystrokes` |
+| `cursor_x`, `cursor_y` | `INTEGER` | Screen coordinates of cursor |
+| `keystrokes` | `INTEGER` | Keystroke count during interval |
+| `active_window` | `TEXT` | Full active window title |
+| `employee_id` | `TEXT` | Employee name |
+| `ram_usage_gb` | `REAL` | Current system RAM usage |
+| `scroll_distance` | `INTEGER` | Mouse scroll wheel accumulated ticks |
+| `modifier_keys` | `INTEGER` | `1` if modifier key was held during interval, else `0` |
+| `ram_total_gb` | `REAL` | Total system RAM size |
+
+---
+
+## 16. Current Implementation Status & Roadmap
 
 ### Live in CLI/MCP (v3.8.25):
 - `app` scope: `status`, `list_clients`, `list_funnels`, `list_tasks`, `list_templates`, `create_project`, `open`, `list_mogrts`, `list_audio`

@@ -56,6 +56,8 @@ CURSOR_INTERVAL = 60           # 60 seconds (1 minute) optimal for team
 KEYSTROKE_MAX_INTERVAL = 300   # 5 minutes optimal for team
 POLL_INTERVAL = 1              # 1 second for checking window changes
 SYNC_INTERVAL = 60             # 1 minute for syncing to admin dashboard
+IDLE_SYNC_INTERVAL = 600       # 10 minutes — extended sync interval when idle
+IDLE_THRESHOLD = 3             # consecutive idle cycles before switching to idle mode
 DATA_FILE = "employee_usage_data.db"
 ADMIN_API_URL = "https://voluble-basbousa-2977b2.netlify.app/api/ingest"
 
@@ -78,10 +80,10 @@ except Exception:
 active_modifiers = set()  # Which modifier keys are currently held down
 
 def get_ram_usage_gb():
-    """Returns RAM used by the current process in GB. Zero-cost, pure psutil."""
+    """Returns total system RAM currently in use (not just this process)."""
     try:
-        proc = psutil.Process(os.getpid())
-        return round(proc.memory_info().rss / (1024 ** 3), 3)
+        mem = psutil.virtual_memory()
+        return round(mem.used / (1024 ** 3), 3)
     except Exception:
         return 0.0
 
@@ -90,6 +92,23 @@ def get_ram_total_gb():
         return round(psutil.virtual_memory().total / (1024 ** 3), 3)
     except Exception:
         return 16.0
+
+def simplify_app(raw):
+    """Reduces a full window title to a short category enum for storage efficiency."""
+    if not raw:
+        return 'Other'
+    r = raw.lower()
+    if 'premiere' in r:                            return 'Premiere Pro'
+    if 'afterfx' in r or 'after effects' in r:     return 'After Effects'
+    if any(b in r for b in ('chrome', 'edge', 'firefox', 'safari', 'opera')): return 'Browser'
+    if 'slack' in r:                               return 'Slack'
+    if 'explorer' in r or 'finder' in r:           return 'File Explorer'
+    if any(i in r for i in ('code', 'cursor', 'intellij', 'pycharm')): return 'IDE'
+    if any(t in r for t in ('powershell', 'terminal', 'cmd', 'bash')): return 'Terminal'
+    if 'discord' in r:                             return 'Discord'
+    if 'photoshop' in r:                           return 'Photoshop'
+    if 'figma' in r:                               return 'Figma'
+    return 'Other'
 
 def init_db():
     conn = sqlite3.connect(DATA_FILE)
@@ -196,10 +215,13 @@ def record_cursor():
         try:
             x, y = get_cursor_position()
             window_title = get_active_window_title()
+            # Store simplified app name AND raw title separately
+            app_name = simplify_app(window_title)
             ram = get_ram_usage_gb()
             if not is_adobe_running():
                 window_title += " [ADOBE_CLOSED]"
-            print(f"[DEBUG] Cursor Event -> X:{x} Y:{y} RAM:{ram}GB Window:{window_title}")
+                app_name = simplify_app(window_title)  # re-classify with marker
+            print(f"[DEBUG] Cursor Event -> X:{x} Y:{y} RAM:{ram}GB/{ram_total}GB App:{app_name} Window:{window_title}")
             save_event("cursor", x, y, 0, window_title, ram_usage_gb=ram, ram_total_gb=ram_total)
         except Exception as e:
             print(f"Cursor error: {e}")
@@ -242,36 +264,47 @@ def record_keystrokes():
 
         time.sleep(POLL_INTERVAL)
 
-# ── Sync thread ───────────────────────────────────────────────────────────────
+# ── Sync thread (with idle debouncing) ────────────────────────────────────────
 
 def sync_data():
+    idle_cycles = 0  # tracks consecutive sync cycles with zero pending rows
     while True:
-        time.sleep(SYNC_INTERVAL)
+        # Adaptive sleep: longer intervals when idle to save bandwidth
+        sleep_time = IDLE_SYNC_INTERVAL if idle_cycles >= IDLE_THRESHOLD else SYNC_INTERVAL
+        time.sleep(sleep_time)
         try:
             conn = sqlite3.connect(DATA_FILE)
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
             c.execute("SELECT * FROM usage_events WHERE synced = 0 LIMIT 100")
             rows = c.fetchall()
-            if rows:
-                payload  = [dict(row) for row in rows]
-                row_ids  = [row['id'] for row in rows]
-                req = urllib.request.Request(ADMIN_API_URL, method="POST")
-                req.add_header('Content-Type', 'application/json')
-                req.add_header('x-api-key', API_KEY)
-                data_bytes = json.dumps(payload).encode('utf-8')
-                print(f"[DEBUG] Syncing {len(payload)} events to Admin Dashboard...")
-                try:
-                    response = urllib.request.urlopen(req, data=data_bytes, timeout=10)
-                    if response.getcode() in [200, 201]:
-                        placeholders = ','.join('?' * len(row_ids))
-                        c.execute(f"UPDATE usage_events SET synced = 1 WHERE id IN ({placeholders})", row_ids)
-                        conn.commit()
-                        print(f"[DEBUG] Successfully synced {len(payload)} events.")
-                    else:
-                        print(f"[DEBUG] Sync failed with status: {response.getcode()}")
-                except urllib.error.URLError as e:
-                    print(f"[DEBUG] Sync connection failed (Offline?): {e.reason}")
+            if not rows:
+                idle_cycles += 1
+                if idle_cycles == IDLE_THRESHOLD:
+                    print(f"[DEBUG] Idle debounce active — extending sync interval to {IDLE_SYNC_INTERVAL}s")
+                conn.close()
+                continue
+
+            # Activity detected — reset idle counter
+            idle_cycles = 0
+            payload  = [dict(row) for row in rows]
+            row_ids  = [row['id'] for row in rows]
+            req = urllib.request.Request(ADMIN_API_URL, method="POST")
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('x-api-key', API_KEY)
+            data_bytes = json.dumps(payload).encode('utf-8')
+            print(f"[DEBUG] Syncing {len(payload)} events to Admin Dashboard...")
+            try:
+                response = urllib.request.urlopen(req, data=data_bytes, timeout=10)
+                if response.getcode() in [200, 201]:
+                    placeholders = ','.join('?' * len(row_ids))
+                    c.execute(f"UPDATE usage_events SET synced = 1 WHERE id IN ({placeholders})", row_ids)
+                    conn.commit()
+                    print(f"[DEBUG] Successfully synced {len(payload)} events.")
+                else:
+                    print(f"[DEBUG] Sync failed with status: {response.getcode()}")
+            except urllib.error.URLError as e:
+                print(f"[DEBUG] Sync connection failed (Offline?): {e.reason}")
             conn.close()
         except Exception as e:
             print(f"[DEBUG] Sync Error: {e}")

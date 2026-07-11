@@ -11,13 +11,18 @@ exports.handler = async (event, context) => {
 
     try {
         const employeeId = event.queryStringParameters.employee_id;
+        const date = event.queryStringParameters.date || new Date().toISOString().split('T')[0];
         
+        // Build timezone-agnostic day boundaries (UTC matches database timestamp storage)
+        const dayStart = `${date}T00:00:00.000Z`;
+        const dayEnd = `${date}T23:59:59.999Z`;
+
         const limit = 1000;
         let offset = 0;
         let allData = [];
 
         while (true) {
-            let url = `${process.env.SUPABASE_URL}/rest/v1/admin_events?select=*&order=timestamp.desc&limit=${limit}&offset=${offset}`;
+            let url = `${process.env.SUPABASE_URL}/rest/v1/admin_events?select=*&order=timestamp.desc&limit=${limit}&offset=${offset}&timestamp=gte.${dayStart}&timestamp=lte.${dayEnd}`;
             if (employeeId) {
                 url += `&employee_id=eq.${encodeURIComponent(employeeId)}`;
             }

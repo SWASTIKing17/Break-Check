@@ -55,7 +55,8 @@
             </nav>
 
             <div class="sidebar-footer">
-                <div class="sidebar-controls">
+                <div class="sidebar-controls" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <input type="date" id="datePicker" class="employee-dropdown" style="background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; font-family: inherit; font-size: 0.85rem;" onchange="refreshDashboard()">
                     <select id="employeeSelect" class="employee-dropdown" onchange="refreshDashboard()">
                         <option value="">Loading…</option>
                     </select>

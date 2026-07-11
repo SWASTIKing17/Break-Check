@@ -2,9 +2,11 @@
 
 **Purpose:** Map for agents, developers, and non-coder users.  
 Use this file to find: which file does what, which function controls which feature.  
-**Version:** v3.8.36 | **Last Updated:** 2026-07-11
+**Version:** v3.8.38 | **Last Updated:** 2026-07-11
 
 ---
+
+[2026-07-11] Modified & New Files — Performance Overhaul, SQLite Mock DB & Date Picker (`Break Check/usage_monitor.py`, `Break Check/Dashboard/public/app.js`, `Break Check/Dashboard/public/index.html`, `Break Check/Dashboard/server.js`, `Break Check/Dashboard/netlify/functions/data.js`, `Break Check/populate_local_test_data.py` [NEW]): Updated the dashboard frontend and server APIs to support daily pagination. Updated local SQLite and remote Supabase tables to support TIMESTAMPTZ and composite indexing. Fixed RAM tracking and added idle debouncing to the Python background monitor. Added a local SQLite seeder mapping complete telemetry data to the local DB file.
 
 [2026-07-11] Modified & New Files — Break Check Dashboard v3 & Gemini AI Chat (`Break Check/Dashboard/public/index.html`, `Break Check/Dashboard/public/style.css`, `Break Check/Dashboard/public/app.js`, `Break Check/Dashboard/netlify/functions/chat.js` [NEW], `Break Check/Dashboard/netlify/functions/employees.js` [NEW], `Break Check/Dashboard/netlify/functions/ingest.js`): Overhauled the entire data architecture to run exclusively on the `admin_events` table, replacing Supabase `team_profiles`. Added `employees.js` to fetch employees dynamically via `SELECT DISTINCT employee_id FROM admin_events`. Replaced the "Team Profiles" tab with a high-level "Overview" landing page displaying key metrics (Active vs Idle %, Flow Score, Modifier Ratio). Built a fully integrated AI Copilot (Google Gemini 2.5 Flash) via `chat.js` Netlify function which automatically pulls live dashboard metrics into its prompt context.
 

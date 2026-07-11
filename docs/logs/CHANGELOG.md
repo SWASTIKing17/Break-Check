@@ -7,6 +7,13 @@ Format: `[vX.Y.Z] — YYYY-MM-DD HH:MM | Type | Description`
 
 ---
 
+## [v3.8.38] — 2026-07-11 | DB & Perf & Fix | Telemetry System Optimizations, Local SQLite Mock DB & Date Picker Pagination
+
+- **Date Picker Pagination & Performance Overhaul:** Added a native HTML `<input type="date">` Date Picker to the dashboard UI. Refactored the dashboard client (`app.js`) and API controllers (`data.js` / local `server.js`) to support date-based pagination, querying only events matching the selected date. This reduces payloads from MBs to <100KB, preventing browser memory leaks and thread-blocking while leveraging Supabase's indexing.
+- **Supabase Database TIMESTAMPTZ Migration & Indexing:** Converted `timestamp` column in the `admin_events` table from `TEXT` to native `TIMESTAMPTZ` for optimized timezone-aware queries. Added a composite index `idx_admin_events_employee_ts (employee_id, timestamp DESC)` and a single-column index `idx_admin_events_ts (timestamp DESC)` to eliminate full-table scans.
+- **Python Tracker Precision Upgrades (`usage_monitor.py`):** Fixed RAM usage tracking by replacing process-specific `os.getpid()` tracking with system-wide virtual memory percentage (`psutil.virtual_memory().percent`). Added **Idle Debouncing** to dynamically extend the syncing interval from 60 seconds to 10 minutes when the editor is idle, reducing network traffic. Implemented local app simplification (`simplify_app`) to hash active window strings into short category enums for storage efficiency.
+- **SQLite Mock DB Seeder (`populate_local_test_data.py`):** Created a zero-dependency local SQLite mock seeder script that populates `dashboard.db` directly. Generates fully customized, randomized workday events (keys, mouse, window switches, RAM, modifier keys) specifically for today's date so developers can manually inspect and manipulate the local database.
+
 ## [v3.8.37] — 2026-07-11 | Feature | Break Check Dashboard v3 — 1-Table Migration & Gemini AI Chat
 
 - **1-Table Database Simplification:** Migrated entire data structure to rely exclusively on `admin_events`, completely removing the Supabase `team_profiles` table. The web dashboard now dynamically resolves employee names from `SELECT DISTINCT employee_id FROM admin_events`. Local Electron apps now hold the only single source of truth for user creation (names, initials, colors).

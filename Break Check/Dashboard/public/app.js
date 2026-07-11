@@ -109,7 +109,12 @@ function setEl(id, val) { const el = document.getElementById(id); if (el) el.tex
 
 /* ── Data fetching ────────────────────────────── */
 async function fetchData(empId) {
-    const url = empId ? `/api/data?employee_id=${encodeURIComponent(empId)}` : '/api/data';
+    const picker = document.getElementById('datePicker');
+    const dateVal = picker?.value || new Date().toISOString().split('T')[0];
+    let url = `/api/data?date=${encodeURIComponent(dateVal)}`;
+    if (empId) {
+        url += `&employee_id=${encodeURIComponent(empId)}`;
+    }
     const res = await fetch(url);
     const result = await res.json();
     return (result.success && Array.isArray(result.data)) ? result.data : [];
@@ -731,6 +736,10 @@ function handleChatKeypress(e) {
    Init
 ══════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+    const picker = document.getElementById('datePicker');
+    if (picker) {
+        picker.value = new Date().toISOString().split('T')[0];
+    }
     fetchProfiles().then(() => refreshDashboard());
 
     // Auto-refresh every 60s
