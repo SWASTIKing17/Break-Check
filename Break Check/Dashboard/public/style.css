@@ -481,9 +481,6 @@ tr:hover td { background: rgba(255,255,255,0.03); }
     overflow: hidden;
     pointer-events: none;
 }
-.is-loading * {
-    opacity: 0.1 !important;
-}
 .is-loading::after {
     content: "";
     position: absolute;
