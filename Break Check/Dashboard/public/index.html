@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Break Check | Workflow Intelligence Matrix</title>
+    <meta name="description" content="FreeXan Break Check — Real-time video editor workflow analytics, proficiency tracking, and hardware health monitoring.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+    <div class="bg-effects">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-purple"></div>
+        <div class="orb orb-green"></div>
+    </div>
+
+    <div class="app-shell">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="14" fill="url(#lg)"/><path d="M8 14h12M14 8v12" stroke="white" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="lg" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg>
+                <span class="logo-text">Break Check</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-view="flow" id="nav-flow" href="#flow" onclick="switchView('flow', this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Activity Flow
+                </a>
+                <a class="nav-item" data-view="proficiency" id="nav-proficiency" href="#proficiency" onclick="switchView('proficiency', this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Editor Proficiency
+                </a>
+                <a class="nav-item" data-view="hardware" id="nav-hardware" href="#hardware" onclick="switchView('hardware', this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Hardware Health
+                </a>
+                <a class="nav-item" data-view="friction" id="nav-friction" href="#friction" onclick="switchView('friction', this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Workflow Friction
+                </a>
+                <a class="nav-item" data-view="team" id="nav-team" href="#team" onclick="switchView('team', this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    Team Profiles
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-controls">
+                    <select id="employeeSelect" class="employee-dropdown" onchange="refreshDashboard()">
+                        <option value="">Loading…</option>
+                    </select>
+                    <button class="refresh-btn" id="refreshBtn" onclick="refreshDashboard()">
+                        <svg id="refreshIcon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <p class="last-updated" id="lastUpdated">Loading…</p>
+            </div>
+        </aside>
+
+        <!-- ── MAIN CONTENT ── -->
+        <main class="main-content">
+
+            <!-- Global KPI strip -->
+            <div class="kpi-strip" id="kpiStrip">
+                <div class="kpi-card" id="kpi-events">
+                    <span class="kpi-label">Total Events</span>
+                    <span class="kpi-value" id="kpi-events-val">—</span>
+                </div>
+                <div class="kpi-card" id="kpi-keys">
+                    <span class="kpi-label">Total Keystrokes</span>
+                    <span class="kpi-value" id="kpi-keys-val">—</span>
+                </div>
+                <div class="kpi-card" id="kpi-active">
+                    <span class="kpi-label">Active Minutes</span>
+                    <span class="kpi-value" id="kpi-active-val">—</span>
+                </div>
+                <div class="kpi-card" id="kpi-modifier">
+                    <span class="kpi-label">Modifier Ratio</span>
+                    <span class="kpi-value" id="kpi-modifier-val">—</span>
+                    <span class="kpi-sub">shortcut usage</span>
+                </div>
+                <div class="kpi-card" id="kpi-scroll">
+                    <span class="kpi-label">Scroll Distance</span>
+                    <span class="kpi-value" id="kpi-scroll-val">—</span>
+                    <span class="kpi-sub">ticks today</span>
+                </div>
+                <div class="kpi-card" id="kpi-ram">
+                    <span class="kpi-label">Avg RAM</span>
+                    <span class="kpi-value" id="kpi-ram-val">—</span>
+                    <span class="kpi-sub">GB (tracker proc)</span>
+                </div>
+            </div>
+
+            <!-- ─ VIEW: Activity Flow ─ -->
+            <section class="view active" id="view-flow">
+                <div class="view-header">
+                    <h2>Activity Flow <span class="view-sub">— Keystrokes, Cursor & Idle periods over time</span></h2>
+                </div>
+                <div class="card span-full">
+                    <div class="chart-wrap" style="height:340px">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+                <div class="cards-row">
+                    <div class="card">
+                        <h3>App Distribution</h3>
+                        <div class="chart-wrap" style="height:280px">
+                            <canvas id="appChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Project Time</h3>
+                        <div class="table-wrap" id="projectListWrap" style="max-height:280px; overflow-y:auto;">
+                            <p class="muted">No project data yet.</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Scroll by App</h3>
+                        <div class="chart-wrap" style="height:280px">
+                            <canvas id="scrollAppChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─ VIEW: Editor Proficiency ─ -->
+            <section class="view" id="view-proficiency">
+                <div class="view-header">
+                    <h2>Editor Proficiency <span class="view-sub">— Shortcut mastery & flow state analysis</span></h2>
+                </div>
+                <div class="cards-row">
+                    <div class="card card-highlight">
+                        <h3>Modifier Ratio Scorecard</h3>
+                        <div class="modifier-gauge-wrap">
+                            <canvas id="modifierGauge" width="220" height="220"></canvas>
+                            <div class="gauge-label">
+                                <span id="modifierPct">—</span>
+                                <small>Shortcut Usage</small>
+                            </div>
+                        </div>
+                        <p class="insight-text" id="modifierInsight">Calculating…</p>
+                    </div>
+                    <div class="card">
+                        <h3>Keystroke Intensity (KPM)</h3>
+                        <p class="insight-text" style="margin-bottom:1rem">Keystrokes per minute over the session. High peaks = deep focus.</p>
+                        <div class="chart-wrap" style="height:240px">
+                            <canvas id="kpmChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card span-full">
+                    <h3>Flow State Heatmap — Keystrokes by Hour</h3>
+                    <div id="heatmapWrap" class="heatmap-grid"></div>
+                </div>
+            </section>
+
+            <!-- ─ VIEW: Hardware Health ─ -->
+            <section class="view" id="view-hardware">
+                <div class="view-header">
+                    <h2>Hardware Health <span class="view-sub">— RAM usage & crash predictor</span></h2>
+                </div>
+                <div class="cards-row">
+                    <div class="card card-warn" id="ramAlertCard">
+                        <h3>RAM Spike Alert</h3>
+                        <p class="insight-text" id="ramAlertText">Analysing RAM logs…</p>
+                    </div>
+                    <div class="card">
+                        <h3>Peak RAM Reading</h3>
+                        <div class="big-number" id="peakRam">—<small>GB</small></div>
+                        <p class="insight-text">Highest RAM recorded by the tracker process.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Avg RAM per App</h3>
+                        <div id="ramByApp" class="bar-list"></div>
+                    </div>
+                </div>
+                <div class="card span-full">
+                    <h3>RAM Usage Over Time</h3>
+                    <div class="chart-wrap" style="height:300px">
+                        <canvas id="ramChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─ VIEW: Workflow Friction ─ -->
+            <section class="view" id="view-friction">
+                <div class="view-header">
+                    <h2>Workflow Friction <span class="view-sub">— Context switching & asset hunting signals</span></h2>
+                </div>
+                <div class="cards-row">
+                    <div class="card card-highlight">
+                        <h3>Context Switches / Hour</h3>
+                        <div class="big-number" id="contextSwitchRate">—</div>
+                        <p class="insight-text" id="contextSwitchInsight">Calculating…</p>
+                    </div>
+                    <div class="card">
+                        <h3>Scroll by Category</h3>
+                        <p class="insight-text" style="margin-bottom:1rem">High scroll in File Explorer = asset hunting. High in Premiere = productive timeline work.</p>
+                        <div class="chart-wrap" style="height:220px">
+                            <canvas id="scrollCatChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Top Context Switches</h3>
+                        <div id="switchPairsWrap" class="bar-list"></div>
+                    </div>
+                </div>
+                <div class="card span-full">
+                    <h3>Window Switch Timeline</h3>
+                    <div class="chart-wrap" style="height:280px">
+                        <canvas id="switchChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─ VIEW: Team Profiles ─ -->
+            <section class="view" id="view-team">
+                <div class="view-header">
+                    <h2>Team Profiles <span class="view-sub">— Manage employees synced to the pill</span></h2>
+                </div>
+                <div class="card span-full">
+                    <div class="add-profile-bar">
+                        <input type="text" id="new-profile-name" class="text-input" placeholder="Full Name (e.g. John Doe)">
+                        <button id="btn-add-profile" class="action-btn btn-blue">+ Add Employee</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table id="teamTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Initials</th>
+                                    <th>Color</th>
+                                    <th style="text-align:right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="team-profiles-body">
+                                <tr><td colspan="4" class="muted center">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

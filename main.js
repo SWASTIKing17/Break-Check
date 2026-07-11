@@ -1,8 +1,11 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, shell, nativeImage } = require('electron');
+app.setName('FreeXan');
+app.setAppUserModelId('com.bloomx.freexan');
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const { WebSocketServer } = require('ws');
+const net = require('net');
 const db = require('./db');
 const axios = require('axios');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
@@ -18,8 +21,12 @@ const httpApi = require('./httpApi');
 
 const EXPECTED_EXT_VERSION = '2.0.0'; // Must match EXT_VERSION in cep-extension/ext.js
 
-// ── Debug Logger ─────────────────────────────────────────────────────────────
-const { createLogger } = require('./logger');
+// ── Debug Logger & Universal Framework ────────────────────────────────────────
+const { createLogger, sendLog, flushLogs, getSystemContext, getLogsDir } = require('./logger');
+const nodemailer = require('nodemailer');
+const AdmZip = require('adm-zip');
+const crypto = require('crypto');
+
 const mainLogger = createLogger('main');
 const cepLogger = createLogger('cep_bridge');
 const dragDropLogger = createLogger('drag_n_drop');
@@ -29,10 +36,137 @@ const audioLogger = createLogger('audio');
 const bloomxLogger = createLogger('bloomx');
 const linkLogger = createLogger('link');
 
-// Keep legacy dbg function mapped to mainLogger so existing code doesn't break
 function dbg(...args) {
   mainLogger(...args);
 }
+
+// 1.3 Wire Process Crash Safety Traps
+process.on('uncaughtException', (err) => {
+  sendLog('fatal', 'process:uncaught', 'electron-main', null, {}, null, err);
+  flushLogs();
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  sendLog('fatal', 'process:unhandled-rejection', 'electron-main', null, { reason: String(reason) });
+  flushLogs();
+});
+app.on('before-quit', () => {
+  sendLog('info', 'app:quit', 'electron-main');
+  flushLogs();
+});
+
+// 1.4 Monkey-patch ipcMain.handle for universal telemetry & 5s hang detection
+const originalIpcHandle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, handler) => {
+  return originalIpcHandle(channel, async (event, ...args) => {
+    const correlationId = (args[0] && typeof args[0] === 'object' && args[0].correlationId) || crypto.randomUUID();
+    const start = Date.now();
+    sendLog('debug', 'ipc:invoke', 'electron-main', correlationId, { channel, argCount: args.length });
+    const timer = setTimeout(() => {
+      sendLog('warn', 'ipc:timeout', 'electron-main', correlationId, { channel, elapsedMs: Date.now() - start });
+    }, 5000);
+    try {
+      const result = await handler(event, ...args);
+      clearTimeout(timer);
+      sendLog('debug', 'ipc:resolve', 'electron-main', correlationId, { channel }, Date.now() - start);
+      return result;
+    } catch(err) {
+      clearTimeout(timer);
+      sendLog('error', 'ipc:error', 'electron-main', correlationId, { channel }, Date.now() - start, err);
+      throw err;
+    }
+  });
+};
+
+// 5.1 & 5.2 One-Click Diagnostic Bundler & Bug Report Emailer
+async function exportDiagnosticsZip() {
+  const zip = new AdmZip();
+  const logsPath = getLogsDir();
+  if (logsPath && fs.existsSync(logsPath)) {
+    const allFiles = fs.readdirSync(logsPath)
+      .filter(f => f.endsWith('.log') || f.endsWith('.old'))
+      .map(f => ({ name: f, mtime: fs.statSync(path.join(logsPath, f)).mtimeMs }))
+      .sort((a, b) => b.mtime - a.mtime)
+      .slice(0, 3); // Last 3 log rotations
+
+    for (const fileObj of allFiles) {
+      let content = fs.readFileSync(path.join(logsPath, fileObj.name), 'utf8');
+      content = content
+        .replace(/[a-zA-Z]:[\\/]Users[\\/][^\\/\s"']+/gi, 'C:\\Users\\[USER_PATH]')
+        .replace(/\/[hH]ome\/[^/\s"']+/gi, '/home/[USER_PATH]')
+        .replace(/\/Users\/[^/\s"']+/gi, '/Users/[USER_PATH]');
+      zip.addFile(fileObj.name, Buffer.from(content, 'utf8'));
+    }
+  }
+  const sysContext = getSystemContext();
+  zip.addFile('system-context.json', Buffer.from(JSON.stringify(sysContext, null, 2), 'utf8'));
+  return zip.toBuffer();
+}
+
+ipcMain.handle('export-diagnostics', async () => {
+  const zipBuf = await exportDiagnosticsZip();
+  const diagPath = path.join(app.getPath('temp'), `freeXan_Diagnostics_${Date.now()}.zip`);
+  fs.writeFileSync(diagPath, zipBuf);
+  shell.showItemInFolder(diagPath);
+  return { success: true, localPath: diagPath };
+});
+
+ipcMain.handle('fetch-supabase-profiles', async () => {
+  try {
+    const url = "https://toidowlqmqbmtrfjvzgt.supabase.co/rest/v1/team_profiles";
+    const key = "sb_publishable_KSuDUKzHr8kzRV2YlnpP_g_osCedHm8";
+    const response = await axios.get(url, {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    sendLog('error', 'supabase:fetch', 'electron-main', null, {}, null, error);
+    throw new Error('Failed to fetch from Supabase: ' + error.message);
+  }
+});
+
+ipcMain.handle('send-bug-report', async (event, userReportText) => {
+  sendLog('info', 'diagnostic:report-bug', 'electron-main', null, { hasReport: !!userReportText });
+  try {
+    const zipBuf = await exportDiagnosticsZip();
+    const zipBase64 = zipBuf.toString('base64');
+    
+    // Save local copy to temp/desktop for user reference
+    const diagPath = path.join(app.getPath('temp'), `freeXan_Debug_${Date.now()}.zip`);
+    fs.writeFileSync(diagPath, zipBuf);
+
+    // Attempt HTTP POST webhook to email bridge
+    try {
+      await axios.post('https://formsubmit.co/ajax/swastik@bloomxsolutions.com', {
+        _subject: `freeXan Bug Report - ${getSystemContext().build}`,
+        report: userReportText,
+        systemContext: JSON.stringify(getSystemContext()),
+        attachment_note: `Diagnostic zip saved locally at: ${diagPath}`
+      }, { headers: { 'Content-Type': 'application/json' }, timeout: 8000 });
+    } catch(apiErr) {
+      sendLog('warn', 'diagnostic:email-fallback', 'electron-main', null, { error: apiErr.message });
+    }
+
+    shell.showItemInFolder(diagPath);
+    return { success: true, localPath: diagPath };
+  } catch(e) {
+    sendLog('error', 'diagnostic:report-fail', 'electron-main', null, {}, null, e);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.on('write-log', (_, { component, msg }) => {
+  sendLog('debug', `${component || 'ui'}:msg`, 'electron-renderer', null, { msg });
+});
+ipcMain.on('log', (_, entry) => {
+  sendLog(entry.level || 'info', entry.event || 'log', entry.source || 'electron-renderer', entry.correlationId || null, entry.payload || {});
+});
+ipcMain.on('log-from-preload', (_, entry) => {
+  sendLog('debug', entry.event || 'preload:event', 'preload', null, entry);
+});
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Date/Time Variable Resolver ───────────────────────────────────────────────
@@ -76,7 +210,6 @@ function inferSlotType(name) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 let mainWindow = null;
-let overlayWindow = null;
 let tray = null;
 let wss = null;
 let activeProjectPath = '';     // Synced from CEP extension via WebSocket
@@ -150,13 +283,40 @@ function createWindow() {
   });
 }
 
-function createTray() {
-  // Create a simple custom icon or use a standard shape if file doesn't exist
-  // We will create a small 16x16 icon dynamically or use a fallback
-  const iconPath = path.join(__dirname, 'tray_icon.png');
+let isPillsHidden = false;
 
-  // Create tray
-  tray = new Tray(fs.existsSync(iconPath) ? iconPath : nativeImage.createEmpty());
+function killNativePillProcess() {
+  try {
+    if (nativePillSocket && !nativePillSocket.destroyed) {
+      nativePillSocket.write(JSON.stringify({ type: 'quit' }) + '\n');
+    }
+  } catch (e) {}
+  try {
+    if (nativePillProcess) {
+      nativePillProcess.kill();
+      nativePillProcess = null;
+    }
+    const { exec } = require('child_process');
+    exec('taskkill /IM FreeXanPill.exe /F', () => {});
+  } catch (e) {}
+}
+
+function togglePillsVisibility() {
+  isPillsHidden = !isPillsHidden;
+  sendLog('info', 'ui:tray-toggle-pills', 'electron-main', null, { isPillsHidden });
+  if (isPillsHidden) {
+    killNativePillProcess();
+  } else {
+    if (typeof spawnNativePillProcess === 'function') {
+      spawnNativePillProcess();
+    }
+  }
+  updateTrayMenu();
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+  const hideShowLabel = isPillsHidden ? 'Show Pill' : 'Hide Pill';
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open freeXan',
@@ -169,7 +329,11 @@ function createTray() {
       }
     },
     {
-      label: 'Reposition Overlay',
+      label: hideShowLabel,
+      click: () => togglePillsVisibility()
+    },
+    {
+      label: 'Reposition Pill',
       click: () => repositionOverlay()
     },
     { type: 'separator' },
@@ -181,11 +345,15 @@ function createTray() {
       }
     }
   ]);
-
-  tray.setToolTip('freeXan');
   tray.setContextMenu(contextMenu);
+}
 
-  // Toggle show/hide on double click
+function createTray() {
+  const iconPath = path.join(__dirname, 'tray_icon.png');
+  tray = new Tray(fs.existsSync(iconPath) ? iconPath : nativeImage.createEmpty());
+  tray.setToolTip('freeXan');
+  updateTrayMenu();
+
   tray.on('double-click', () => {
     if (mainWindow) {
       if (mainWindow.isVisible()) {
@@ -287,8 +455,10 @@ function enableCEPDebugging() {
 function getPluginsSourceRoot() {
   const packed = path.join(process.resourcesPath || '', 'plugins');
   if (fs.existsSync(packed)) return packed;
-  const devCeps = path.join(__dirname, 'CEPs');
-  if (fs.existsSync(devCeps)) return devCeps;
+  if (process.argv.includes('--use-ceps')) {
+    const devCeps = path.join(__dirname, 'CEPs');
+    if (fs.existsSync(devCeps)) return devCeps;
+  }
   return path.join(__dirname, 'plugins');
 }
 
@@ -605,6 +775,22 @@ function startWebSocketServer() {
   console.log('Starting local WebSocket server on port 4554...');
   wss = new WebSocketServer({ port: 4554 });
 
+  // 3.4 CEP Heartbeat monitor (ping active CEP panels every 10s)
+  setInterval(() => {
+    if (isCepConnected && wss) {
+      const now = Date.now();
+      broadcastToAll(JSON.stringify({ type: 'cep_heartbeat_ping', timestamp: now }));
+      setTimeout(() => {
+        if (!wss) return;
+        wss.clients.forEach(c => {
+          if (c.readyState === 1 && (!c.lastPong || now - c.lastPong > 11000)) {
+            if (typeof sendLog === 'function') sendLog('warn', 'cep:heartbeat-timeout', `cep-${c.clientType || 'panel'}`, null, { inactiveMs: now - (c.lastPong || 0) });
+          }
+        });
+      }, 3000);
+    }
+  }, 10000);
+
   wss.on('connection', (ws) => {
     // dbg(`[CEP] Panel connected`);
     isCepConnected = true;
@@ -722,19 +908,10 @@ function startWebSocketServer() {
           }
 
         } else if (data.type === 'ext_log') {
-          // Log forwarded from the CEP panel — routed based on source if provided
-          if (data.source === 'caption') {
-            captionLogger(data.msg);
-          } else if (data.source === 'audio') {
-            audioLogger(data.msg);
-          } else if (data.source === 'bloomx') {
-            bloomxLogger(data.msg);
-          } else if (data.source === 'link') {
-            linkLogger(data.msg);
-          } else {
-            dbg(`[EXT] ${data.msg}`);
-          }
-
+          sendLog(data.level || 'debug', data.event || 'cep:log', `cep-${data.source || 'panel'}`, data.correlationId || null, { msg: data.msg, payload: data.payload });
+        } else if (data.type === 'cep_heartbeat' || data.type === 'cep_heartbeat_pong') {
+          ws.lastPong = Date.now();
+          sendLog('debug', 'cep:heartbeat-ack', `cep-${data.source || data.plugin || 'panel'}`, null, { timestamp: Date.now() });
         } else if (data.type === 'import_result') {
           // dbg(`[CEP] import_result for "${data.filePath}": ${data.result}`);
         } else if (data.type === 'bin_files') {
@@ -1191,110 +1368,28 @@ function startWebSocketServer() {
 }
 
 function updateOverlayUI() {
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    // CEP-synced name takes priority; fall back to native window-title detection
-    const cepName = activeProjectPath ? path.basename(activeProjectPath) : '';
-    const nativeName = nativeProjectPath ? path.basename(nativeProjectPath) : '';
-    overlayWindow.webContents.send('overlay-update', {
-      connected: isCepConnected,
-      projectName: cepName,
-      nativeProjectName: nativeName
-    });
+  if (typeof pushStateToNativePill === 'function') {
+    pushStateToNativePill();
   }
 }
-
-function _easeInOutCubic(t) {
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-let _repositionTimer = null;
 
 function repositionOverlay() {
-  if (!overlayWindow || overlayWindow.isDestroyed()) {
-    createOverlayWindow();
-    return;
+  if (isPillsHidden) {
+    isPillsHidden = false;
+    updateTrayMenu();
   }
-
-  // Clear any in-progress animation
-  if (_repositionTimer) { clearInterval(_repositionTimer); _repositionTimer = null; }
-
-  overlayWindow.show();
-  overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-
-  const [startX, startY] = overlayWindow.getPosition();
-  const targetX = 20, targetY = 20;
-
-  // Already at target — nothing to do
-  if (startX === targetX && startY === targetY) return;
-
-  const duration = 1500; // ms
-  const startTime = Date.now();
-
-  _repositionTimer = setInterval(() => {
-    if (!overlayWindow || overlayWindow.isDestroyed()) {
-      clearInterval(_repositionTimer);
-      _repositionTimer = null;
-      return;
+  try {
+    if (nativePillSocket && !nativePillSocket.destroyed) {
+      nativePillSocket.write(JSON.stringify({ type: 'reposition' }) + '\n');
+    } else if (typeof spawnNativePillProcess === 'function') {
+      spawnNativePillProcess();
     }
-
-    const t = Math.min((Date.now() - startTime) / duration, 1);
-    const ease = _easeInOutCubic(t);
-
-    try {
-      overlayWindow.setPosition(
-        Math.round(startX + (targetX - startX) * ease),
-        Math.round(startY + (targetY - startY) * ease)
-      );
-    } catch (e) {
-      clearInterval(_repositionTimer);
-      _repositionTimer = null;
-    }
-
-    if (t >= 1) {
-      clearInterval(_repositionTimer);
-      _repositionTimer = null;
-    }
-  }, 16);
+  } catch (e) {}
 }
 
-function createOverlayWindow() {
-  // Start at compact size: 56px pill + 14px padding each side = 84px
-  // No setIgnoreMouseEvents — window is sized to the pill so there are no transparent gaps to click through
-  overlayWindow = new BrowserWindow({
-    width: 84,
-    height: 84,
-    x: 20,
-    y: 20,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    resizable: false,
-    movable: true,
-    skipTaskbar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true
-    }
-  });
-
-  // Use 'screen-saver' level so the overlay stays above Windows screenshot tools
-  // (default 'normal' alwaysOnTop gets covered by Win+Shift+S Snipping Tool overlay)
-  overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-  overlayWindow.setVisibleOnAllWorkspaces(true);
-
-  overlayWindow.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
-
-  overlayWindow.on('closed', () => {
-    overlayWindow = null;
-    // Auto-recreate if closed unexpectedly (screenshot tools can kill transparent windows)
-    if (!app.isQuitting) {
-      setTimeout(() => { if (!overlayWindow) createOverlayWindow(); }, 600);
-    }
-  });
-}
+// Legacy createOverlayWindow() removed — HTML/CSS/JS Electron pill has been archived
+// in archive_legacy_electron_pill/ for future reference or cross-platform reuse.
+// The standalone Native C++ Pill (FreeXanPill.exe) is now the sole overlay pill.
 
 function getDestSubfolder(projectFolder, fileExt, slotMap, forcedType) {
   try {
@@ -1405,18 +1500,11 @@ function findLinksSidecar(prprojPath) {
 let currentLinkMap = [];
 
 // Push the current set of links (`[{ folderPath, binName, shortcut }, …]`) to
-// the overlay window so the hold-key-to-route gesture knows where to send files.
+// the native C++ pill so the hold-key-to-route gesture knows where to send files.
 function pushLinkMapToOverlay(links) {
   currentLinkMap = Array.isArray(links) ? links : [];
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    try {
-      overlayWindow.webContents.send('overlay-link-map', currentLinkMap);
-      dbg(`[LinkWatch] pushed link map to overlay (${currentLinkMap.length} link(s), shortcuts: ${JSON.stringify(currentLinkMap.map(l => l.shortcut || '-'))})`);
-    } catch (e) {
-      dbg(`[LinkWatch] push to overlay failed: ${e.message}`);
-    }
-  } else {
-    dbg(`[LinkWatch] overlay not ready — cached ${currentLinkMap.length} link(s) for later request-status`);
+  if (typeof pushLinkMapToNativePill === 'function') {
+    pushLinkMapToNativePill(currentLinkMap);
   }
 }
 
@@ -1429,22 +1517,46 @@ function refreshLinkedFolders(prprojPath) {
     return;
   }
   const sidecarPath = findLinksSidecar(prprojPath);
-  if (!sidecarPath) {
-    pushLinkMapToOverlay([]);
-    return;
+  let links = null;
+  if (sidecarPath) {
+    try {
+      links = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
+    } catch (e) {
+      dbg(`[LinkWatch] failed to parse ${sidecarPath}: ${e.message}`);
+    }
   }
-  let links;
-  try {
-    links = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
-  } catch (e) {
-    dbg(`[LinkWatch] failed to parse ${sidecarPath}: ${e.message}`);
-    pushLinkMapToOverlay([]);
-    return;
+  if (!Array.isArray(links) || links.length === 0) {
+    // Fallback: build links from _freexan_slot_map.json in project dir or parent dir
+    const projectDir = path.dirname(prprojPath);
+    const slotMapPath = path.join(projectDir, '_freexan_slot_map.json');
+    if (fs.existsSync(slotMapPath)) {
+      try {
+        const slotMap = JSON.parse(fs.readFileSync(slotMapPath, 'utf8'));
+        links = [];
+        const order = ['video', 'audio', 'bgm', 'sfx', 'image'];
+        order.forEach((type, idx) => {
+          if (slotMap[type] && slotMap[type].folder) {
+            links.push({
+              folderPath: slotMap[type].folder,
+              binName: slotMap[type].bin || type,
+              shortcut: String(idx + 1)
+            });
+          }
+        });
+        dbg(`[LinkWatch] built ${links.length} link(s) from _freexan_slot_map.json fallback`);
+      } catch (e) {
+        dbg(`[LinkWatch] failed fallback slot map: ${e.message}`);
+      }
+    }
   }
   if (!Array.isArray(links) || links.length === 0) {
     pushLinkMapToOverlay([]);
     return;
   }
+  // Ensure every link has a shortcut 1..8
+  links.forEach((l, idx) => {
+    if (!l.shortcut && idx < 8) l.shortcut = String(idx + 1);
+  });
   dbg(`[LinkWatch] starting ${links.length} link(s) for project ${path.basename(prprojPath)}`);
   pushLinkMapToOverlay(links);
   linkWatcher.start(links, {
@@ -1935,130 +2047,100 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   }
 });
 
-ipcMain.on('resize-overlay', (event, mode) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win) return;
-  // Compact: 56 px pill + 14 px padding each side = 84 px
-  // Expanded: 216 px pill + 14 px padding each side = 244 px
-  // Halo: 180×180 with pill recentred (8-bubble picker at radius 50, tight ring)
-  let newW, newH;
-  if (mode === 'halo') { newW = 180; newH = 180; }
-  else if (mode === true || mode === 'expanded') { newW = 244; newH = 84; }
-  else { newW = 84; newH = 84; }
-  // Keep the pill visually anchored on screen across mode switches. Compact &
-  // expanded put the pill at top-left (centre ≈ x+42, y+42); halo centres the
-  // pill in the window (centre = x+90, y+90). Shift the window so the pill's
-  // screen position doesn't jump.
-  const [curX, curY] = win.getPosition();
-  const [curW, curH] = win.getSize();
-  const pillCx = curX + (curW === 180 && curH === 180 ? 90 : 42);
-  const pillCy = curY + (curW === 180 && curH === 180 ? 90 : 42);
-  const newOffX = (newW === 180 && newH === 180) ? 90 : 42;
-  const newOffY = (newW === 180 && newH === 180) ? 90 : 42;
-  const newX = Math.round(pillCx - newOffX);
-  const newY = Math.round(pillCy - newOffY);
-  win.setBounds({ x: newX, y: newY, width: newW, height: newH });
+// Legacy Electron overlay IPC handlers (resize-overlay, move-overlay-window, overlay-log, request-status)
+// removed — archived in archive_legacy_electron_pill/ for future reference.
 
-  // Halo mode: claim keyboard focus so number-key picks and clicks register
-  // immediately. Without this, the first click typically just transfers focus
-  // and is swallowed (Windows "first-click steals focus" pattern), and the
-  // Premiere home-screen monitor may have popped the main window over.
-  haloPickerActive = (mode === 'halo');
-  if (mode === 'halo') {
-    // Hide the main window if it's showing — it would steal focus and visually
-    // dominate the small overlay picker.
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !userOpenedManually) {
-      mainWindow.hide();
-    }
-    setTimeout(() => {
-      try {
-        win.focus();
-        win.moveTop();
-      } catch (_) {}
-    }, 20);
-  }
-});
-
-// ipcMain.on('resize-overlay', (event, expanded) => {
-//   const webContents = event.sender;
-//   const win = BrowserWindow.fromWebContents(webContents);
-//   if (win) {
-//     win.setSize(expanded ? 260 : 100, 100);
-//   }
-// });
-
-ipcMain.on('move-overlay-window', (event, delta) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win) return;
-  if (!delta || typeof delta.deltaX !== 'number' || typeof delta.deltaY !== 'number') return;
-  if (!Number.isFinite(delta.deltaX) || !Number.isFinite(delta.deltaY)) return;
-  const [x, y] = win.getPosition();
-  try {
-    win.setPosition(Math.round(x + delta.deltaX), Math.round(y + delta.deltaY));
-  } catch (e) { /* position out of bounds — ignore */ }
-});
-
-// Overlay logs forwarded into debug.log so they can be read without DevTools.
-ipcMain.on('overlay-log', (event, msg) => {
-  dbg(`[OVERLAY] ${msg}`);
-});
-
-ipcMain.on('request-status', () => {
-  updateOverlayUI();
-  // Re-push the cached link map: the overlay may have just loaded and missed
-  // the original push that fired when `active_project` arrived from CEP.
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    try {
-      overlayWindow.webContents.send('overlay-link-map', currentLinkMap);
-      dbg(`[LinkWatch] re-pushed link map on request-status (${currentLinkMap.length} link(s))`);
-    } catch (e) {
-      dbg(`[LinkWatch] re-push on request-status failed: ${e.message}`);
-    }
-  }
-});
-
-ipcMain.handle('import-dropped-files', async (event, filePaths, opts) => {
+async function performImportDroppedFiles(filePaths, opts) {
   dragDropLogger('--- DRAG N DROP INITIATED ---');
   dragDropLogger(`Files dropped: ${filePaths ? filePaths.length : 0}`, filePaths);
   if (opts) dragDropLogger('Options:', opts);
 
-  // Halo route override: the overlay can pass a `routeToFolder` (and optionally
-  // `moveSource`) to bypass slot mapping entirely and place the files straight
-  // into a linked folder. The existing linkWatcher already watching that folder
-  // picks them up and dispatches the Premiere import — so we just transfer and
-  // return.
+  // Halo route override: when overlay or native pill passes `routeToFolder` (and optionally `routeToBin`)
   if (opts && opts.routeToFolder) {
-    const target = String(opts.routeToFolder);
+    const target = path.resolve(path.normalize(String(opts.routeToFolder)));
     const moveMode = !!opts.moveSource;
+    let targetBin = opts.routeToBin ? String(opts.routeToBin) : null;
+    if (!targetBin && currentLinkMap && Array.isArray(currentLinkMap)) {
+      const match = currentLinkMap.find(l => l && l.folderPath && path.normalize(l.folderPath).toLowerCase() === target.toLowerCase());
+      if (match && match.binName) targetBin = match.binName;
+    }
+    dragDropLogger(`[IMPORT DEBUG] Halo Route initiated → target: "${target}", targetBin: "${targetBin || 'none'}", moveMode: ${moveMode}`);
+    sendLog('info', 'ipc:halo-import-initiated', 'electron-main', null, { target, targetBin, fileCount: filePaths ? filePaths.length : 0 });
     try {
       if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
-      let count = 0;
-      for (const src of (filePaths || [])) {
-        if (!src || !fs.existsSync(src)) continue;
+      const toImport = [];
+      for (const rawSrc of (filePaths || [])) {
+        if (!rawSrc) continue;
+        const src = path.resolve(path.normalize(rawSrc));
+        if (!fs.existsSync(src)) continue;
         const fileExt = path.extname(src);
+        const fileName = path.basename(src);
         const baseName = path.basename(src, fileExt);
         const stat = fs.statSync(src);
+        let finalDestPath;
+        const isAlreadyInTarget = path.normalize(path.dirname(src)).toLowerCase() === target.toLowerCase();
+
         if (stat.isDirectory()) {
-          const dest = path.join(target, path.basename(src));
-          if (fs.existsSync(dest)) continue;       // skip if dir already there
-          if (moveMode) moveFsItem(src, dest, true);
-          else fs.cpSync(src, dest, { recursive: true });
-        } else {
-          let dest = path.join(target, path.basename(src));
-          let counter = 1;
-          while (fs.existsSync(dest)) {
-            dest = path.join(target, `${baseName}_${counter}${fileExt}`);
-            counter++;
+          finalDestPath = path.join(target, fileName);
+          if (!isAlreadyInTarget && !fs.existsSync(finalDestPath)) {
+            if (moveMode) moveFsItem(src, finalDestPath, true);
+            else fs.cpSync(src, finalDestPath, { recursive: true });
           }
-          if (moveMode) moveFsItem(src, dest, false);
-          else fs.copyFileSync(src, dest);
+        } else {
+          if (isAlreadyInTarget) {
+            finalDestPath = src;
+          } else {
+            finalDestPath = path.join(target, fileName);
+            let counter = 1;
+            while (fs.existsSync(finalDestPath)) {
+              if (path.normalize(finalDestPath).toLowerCase() === src.toLowerCase()) break;
+              finalDestPath = path.join(target, `${baseName}_${counter}${fileExt}`);
+              counter++;
+            }
+            if (path.normalize(finalDestPath).toLowerCase() !== src.toLowerCase()) {
+              if (moveMode) moveFsItem(src, finalDestPath, false);
+              else fs.copyFileSync(src, finalDestPath);
+            }
+          }
         }
-        count++;
+        if (linkWatcher && typeof linkWatcher.markSeen === 'function') {
+          linkWatcher.markSeen(finalDestPath);
+        }
+        toImport.push({ filePath: finalDestPath, binName: targetBin });
       }
-      dragDropLogger(`[IMPORT] halo route → ${moveMode ? 'moved' : 'copied'} ${count} file(s) to "${target}" (linkWatcher will pick up the rest)`);
-      return { success: true, imported: false };
+
+      let importedIntoPremiere = false;
+      if (wss && isCepConnected && toImport.length > 0) {
+        const batchId = 'b_halo_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        const total = toImport.length;
+        toImport.forEach((item, idx) => {
+          wss.clients.forEach(client => {
+            if (client.readyState !== 1) return;
+            try {
+              const msg = {
+                type: 'import',
+                filePath: item.filePath,
+                binName: item.binName || null,
+                batchId,
+                batchIndex: idx,
+                batchTotal: total,
+                isLast: idx === total - 1
+              };
+              dragDropLogger(`[IMPORT DEBUG] → WebSocket send: filePath="${item.filePath}" binName="${item.binName || 'null'}" (batch ${idx + 1}/${total})`);
+              client.send(JSON.stringify(msg));
+              importedIntoPremiere = true;
+            } catch (sendErr) {
+              dragDropLogger(`[IMPORT DEBUG] WebSocket send failed: ${sendErr.message}`);
+            }
+          });
+        });
+      }
+
+      dragDropLogger(`[IMPORT] halo route → ${moveMode ? 'moved' : 'copied'} ${toImport.length} file(s) to "${target}", dispatched to CEP: ${importedIntoPremiere}`);
+      return { success: true, imported: importedIntoPremiere };
     } catch (err) {
       dragDropLogger(`[IMPORT] halo route failed: ${err.message}`);
+      sendLog('error', 'ipc:halo-import-error', 'electron-main', null, { error: err.message }, null, err);
       throw err;
     }
   }
@@ -2225,6 +2307,9 @@ ipcMain.handle('import-dropped-files', async (event, filePaths, opts) => {
 
       dbg(`[IMPORT] finalDestPath : "${finalDestPath}"`);
 
+      if (linkWatcher && typeof linkWatcher.markSeen === 'function') {
+        linkWatcher.markSeen(finalDestPath);
+      }
       toImport.push({ filePath: finalDestPath, binName });
     }
 
@@ -2263,9 +2348,9 @@ ipcMain.handle('import-dropped-files', async (event, filePaths, opts) => {
     console.error('Failed to import dropped files:', err);
     throw err;
   }
-});
+}
 
-ipcMain.handle('import-browser-image', async (event, url) => {
+async function performImportBrowserImage(url) {
   if (!/^https?:\/\//i.test(url)) {
     throw new Error('Only http and https image URLs are supported.');
   }
@@ -2367,7 +2452,223 @@ ipcMain.handle('import-browser-image', async (event, url) => {
   } finally {
     try { fs.unlinkSync(sourcePath); } catch (_) { }
   }
+}
+
+ipcMain.handle('import-dropped-files', async (event, filePaths, opts) => {
+  return await performImportDroppedFiles(filePaths, opts);
 });
+
+ipcMain.handle('import-browser-image', async (event, url) => {
+  return await performImportBrowserImage(url);
+});
+
+// ── Native C++ Pill Named Pipe Bridge ────────────────────────────────────────
+
+let nativePillSocket = null;
+let nativePillProcess = null;
+let currentProfileIndex = 0;
+
+function pushStateToNativePill() {
+  if (!nativePillSocket) return;
+  const cepName = activeProjectPath ? path.basename(activeProjectPath) : '';
+  const nativeName = nativeProjectPath ? path.basename(nativeProjectPath) : '';
+  
+  const users = db.usersApi.getAll();
+  let currentUser = { name: "Swastik", initials: "SW", hex_color: "#7c3aed" };
+  if (users.length > 0) {
+    currentUser = users[currentProfileIndex % users.length] || currentUser;
+  }
+  
+  let r = 124, g = 58, b = 237; // default #7c3aed
+  if (currentUser.hex_color && currentUser.hex_color.startsWith('#') && currentUser.hex_color.length >= 7) {
+    const hex = currentUser.hex_color.replace('#', '');
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  }
+
+  const payload = {
+    type: 'overlay-update',
+    data: {
+      connected: isCepConnected,
+      projectName: cepName,
+      nativeProjectName: nativeName,
+      currentProfile: currentUser.name,
+      profileInitials: currentUser.initials,
+      profileColorR: r,
+      profileColorG: g,
+      profileColorB: b
+    }
+  };
+  try {
+    nativePillSocket.write(JSON.stringify(payload) + '\n');
+  } catch (err) {
+    dbg(`[NativePill] write state failed: ${err.message}`);
+  }
+}
+
+function pushLinkMapToNativePill(links) {
+  if (!nativePillSocket) return;
+  const payload = {
+    type: 'overlay-link-map',
+    data: Array.isArray(links) ? links : []
+  };
+  try {
+    nativePillSocket.write(JSON.stringify(payload) + '\n');
+  } catch (err) {
+    dbg(`[NativePill] write link map failed: ${err.message}`);
+  }
+}
+
+let pendingProfileTimer = null;
+let pendingProfileName = null;
+
+async function handleNativePillMessage(msg) {
+  const cid = msg.correlationId || crypto.randomUUID();
+  if (msg.type === 'log') {
+    sendLog(msg.level || 'info', msg.event || 'ui:native-pill-event', 'native-pill', cid, msg.payload || {});
+    return;
+  }
+  if (msg.type === 'cycle-profile') {
+    const users = db.usersApi.getAll();
+    if (users.length > 0) {
+      currentProfileIndex = (currentProfileIndex + 1) % users.length;
+      const user = users[currentProfileIndex];
+      pendingProfileName = user.name;
+      
+      if (pendingProfileTimer) clearTimeout(pendingProfileTimer);
+
+      const now = new Date();
+      const seconds = now.getSeconds();
+      const ms = now.getMilliseconds();
+      let msToNextMinute = 60000 - (seconds * 1000 + ms);
+      
+      // If within the last 10 seconds (50-59), target the minute AFTER the next one
+      if (seconds >= 50) {
+        msToNextMinute += 60000;
+      }
+
+      pendingProfileTimer = setTimeout(() => {
+        try {
+          const profilePath = app.isPackaged 
+            ? path.join(app.getPath('userData'), 'current_profile.txt')
+            : path.join(__dirname, 'Break Check', 'current_profile.txt');
+          fs.writeFileSync(profilePath, pendingProfileName);
+        } catch (err) {
+          dbg(`[NativePill] write profile failed: ${err.message}`);
+        }
+        pendingProfileTimer = null;
+      }, msToNextMinute);
+
+      pushStateToNativePill();
+    }
+    return;
+  }
+  if (msg.type === 'request-status') {
+    pushStateToNativePill();
+    pushLinkMapToNativePill(currentLinkMap);
+    return;
+  }
+  if (msg.type === 'import-dropped-files') {
+    sendLog('info', 'ipc:native-pill-import-call', 'electron-main', cid, { filePaths: msg.filePaths, opts: msg.opts });
+    const startTime = Date.now();
+    try {
+      const res = await performImportDroppedFiles(msg.filePaths, msg.opts);
+      sendLog('info', 'ipc:native-pill-import-resolve', 'electron-main', cid, { success: true, res }, Date.now() - startTime);
+    } catch (err) {
+      sendLog('error', 'ipc:native-pill-import-error', 'electron-main', cid, { error: err.message }, Date.now() - startTime, err);
+    }
+    return;
+  }
+  if (msg.type === 'import-browser-image') {
+    sendLog('info', 'ipc:native-pill-browser-import-call', 'electron-main', cid, { url: msg.url });
+    const startTime = Date.now();
+    try {
+      const res = await performImportBrowserImage(msg.url);
+      sendLog('info', 'ipc:native-pill-browser-import-resolve', 'electron-main', cid, { success: true, res }, Date.now() - startTime);
+    } catch (err) {
+      sendLog('error', 'ipc:native-pill-browser-import-error', 'electron-main', cid, { error: err.message }, Date.now() - startTime, err);
+    }
+    return;
+  }
+}
+
+function spawnNativePillProcess() {
+  if (nativePillProcess) return;
+  const exePath = app.isPackaged 
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'native-pill', 'build', 'FreeXanPill.exe')
+    : path.join(__dirname, 'native-pill', 'build', 'FreeXanPill.exe');
+  if (!fs.existsSync(exePath)) {
+    dbg(`[NativePill] binary not found at ${exePath} (will spawn once built)`);
+    return;
+  }
+  try {
+    dbg(`[NativePill] spawning side-by-side native pill direct child: ${exePath}`);
+    nativePillProcess = spawn(exePath, [], {
+      detached: false,
+      stdio: 'ignore',
+      windowsHide: true
+    });
+    nativePillProcess.on('exit', (code) => {
+      dbg(`[NativePill] process exited with code: ${code}`);
+      nativePillProcess = null;
+    });
+    nativePillProcess.on('error', (err) => {
+      dbg(`[NativePill] process error: ${err.message}`);
+      nativePillProcess = null;
+    });
+  } catch (e) {
+    dbg(`[NativePill] spawn failed: ${e.message}`);
+  }
+}
+
+function initNativePillBridge() {
+  const PIPE_NAME = '\\\\.\\pipe\\freexan_pill';
+  try {
+    const server = net.createServer((socket) => {
+      sendLog('info', 'ipc:native-pill-connect', 'electron-main', null, { pipe: PIPE_NAME });
+      dbg('[NativePill] connected to named pipe');
+      nativePillSocket = socket;
+      pushStateToNativePill();
+      if (currentLinkMap && currentLinkMap.length > 0) {
+        pushLinkMapToNativePill(currentLinkMap);
+      }
+      let buffer = '';
+      socket.on('data', async (chunk) => {
+        buffer += chunk.toString('utf8');
+        let lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const msg = JSON.parse(line.trim());
+            await handleNativePillMessage(msg);
+          } catch (err) {
+            sendLog('error', 'ipc:native-pill-parse-error', 'electron-main', null, { raw: line }, null, err);
+          }
+        }
+      });
+      socket.on('close', () => {
+        sendLog('warn', 'ipc:native-pill-disconnect', 'electron-main', null, {});
+        dbg('[NativePill] disconnected');
+        if (nativePillSocket === socket) nativePillSocket = null;
+      });
+      socket.on('error', (err) => {
+        sendLog('error', 'ipc:native-pill-socket-error', 'electron-main', null, {}, null, err);
+      });
+    });
+    server.on('error', (err) => {
+      sendLog('error', 'ipc:native-pill-server-error', 'electron-main', null, {}, null, err);
+    });
+    server.listen(PIPE_NAME, () => {
+      sendLog('info', 'ipc:native-pill-server-start', 'electron-main', null, { pipe: PIPE_NAME });
+      dbg(`[NativePill] named pipe listening on ${PIPE_NAME}`);
+      spawnNativePillProcess();
+    });
+  } catch (err) {
+    sendLog('error', 'ipc:native-pill-bridge-init-error', 'electron-main', null, {}, null, err);
+  }
+}
 
 // ── Database IPC ─────────────────────────────────────────────────────────────
 
@@ -2402,6 +2703,11 @@ ipcMain.handle('db-get-assets', () => db.assetsApi.getAll());
 ipcMain.handle('db-add-asset', (_, clientId, funnelId, name, filePath, category, tags) => db.assetsApi.add(clientId, funnelId, name, filePath, category, tags));
 ipcMain.handle('db-update-asset', (_, id, name, filePath, clientId, funnelId) => { db.assetsApi.update(id, name, filePath, clientId, funnelId); });
 ipcMain.handle('db-delete-asset', (_, id) => { db.assetsApi.delete(id); });
+
+ipcMain.handle('db-get-users', () => db.usersApi.getAll());
+ipcMain.handle('db-add-user', (_, name, initials, hex_color) => db.usersApi.add(name, initials, hex_color));
+ipcMain.handle('db-update-user', (_, id, name, initials, hex_color) => { db.usersApi.update(id, name, initials, hex_color); });
+ipcMain.handle('db-delete-user', (_, id) => { db.usersApi.delete(id); });
 
 ipcMain.handle('select-files', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -2475,12 +2781,53 @@ app.on('second-instance', () => {
   }
 });
 
+// ── Background Usage Monitor Deployment ─────────────────────────────────────
+function deployUsageMonitor() {
+  const isPackaged = app.isPackaged;
+  const exePath = isPackaged 
+    ? path.join(process.resourcesPath, 'bin', 'usage_monitor.exe')
+    : path.join(__dirname, 'bin', 'usage_monitor.exe');
+
+  if (!fs.existsSync(exePath)) {
+    sendLog('warn', 'tracker:missing', 'electron-main', null, { exePath });
+    return;
+  }
+
+  // 1. Add to Windows Startup Registry (Persistence)
+  // This ensures usage_monitor.exe runs silently on Windows boot regardless of FreeXan
+  const regCommand = `reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "FreeXanUsageMonitor" /t REG_SZ /d "\\"${exePath}\\"" /f`;
+  exec(regCommand, (error) => {
+    if (error) {
+      sendLog('error', 'tracker:registry-failed', 'electron-main', null, {}, null, error);
+    } else {
+      sendLog('info', 'tracker:registry-success', 'electron-main', null, { exePath });
+    }
+  });
+
+  // 2. Spawn it immediately if it's not already running
+  exec('tasklist /FI "IMAGENAME eq usage_monitor.exe"', (err, stdout) => {
+    if (!stdout.toLowerCase().includes('usage_monitor.exe')) {
+      sendLog('info', 'tracker:spawning', 'electron-main', null, { exePath });
+      const trackerProcess = spawn(exePath, [], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      trackerProcess.unref(); // Allow FreeXan to exit without waiting for tracker
+    } else {
+      sendLog('info', 'tracker:already-running', 'electron-main');
+    }
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 app.whenReady().then(() => {
   const startHidden = process.argv.includes('--hidden');
   const noPlugins = process.argv.includes('--no-plugins');
 
   loadConfig();
   enableCEPDebugging();
+  deployUsageMonitor();
   
   if (!noPlugins) {
     installCEPExtension();
@@ -2488,13 +2835,15 @@ app.whenReady().then(() => {
   
   startWebSocketServer();
   createWindow();
-  createOverlayWindow();
+  initNativePillBridge();
   createTray();
   startPremiereMonitor();
 
   // HTTP door for CLI + MCP tools (localhost only, port 4555)
   httpApi.startHttpApi({
     db,
+    mogrtDb,
+    audioDb,
     shell,
     appConfig,
     appVersion: app.getVersion(),
@@ -2512,7 +2861,8 @@ app.whenReady().then(() => {
       connectedPlugins: Array.from(pluginConnections.keys())
     }),
     invokeHandler: httpApi.invokeIpcHandler,
-    dispatchToPlugin
+    dispatchToPlugin,
+    sendLog
   });
 
   // Initialize Audio Watchers
@@ -2552,14 +2902,6 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
-
-  // Re-assert overlay z-level when any window gains focus — Windows can silently
-  // drop alwaysOnTop after screenshot tools or system overlays release the desktop.
-  app.on('browser-window-focus', () => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-      overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-    }
-  });
 });
 
 app.on('window-all-closed', () => {
@@ -2574,6 +2916,7 @@ app.on('before-quit', () => {
   audioWatcher.stopAll();
   mogrtWatcher.stopAll();
   httpApi.stopHttpApi();
+  killNativePillProcess();
 });
 
 // ── Audio Library IPC ─────────────────────────────────────────────────────────

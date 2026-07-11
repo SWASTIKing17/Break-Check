@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.log
 .env
+*.db
+current_profile.txt
+employee_usage_data.json
+employee_usage_data.db
